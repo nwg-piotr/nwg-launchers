@@ -6,6 +6,8 @@ As it's never too late to learn something new, I decided to try and code my [sgt
 This command creates a GNOME-like application grid with the search box, optionally prepended with 1 row of favourites
 (most frequently used) apps.
 
+[screenshot](http://nwg.pl/Lychee/uploads/big/93a95e8b221fd1c7a11d213f0ee071ee.png)
+
 ### Dependencies
 
 - `gtkmm3`
