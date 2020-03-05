@@ -1,5 +1,11 @@
-/* Credits for transparency go to AthanasiusOfAlex at https://stackoverflow.com/a/21460337 
- *
+/* GTK-based application grid
+ * Copyright (c) 2020 Piotr Miller
+ * e-mail: nwg.piotr@gmail.com
+ * Website: http://nwg.pl
+ * Project: https://github.com/nwg-piotr/nwg-launchers
+ * License: GPL3
+ * *
+ * Credits for window transparency go to AthanasiusOfAlex at https://stackoverflow.com/a/21460337 
  * transparent.cpp
  * Code adapted from 'alphademo.c' by Mike
  * (http://plan99.net/~mike/blog--now a dead link--unable to find it.)

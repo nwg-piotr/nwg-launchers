@@ -1,4 +1,14 @@
-/* Returns cache file path */
+/* GTK-based application grid
+ * Copyright (c) 2020 Piotr Miller
+ * e-mail: nwg.piotr@gmail.com
+ * Website: http://nwg.pl
+ * Project: https://github.com/nwg-piotr/nwg-launchers
+ * License: GPL3
+ * */
+
+/* 
+ * Returns cache file path 
+ * */
 std::string get_cache_path() {
 	std::string s = "";
 	char* val = getenv("XDG_CACHE_HOME");
@@ -16,7 +26,9 @@ std::string get_cache_path() {
 	return full_path;
 }
 
-/* Returns config dir */
+/* 
+ * Returns config dir 
+ * */
 std::string get_config_dir() {
 	std::string s = "";
 	char* val = getenv("XDG_CONFIG_HOME");
@@ -31,7 +43,9 @@ std::string get_config_dir() {
 	return s;
 }
 
-/* Returns a file content as string */
+/* 
+ * Returns a file content as a string 
+ * */
 std::string read_file_to_string(std::string filename) {
 	std::ifstream input(filename);
 	std::stringstream sstr;
@@ -41,13 +55,17 @@ std::string read_file_to_string(std::string filename) {
 	return sstr.str();
 }
 
-/* Saves a string to a file */
+/* 
+ * Saves a string to a file 
+ * */
 void save_string_to_file(std::string s, std::string filename) {
 	std::ofstream file(filename);
 	file << s;
 }
 
-/* Returns window manager name */
+/* 
+ * Returns window manager name 
+ * */
 std::string detect_wm() {
     /* Actually we only need to check if we're on sway or not,
      * but let's try to find a WM name if possible. If not, let it be just "other" */
@@ -81,7 +99,9 @@ std::string detect_wm() {
     return wm_name;
 }
 
-/* Returns first 2 chars of current locale string */
+/* 
+ * Returns first 2 chars of current locale string 
+ * */
 std::string get_locale() {
 	char* env_val = getenv("LANG");
 	std::string loc(env_val);
@@ -93,7 +113,9 @@ std::string get_locale() {
 	return l;
 }
 
-/* Returns locations of .desktop files */
+/* 
+ * Returns locations of .desktop files 
+ * */
 std::vector<std::string> get_app_dirs() {
 	std::string homedir = getenv("HOME");
 	std::vector<std::string> result = {homedir + "/.local/share/applications", "/usr/share/applications",
@@ -103,7 +125,9 @@ std::vector<std::string> get_app_dirs() {
 	return result;
 }
 
-/* Returns all .desktop files paths */
+/* 
+ * Returns all .desktop files paths 
+ * */
 std::vector<std::string> list_entries(std::vector<std::string> paths) {
 	std::vector<std::string> desktop_paths;
 	for (std::string dir : paths) {
@@ -119,7 +143,9 @@ std::vector<std::string> list_entries(std::vector<std::string> paths) {
 	return desktop_paths;
 }
 
-/* Parses .desktop file, returns vector<string> {'name', 'exec', 'icon', 'comment'} */
+/* 
+ * Parses .desktop file to vector<string> {'name', 'exec', 'icon', 'comment'} 
+ * */
 std::vector<std::string> desktop_entry(std::string path, std::string lang) {
 	std::vector<std::string> fields = {"", "", "", ""};
 	
@@ -178,7 +204,9 @@ std::vector<std::string> desktop_entry(std::string path, std::string lang) {
 	return fields;
 }
 
-/* Returns output of a command as string */
+/* 
+ * Returns output of a command as string 
+ * */
 std::string get_output(std::string cmd) {
 	const char *command = cmd.c_str();
     std::array<char, 128> buffer;
@@ -194,7 +222,8 @@ std::string get_output(std::string cmd) {
 }
 
 /* Converts json string into a json object;
- * Requires nlohmann-json package, https://github.com/nlohmann/json */
+ * Requires nlohmann-json package, https://github.com/nlohmann/json
+ * */
 ns::json string_to_json(std::string jsonString) {
     const char *s = jsonString.c_str();
     ns::json jsonObj;
@@ -208,14 +237,18 @@ void save_json(ns::json json_obj, std::string filename) {
 	o << std::setw(2) << json_obj << std::endl;
 }
 
-/* Returns json object out of the cache file */
+/* 
+ * Returns json object out of the cache file 
+ * */
 ns::json get_cache(std::string cache_file) {
     std::string cache_string = read_file_to_string(cache_file);
 
     return string_to_json(cache_string);
 }
 
-/* Returns n cache items sorted by clicks; n should be the number of grid columns */
+/* 
+ * Returns n cache items sorted by clicks; n should be the number of grid columns 
+ * */
 std::vector<CacheEntry> get_favourites(ns::json cache, int number) {
     // read from json object
     std::vector<CacheEntry> sorted_cache {}; // not yet sorted
@@ -234,7 +267,9 @@ std::vector<CacheEntry> get_favourites(ns::json cache, int number) {
 	return favourites;
 }
 
-/* Returns x, y, width, hight of focused display */
+/* 
+ * Returns x, y, width, hight of focused display 
+ * */
 std::vector<int> display_geometry(std::string wm) {
 	std::vector<int> geo = {0, 0, 0, 0};
 	if (wm == "sway") {
@@ -253,7 +288,9 @@ std::vector<int> display_geometry(std::string wm) {
 	return geo;
 }
 
-/* Returns Gtk::Image out of the icon name of file path */
+/* 
+ * Returns Gtk::Image out of the icon name of file path 
+ * */
 Gtk::Image* app_image(std::string icon) {
 	Glib::RefPtr<Gtk::IconTheme> icon_theme;
 	Glib::RefPtr<Gdk::Pixbuf> pixbuf;
@@ -278,7 +315,10 @@ Gtk::Image* app_image(std::string icon) {
 	return image;
 }
 
-/* Credits for this awesome class go to iain at https://stackoverflow.com/a/868894 */
+/* 
+ * Argument parser
+ * Credits for this cool class go to iain at https://stackoverflow.com/a/868894 
+ * */
 class InputParser{
     public:
         InputParser (int &argc, char **argv){
