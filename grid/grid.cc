@@ -16,6 +16,22 @@ int main(int argc, char *argv[]) {
 	struct timeval tp;
 	gettimeofday(&tp, NULL);
 	long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+	
+	/* Try to lock /tmp/nwggrid.lock file. This will return -1 if the command is already running.
+	 * Thanks to chmike at https://stackoverflow.com/a/1643134 */
+	
+	// Create pid file if not yet exists
+	if (!std::ifstream("/tmp/nwggrid.pid")) {
+		save_string_to_file("nwggrid lock file", "/tmp/nwggrid.lock");
+	}
+	
+	if (tryGetLock("/tmp/nwggrid.lock") == -1) {
+		// kill if already running
+		std::string cmd = "pkill -f nwggrid";
+		const char *command = cmd.c_str();
+		std::system(command);
+		std::exit(0);
+	}
 
 	std::string lang ("");
 
@@ -150,10 +166,10 @@ int main(int argc, char *argv[]) {
 	
 	/* turn off borders, enable floating on sway */
 	if (wm == "sway") {
-		std::string cmd = "swaymsg for_window [title=\"~cgtk*\"] floating enable";
+		std::string cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
 		const char *command = cmd.c_str();
 		std::system(command);
-		cmd = "swaymsg for_window [title=\"~cgtk*\"] border none";
+		cmd = "swaymsg for_window [title=\"~nwggrid*\"] border none";
 		command = cmd.c_str();
 		std::system(command);
 	}

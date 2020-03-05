@@ -14,6 +14,10 @@
 #include <glibmm/ustring.h>
 #include <sys/stat.h>
 
+#include <sys/types.h>
+#include <sys/file.h>
+#include <fcntl.h>
+
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 

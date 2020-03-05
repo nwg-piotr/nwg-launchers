@@ -34,3 +34,4 @@ uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/nwggrid
 	rm -rf ${DESTDIR}${PREFIX}/lib/nwggrid
 	rm -rf ${DESTDIR}${PREFIX}/share/nwggrid
+	rm -f /tmp/nwggrid.lock

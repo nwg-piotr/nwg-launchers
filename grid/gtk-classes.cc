@@ -15,8 +15,8 @@
  * */
 
 MainWindow::MainWindow() {
-    set_title("~cgtk-grid");
-    set_role("~cgtk-grid");
+    set_title("~nwggrid");
+    set_role("~nwggrid");
     //~ set_skip_taskbar_hint(true);
     set_skip_pager_hint(true);
     searchbox.set_text("Type to search");
