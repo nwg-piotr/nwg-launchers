@@ -20,20 +20,20 @@ This command creates a GNOME-like application grid, with the search box, optiona
 
 ### Installation
 
-```shell
+```
 git clone https://github.com/nwg-piotr/nwg-launchers.git
 cd nwg-launchers/grid
 sudo make clean install
 ```
 To uninstall:
 
-```shell
+```
 sudo make uninstall
 ```
 
 ### Usage
 
-```shell
+```
 $ nwggrid -h
 GTK application grid: nwggrid 0.0.1 (c) Piotr Miller 2020
 
@@ -51,7 +51,7 @@ Options:
 To give the grid more gnomish look, the application uses the `/usr/share/nwggrid/style.css` style sheet. If you'd' like
 to change something, you may use your own `style.css` file. Replace `~/.config` below with your config home, if necessary.
 
-```shell
+```
 mkdir ~/.config/nwggrid
 cp /usr/share/nwggrid/style.css ~/.config/nwggrid
 ```
