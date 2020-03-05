@@ -37,6 +37,8 @@ sudo make uninstall
 $ nwggrid -h
 GTK application grid: nwggrid 0.0.1 (c) Piotr Miller 2020
 
+nwggrid [-h] [-f] [-o <opacity>] [-c <col>] [-s <size>] [-l <ln>]
+
 Options:
 -h            show this help message and exit
 -f            display favourites
