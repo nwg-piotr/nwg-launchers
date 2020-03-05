@@ -175,8 +175,8 @@ int main(int argc, char *argv[]) {
     std::vector<int> geometry = display_geometry(wm);
     std::cout << "Focused display: " << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", " 
 		<< geometry[3] << '\n';
-	int x = geometry[0];
-	int y = geometry[1];
+	//~ int x = geometry[0];
+	//~ int y = geometry[1];
 	int w = geometry[2];
 	int h = geometry[3];
 
@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		window.fullscreen();
 		/* TODO at the moment we have no geometry detection for not-sway! */
-		window.move(x, y); 	// needed in FVWM, which happens to place fullscreen window in between displays
+		//~ window.move(x, y); 	// needed in FVWM, otherwise grid always appears on screen 0
 	}
 	
 	Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
