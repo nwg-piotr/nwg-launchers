@@ -1,15 +1,15 @@
 # nwg-launchers
 As it's never too late to learn something new, I decided to try and code my 
-[sgtk-menu](https://github.com/nwg-piotr/sgtk-menu) set of launchers, written in python, from scratch in C++.
+[sgtk-menu](https://github.com/nwg-piotr/sgtk-menu) set of launchers (written in python) from scratch in C++.
 By the way I'm trying to simplify their usage, by reducing the number of arguments. Whatever possible, is being moved
 to css style sheets.
 
-For now the first launcher seems to work pretty good:
+For now the first launcher (and my favourite) seems to work pretty well:
 
 ## nwggrid
 
-This command creates a GNOME-like application grid, with the search box, optionally prepended with one row of favourites
-(most frequently used) apps.
+This command creates a GNOME-like application grid, with the search box, optionally prepended with a row of favourites
+(most frequently used apps).
 
 [screenshot](http://nwg.pl/Lychee/uploads/big/93a95e8b221fd1c7a11d213f0ee071ee.png)
 
@@ -17,6 +17,7 @@ This command creates a GNOME-like application grid, with the search box, optiona
 
 - `gtkmm3`
 - `nlohmann-json`
+- `something else I forgot?`
 
 ### Installation
 
@@ -50,7 +51,7 @@ Options:
 
 ### Custom styling
 
-To give the grid more gnomish look, the application uses the `/usr/share/nwggrid/style.css` style sheet. If you'd' like
+To give the grid more gnomish look, the application uses the `/usr/share/nwggrid/style.css` style sheet. If you'd like
 to change something, you may use your own `style.css` file. Replace `~/.config` below with your config home, if necessary.
 
 ```
@@ -62,5 +63,5 @@ Edit the style sheet to your liking.
 
 ### TODO
 
-- prevent from launching multiple instances;
+- ~~prevent from launching multiple instances~~;
 - detect display geometry not in sway only: at the moment FVWM always places the grid on primary display.
