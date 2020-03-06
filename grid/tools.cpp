@@ -6,7 +6,7 @@
  * License: GPL3
  * */
 
-/* Try to lock the pid file
+/* Try to lock the lock file
  * Thanks to chmike at https://stackoverflow.com/a/1643134 
  * */
 int tryGetLock(char const *lockName) {
@@ -88,7 +88,7 @@ std::string detect_wm() {
 	char *env_val[2];
     std::string wm_name{"other"};
 
-	for(int i=0; i<3; i++) {
+	for(int i=0; i<2; i++) {
 		// get environment values
 		env_val[i] = getenv(env_var[i]);
 		if (env_val[i] != NULL) {
@@ -128,6 +128,22 @@ std::string get_locale() {
 	return l;
 }
 
+/*
+ * Splits string into vector of strings by delimiter
+ * */
+std::vector<std::string> split_string(std::string str, std::string delimiter) {
+	std::vector<std::string> result;
+	std::size_t current, previous = 0;
+	current = str.find_first_of(delimiter);
+	while (current != std::string::npos) {
+		result.push_back(str.substr(previous, current - previous));
+		previous = current + 1;
+		current = str.find_first_of(delimiter, previous);
+	}
+	result.push_back(str.substr(previous, current - previous));
+	return result;
+}
+
 /* 
  * Returns locations of .desktop files 
  * */
@@ -135,8 +151,14 @@ std::vector<std::string> get_app_dirs() {
 	std::string homedir = getenv("HOME");
 	std::vector<std::string> result = {homedir + "/.local/share/applications", "/usr/share/applications",
 		"/usr/local/share/applications"};
-	// TODO XDG_DATA_DIRS should be prepended
-
+		
+	auto xdg_data_dirs = getenv("XDG_DATA_DIRS");
+	if (xdg_data_dirs != NULL) {
+		std::vector<std::string> dirs = split_string(xdg_data_dirs, ":");
+		for (std::string dir : dirs) {
+			result.push_back(dir);
+		}
+	}
 	return result;
 }
 
