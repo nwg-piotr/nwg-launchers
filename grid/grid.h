@@ -26,6 +26,7 @@ int num_col (6);				// number of grid columns
 int image_size (72);			// button image size in pixels
 bool favs (false);				// whether to display favourites
 double opacity (0.9);			// overlay window opacity
+std::string wm;					// detected window manager name
 ns::json cache;
 std::string cache_file {};
 

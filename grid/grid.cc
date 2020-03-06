@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
 	}
 
     /* get current WM name */
-    std::string wm = detect_wm();
+    wm = detect_wm();
     std::cout << "WM: " << wm << "\n";
     
     /* get lang (2 chars long string) if not yet forced */
@@ -201,6 +201,7 @@ int main(int argc, char *argv[]) {
     std::vector<int> geometry = display_geometry(wm, window);
     std::cout << "Focused display: " << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", " 
 		<< geometry[3] << '\n';
+
 	int x = geometry[0];
 	int y = geometry[1];
 	int w = geometry[2];
@@ -209,7 +210,7 @@ int main(int argc, char *argv[]) {
 	if (wm == "sway") {
 		window.resize(w, h);
 	} else {
-		window.fullscreen();
+		std::cout << "x: " << x << " y: " << y << std::endl;
 		window.move(x, y); 	// needed in FVWM, otherwise grid always appears on screen 0
 	}
 	

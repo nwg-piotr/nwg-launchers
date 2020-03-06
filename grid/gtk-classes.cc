@@ -42,6 +42,10 @@ MainWindow::MainWindow() {
     signal_screen_changed().connect(sigc::mem_fun(*this, &MainWindow::on_screen_changed));
     
     on_screen_changed(get_screen());
+
+    if (wm != "sway") {
+		fullscreen();
+	}
 }
 
 MainWindow::~MainWindow() {
