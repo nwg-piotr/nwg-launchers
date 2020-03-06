@@ -285,7 +285,7 @@ std::vector<CacheEntry> get_favourites(ns::json cache, int number) {
 /* 
  * Returns x, y, width, hight of focused display 
  * */
-std::vector<int> display_geometry(std::string wm) {
+std::vector<int> display_geometry(std::string wm, MainWindow &window) {
 	std::vector<int> geo = {0, 0, 0, 0};
 	if (wm == "sway") {
 		std::string jsonString = get_output("swaymsg -t get_outputs");
@@ -299,7 +299,16 @@ std::vector<int> display_geometry(std::string wm) {
 				geo[3] = jsonObj[index].at("rect").at("height");
 			}
 		}
-	} // todo add detection in not-sway environment
+	} else {
+		Glib::RefPtr<Gdk::Screen> screen = window.get_screen();
+		int display_number = screen -> get_monitor_at_window(screen -> get_active_window());
+		Gdk::Rectangle rect;
+		screen -> get_monitor_geometry(display_number, rect);
+		geo[0] = rect.get_x();
+		geo[1] = rect.get_y();
+		geo[2] = rect.get_width();
+		geo[3] = rect.get_height();
+	}
 	return geo;
 }
 
