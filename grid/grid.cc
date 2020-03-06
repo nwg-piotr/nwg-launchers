@@ -21,12 +21,13 @@ int main(int argc, char *argv[]) {
 	 * Thanks to chmike at https://stackoverflow.com/a/1643134 */
 	
 	// Create pid file if not yet exists
-	if (!std::ifstream("/tmp/nwggrid.pid")) {
+	if (!std::ifstream("/tmp/nwggrid.lock")) {
 		save_string_to_file("nwggrid lock file", "/tmp/nwggrid.lock");
 	}
 	
 	if (tryGetLock("/tmp/nwggrid.lock") == -1) {
 		// kill if already running
+		std::remove("/tmp/nwggrid.lock");
 		std::string cmd = "pkill -f nwggrid";
 		const char *command = cmd.c_str();
 		std::system(command);
