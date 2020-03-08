@@ -42,11 +42,36 @@ int main(int argc, char *argv[]) {
         std::cout << "nwgbar [-h] [-f] [-o <opacity>] [-c <col>] [-s <size>] [-l <ln>]\n\n";
         std::cout << "Options:\n";
         std::cout << "-h            show this help message and exit\n";
+        std::cout << "-v            arrange buttons vertically\n";
+        std::cout << "-ha <l>|<r>   horizontal alignment left/right, default: center\n";
+        std::cout << "-va <t>|<b>   vertical alignment top/bottom, default: center\n";
         std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n";
         std::cout << "-s <size>     button image size (default: 72)\n";
         std::exit(0);
     }
+
+    if(input.cmdOptionExists("-v")){
+		orientation = "v";
+	}
     
+	const std::string &halign = input.getCmdOption("-ha");
+    if (!halign.empty()){
+		if (halign == "l" || halign == "left") {
+			h_align = "l";
+		} else if (halign == "r" || halign == "right") {
+			h_align = "r";
+		}
+	}
+
+	const std::string &valign = input.getCmdOption("-va");
+    if (!valign.empty()){
+		if (valign == "t" || valign == "top") {
+			v_align = "t";
+		} else if (valign == "b" || valign == "bottom") {
+			v_align = "b";
+		}
+	}
+
     const std::string &opa = input.getCmdOption("-o");
     if (!opa.empty()){
         try {
@@ -188,9 +213,9 @@ int main(int argc, char *argv[]) {
 
 	Gtk::HBox favs_hbox;
 	favs_hbox.set_name("bar");
-	if (h_align == "l" || h_align == "left") {
+	if (h_align == "l") {
 		favs_hbox.pack_start(window.favs_grid, false, false);
-	} else if (h_align == "r" || h_align == "right") {
+	} else if (h_align == "r") {
 		favs_hbox.pack_end(window.favs_grid, false, false);
 	} else {
 		favs_hbox.pack_start(window.favs_grid, true, false);
@@ -203,9 +228,9 @@ int main(int argc, char *argv[]) {
 
 	inner_vbox.pack_start(apps_hbox, true, true, 0);
 	
-	if (v_align == "t" || v_align == "top") {
+	if (v_align == "t") {
 		outer_box.pack_start(inner_vbox, false, false);
-	} else if (v_align == "b" || v_align == "bottom") {
+	} else if (v_align == "b") {
 		outer_box.pack_end(inner_vbox, false, false);
 	} else {
 		outer_box.pack_start(inner_vbox, Gtk::PACK_EXPAND_PADDING);
