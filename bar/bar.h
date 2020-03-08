@@ -29,6 +29,9 @@ double opacity (0.9);			// overlay window opacity
 std::string wm;					// detected window manager name
 ns::json cache;
 std::string cache_file {};
+std::string orientation {"h"};
+std::string h_align {""};
+std::string v_align {""};
 
 #ifndef CGTK_APP_BOX_H
 #define CGTK_APP_BOX_H
@@ -99,8 +102,9 @@ std::string cache_file {};
 
 #ifndef CGTK_CACHE_ENTRY_H
 #define CGTK_CACHE_ENTRY_H
-		struct CacheEntry {
+		struct BarEntry {
+			std::string name;
 			std::string exec;
-			int clicks;
+			std::string icon;
 		};
 #endif // CGTK_CACHE_ENTRY_H

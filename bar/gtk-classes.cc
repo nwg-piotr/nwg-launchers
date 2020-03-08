@@ -181,7 +181,7 @@ bool MainWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
     if (_SUPPORTS_ALPHA) {
         cr->set_source_rgba(0.0, 0.0, 0.0, opacity);    // transparent
     } else {
-        cr->set_source_rgb(0.0, 0.0, 0.0);          // opaque
+        cr->set_source_rgb(0.0, 0.0, 0.0);          	// opaque
     }
     cr->set_operator(Cairo::OPERATOR_SOURCE);
     cr->paint();

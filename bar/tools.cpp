@@ -52,7 +52,7 @@ std::string get_config_dir() {
 	} else {
 		char* val = getenv("HOME");
 		s = val;
-		s += "/.config/nwggrid";
+		s += "/.config/nwgbar";
 	}
 	fs::path dir (s);
 	return s;
@@ -275,33 +275,26 @@ void save_json(ns::json json_obj, std::string filename) {
 }
 
 /* 
- * Returns json object out of the cache file 
+ * Returns json object out of the definitions file 
  * */
-ns::json get_cache(std::string cache_file) {
-    std::string cache_string = read_file_to_string(cache_file);
+ns::json get_bar_json(std::string custom_bar) {
+    std::string bar_string = read_file_to_string(custom_bar);
 
-    return string_to_json(cache_string);
+    return string_to_json(bar_string);
 }
 
 /* 
  * Returns n cache items sorted by clicks; n should be the number of grid columns 
  * */
-std::vector<CacheEntry> get_favourites(ns::json cache, int number) {
+std::vector<BarEntry> get_bar_entries(ns::json bar_json) {
     // read from json object
-    std::vector<CacheEntry> sorted_cache {}; // not yet sorted
-    for (ns::json::iterator it = cache.begin(); it != cache.end(); ++it) {
-		struct CacheEntry entry = {it.key(), it.value()};
-		sorted_cache.push_back(entry);
+    std::vector<BarEntry> entries {};
+    for (ns::json::iterator it = bar_json.begin(); it != bar_json.end(); ++it) {
+		int index = std::distance(bar_json.begin(), it);
+		struct BarEntry entry = {bar_json[index].at("name"), bar_json[index].at("exec"), bar_json[index].at("icon")};
+		entries.push_back(entry);
 	}
-	// actually sort by the number of clicks
-	sort(sorted_cache.begin(), sorted_cache.end(), [](const CacheEntry& lhs, const CacheEntry& rhs) {
-		return lhs.clicks > rhs.clicks;
-	});
-	// Trim to the number of columns, as we need just 1 row of favourites
-	std::vector<CacheEntry>::const_iterator first = sorted_cache.begin();
-	std::vector<CacheEntry>::const_iterator last = sorted_cache.begin() + number;
-	std::vector<CacheEntry> favourites(first, last);
-	return favourites;
+	return entries;
 }
 
 /* 
