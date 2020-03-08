@@ -43,8 +43,9 @@ int main(int argc, char *argv[]) {
         std::cout << "Options:\n";
         std::cout << "-h            show this help message and exit\n";
         std::cout << "-v            arrange buttons vertically\n";
-        std::cout << "-ha <l>|<r>   horizontal alignment left/right, default: center\n";
-        std::cout << "-va <t>|<b>   vertical alignment top/bottom, default: center\n";
+        std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
+        std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
+		std::cout << "-t <name>     template file name (default: bar.json)\n";
         std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n";
         std::cout << "-s <size>     button image size (default: 72)\n";
         std::exit(0);
@@ -105,7 +106,7 @@ int main(int argc, char *argv[]) {
     std::string css = config_dir + "/style.css";
     const char *custom_css = css.c_str();
 
-    std::string bar_file = config_dir + "/bar.json";
+    std::string bar_file = config_dir + "/" + definition_file;
     const char *custom_bar = bar_file.c_str();
 
 	cache_file = get_cache_path();
@@ -118,8 +119,6 @@ int main(int argc, char *argv[]) {
 	}
     std::cout << bar_json.size() << " bar entries loaded\n";
 
-    
-    // This will be read-only, to find n most clicked items (n = number of grid columns)
     std::vector<BarEntry> bar_entries {};
     if (bar_json.size() > 0) {
 		bar_entries = get_bar_entries(bar_json);

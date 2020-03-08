@@ -28,6 +28,7 @@ install: all
 	
 	mkdir -p ${DESTDIR}${PREFIX}/share/nwgbar
 	cp -f style.css ${DESTDIR}${PREFIX}/share/nwgbar
+	cp -f bar.json ${DESTDIR}${PREFIX}/share/nwgbar
 	cp -f icon-missing.svg ${DESTDIR}${PREFIX}/share/nwgbar
 
 uninstall:
