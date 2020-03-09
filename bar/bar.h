@@ -21,14 +21,9 @@
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-static Gtk::Label *description;
-int num_col (6);				// number of grid columns
 int image_size (72);			// button image size in pixels
-bool favs (false);				// whether to display favourites
 double opacity (0.9);			// overlay window opacity
 std::string wm;					// detected window manager name
-ns::json cache;
-std::string cache_file {};
 std::string definition_file {"bar.json"};
 std::string orientation {"h"};
 std::string h_align {""};
@@ -68,10 +63,6 @@ std::string v_align {""};
 			void set_visual(Glib::RefPtr<Gdk::Visual> visual);
 			virtual ~MainWindow();
 
-			Gtk::SearchEntry searchbox;				// This will stay insensitive, updated with search_phrase value only
-			Gtk::Label label_desc;					// To display .desktop entry Comment field at the bottom
-			Glib::ustring search_phrase;			// updated on key_press_event
-			Gtk::Grid apps_grid;					// All application buttons grid
 			Gtk::Grid favs_grid;					// Favourites grid above
 			Gtk::Separator separator;				// between favs and all apps
 			std::list<AppBox*> all_boxes {};		// attached to apps_grid unfiltered view

@@ -136,7 +136,6 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	cache_file = get_cache_path();
 	ns::json bar_json {};
     try {
 		bar_json = get_bar_json(custom_bar);
@@ -248,11 +247,6 @@ int main(int argc, char *argv[]) {
 	}
 	
 	inner_vbox.pack_start(favs_hbox, true, false);
-	
-	Gtk::HBox apps_hbox;
-	apps_hbox.pack_start(window.apps_grid, Gtk::PACK_EXPAND_PADDING);
-
-	inner_vbox.pack_start(apps_hbox, true, true, 0);
 	
 	if (v_align == "t") {
 		outer_box.pack_start(inner_vbox, false, false);
