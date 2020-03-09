@@ -76,7 +76,7 @@ std::string v_align {""};
 			Gtk::Separator separator;				// between favs and all apps
 			std::list<AppBox*> all_boxes {};		// attached to apps_grid unfiltered view
 			std::list<AppBox*> filtered_boxes {};	// attached to apps_grid filtered view
-			std::list<AppBox*> fav_boxes {};		// attached to favs_grid
+			std::list<AppBox*> boxes {};		// attached to favs_grid
 
 		private:
 			//Override default signal handler:

@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 	InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
         std::cout << "GTK button bar: nwgbar 0.0.1 (c) Piotr Miller 2020\n\n";
-        std::cout << "nwgbar [-h] [-f] [-o <opacity>] [-c <col>] [-s <size>] [-l <ln>]\n\n";
+        std::cout << "nwgbar [-h] [-v] [-ha <l>|<r>] [-va <t>|<b>] [-t <name>] [-o <opacity>] [-s <size>]\n\n";
         std::cout << "Options:\n";
         std::cout << "-h            show this help message and exit\n";
         std::cout << "-v            arrange buttons vertically\n";
@@ -73,6 +73,11 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	const std::string &tname = input.getCmdOption("-t");
+    if (!tname.empty()){
+		definition_file = tname;
+	}
+
     const std::string &opa = input.getCmdOption("-o");
     if (!opa.empty()){
         try {
@@ -102,20 +107,42 @@ int main(int argc, char *argv[]) {
     }
 
     std::string config_dir = get_config_dir();
+    if (!fs::is_directory(config_dir)) {
+		std::cout << "Config dir not found, creating...\n";
+		fs::create_directory(config_dir);
+	}
 
-    std::string css = config_dir + "/style.css";
-    const char *custom_css = css.c_str();
+    std::string css_file = config_dir + "/style.css";
+    const char *custom_css = css_file.c_str();
+    if (!fs::exists(css_file)) {
+		fs::path source_file = "/usr/share/nwgbar/style.css";
+		fs::path target = css_file;
+		try {
+			fs::copy_file("/usr/share/nwgbar/style.css", target, fs::copy_options::overwrite_existing);
+		} catch (...) {
+			std::cout << "Failed copying default style.css\n";
+		}
+	}
 
     std::string bar_file = config_dir + "/" + definition_file;
     const char *custom_bar = bar_file.c_str();
+    if (!fs::exists(bar_file)) {
+		fs::path source_file = "/usr/share/nwgbar/bar.json";
+		fs::path target = bar_file;
+		try {
+			fs::copy_file("/usr/share/nwgbar/bar.json", target, fs::copy_options::overwrite_existing);
+		} catch (...) {
+			std::cout << "Failed copying default template\n";
+		}
+	}
 
 	cache_file = get_cache_path();
 	ns::json bar_json {};
     try {
 		bar_json = get_bar_json(custom_bar);
 	}  catch (...) {
-		std::cout << "Definitions file not found...\n";
-		std::exit(1);
+		std::cout << "\nERROR: Template file not found, using default\n";
+		bar_json = get_bar_json("/usr/share/nwgbar/bar.json");
 	}
     std::cout << bar_json.size() << " bar entries loaded\n";
 
@@ -190,7 +217,7 @@ int main(int argc, char *argv[]) {
 					ab -> set_image(*image);
 					ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), entry.exec));
 					
-					window.fav_boxes.push_back(ab);
+					window.boxes.push_back(ab);
 		}
 	}
 
@@ -198,7 +225,7 @@ int main(int argc, char *argv[]) {
 	int row = 0;
 
 	if (bar_entries.size() > 0) {
-		for (AppBox *box : window.fav_boxes) {
+		for (AppBox *box : window.boxes) {
 			window.favs_grid.attach(*box, column, row, 1, 1);
 			if (orientation == "v") {
 				row++;
