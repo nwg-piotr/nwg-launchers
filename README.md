@@ -50,8 +50,8 @@ Options:
 
 ### Custom styling
 
-To give the grid more gnomish look, the application uses the `/usr/share/nwggrid/style.css` style sheet. If you'd like
-to change something, you may use your own `style.css` file. Replace `~/.config` below with your config home, if necessary.
+On first run the program creates the `nwgbar` folder in your .config directory. You'll find the `style.css` files inside.
+You may edit the style sheet to your liking.
 
 ```
 mkdir ~/.config/nwggrid

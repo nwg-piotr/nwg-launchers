@@ -108,9 +108,22 @@ int main(int argc, char *argv[]) {
     std::cout << cache.size() << " cache entries loaded\n";
 
     std::string config_dir = get_config_dir();
+    if (!fs::is_directory(config_dir)) {
+		std::cout << "Config dir not found, creating...\n";
+		fs::create_directory(config_dir);
+	}
 
-    std::string css = config_dir + "/style.css";
-    const char *custom_css = css.c_str();
+    std::string css_file = config_dir + "/style.css";
+    const char *custom_css = css_file.c_str();
+    if (!fs::exists(css_file)) {
+		fs::path source_file = "/usr/share/nwggrid/style.css";
+		fs::path target = css_file;
+		try {
+			fs::copy_file("/usr/share/nwggrid/style.css", target, fs::copy_options::overwrite_existing);
+		} catch (...) {
+			std::cout << "Failed copying default style.css\n";
+		}
+	}
     
     // This will be read-only, to find n most clicked items (n = number of grid columns)
     std::vector<CacheEntry> favourites {};
