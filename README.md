@@ -11,7 +11,7 @@ For now first 2 launchers (and my favourites) seem to work pretty well:
 This command creates a GNOME-like application grid, with the search box, optionally prepended with a row of favourites
 (most frequently used apps).
 
-[screenshot](http://nwg.pl/Lychee/uploads/big/93a95e8b221fd1c7a11d213f0ee071ee.png) `nwggrid -f`
+[screenshot](http://nwg.pl/Lychee/uploads/big/93a95e8b221fd1c7a11d213f0ee071ee.png) - `nwggrid -f`
 
 ### Dependencies
 
@@ -64,7 +64,7 @@ Edit the style sheet to your liking.
 
 This command creates a horizontal or vertical button bar, out of a template file.
 
-[screenshot](http://nwg.pl/Lychee/uploads/big/d84cc934ccf639eb5dc8c01304b155db.png) `nwgbar` as the Exit menu.
+[screenshot](http://nwg.pl/Lychee/uploads/big/d84cc934ccf639eb5dc8c01304b155db.png) - `nwgbar` as the Exit menu.
 
 ### Installation
 
