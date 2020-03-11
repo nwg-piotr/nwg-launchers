@@ -99,8 +99,8 @@ Options:
 
 ### Customization
 
-On first run the program creates the `nwggrid` folder in your .config directory. You'll find a sample template and the
-`style.css` files inside.
+On first run the program creates the `nwggrid` folder in your .config directory. You'll find a sample template `bar.json`
+and the `style.css` files inside.
 
 Templates use json format. The default one defines an example Exit menu for sway window manager on Arch Linux:
 
@@ -130,3 +130,5 @@ Templates use json format. The default one defines an example Exit menu for sway
 ```
 
 You may use as many templates as you need, with the `-t` argument. All of them must be placed in the config directory.
+
+The style sheet makes the buttons look similar to `nwggrid`. You can customize them as well.
