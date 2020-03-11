@@ -10,35 +10,14 @@
  * Thanks to chmike at https://stackoverflow.com/a/1643134 
  * */
 int tryGetLock(char const *lockName) {
-    mode_t m = umask( 0 );
-    int fd = open( lockName, O_RDWR|O_CREAT, 0666 );
+    mode_t m = umask(0);
+    int fd = open(lockName, O_RDWR|O_CREAT, 0666);
     umask( m );
-    if( fd >= 0 && flock( fd, LOCK_EX | LOCK_NB ) < 0 )
-    {
-        close( fd );
+    if( fd >= 0 && flock(fd, LOCK_EX | LOCK_NB ) < 0) {
+        close(fd);
         fd = -1;
     }
     return fd;
-}
-
-/* 
- * Returns cache file path 
- * */
-std::string get_cache_path() {
-	std::string s = "";
-	char* val = getenv("XDG_CACHE_HOME");
-	if (val) {
-		s = val;
-	} else {
-		char* val = getenv("HOME");
-		s = val;
-		s += "/.cache";
-	}
-	fs::path dir (s);
-	fs::path file ("nwg-fav-cache");
-	fs::path full_path = dir / file;
-	
-	return full_path;
 }
 
 /* 
@@ -115,133 +94,6 @@ std::string detect_wm() {
 }
 
 /* 
- * Returns first 2 chars of current locale string 
- * */
-std::string get_locale() {
-	char* env_val = getenv("LANG");
-	std::string loc(env_val);
-	std::string l = "en";
-	if (loc.find("_") != std::string::npos) {
-		int idx = loc.find_first_of("_");
-		l = loc.substr(0, idx);
-	}
-	return l;
-}
-
-/*
- * Splits string into vector of strings by delimiter
- * */
-std::vector<std::string> split_string(std::string str, std::string delimiter) {
-	std::vector<std::string> result;
-	std::size_t current, previous = 0;
-	current = str.find_first_of(delimiter);
-	while (current != std::string::npos) {
-		result.push_back(str.substr(previous, current - previous));
-		previous = current + 1;
-		current = str.find_first_of(delimiter, previous);
-	}
-	result.push_back(str.substr(previous, current - previous));
-	return result;
-}
-
-/* 
- * Returns locations of .desktop files 
- * */
-std::vector<std::string> get_app_dirs() {
-	std::string homedir = getenv("HOME");
-	std::vector<std::string> result = {homedir + "/.local/share/applications", "/usr/share/applications",
-		"/usr/local/share/applications"};
-		
-	auto xdg_data_dirs = getenv("XDG_DATA_DIRS");
-	if (xdg_data_dirs != NULL) {
-		std::vector<std::string> dirs = split_string(xdg_data_dirs, ":");
-		for (std::string dir : dirs) {
-			result.push_back(dir);
-		}
-	}
-	return result;
-}
-
-/* 
- * Returns all .desktop files paths 
- * */
-std::vector<std::string> list_entries(std::vector<std::string> paths) {
-	std::vector<std::string> desktop_paths;
-	for (std::string dir : paths) {
-		struct stat st;
-		char* c = const_cast<char*>(dir.c_str());
-		// if directory exists
-		if (stat(c, &st) == 0) {
-			for (const auto & entry : fs::directory_iterator(dir)) {
-				desktop_paths.push_back(entry.path());
-			}
-		}
-	}
-	return desktop_paths;
-}
-
-/* 
- * Parses .desktop file to vector<string> {'name', 'exec', 'icon', 'comment'} 
- * */
-std::vector<std::string> desktop_entry(std::string path, std::string lang) {
-	std::vector<std::string> fields = {"", "", "", ""};
-	
-	std::ifstream file(path);
-	std::string str;
-	while (std::getline(file, str)) {
-		bool read_me = true;
-		if (str.find("[") == 0) {
-			read_me = (str.find("[Desktop Entry") != std::string::npos);
-			if (!read_me) {
-				break;
-			} else {
-				continue;
-			}
-		}
-		if (read_me) {
-			std::string loc_name = "Name[" + lang + "]=";
-			
-			if (str.find("Name=") == 0 || str.find(loc_name) == 0) {
-				if (str.find_first_of("=") != std::string::npos) {
-					int idx = str.find_first_of("=");
-					std::string val = str.substr(idx + 1);
-					fields[0] = val;
-				}
-			}
-			if (str.find("Exec=") == 0) {
-				if (str.find_first_of("=") != std::string::npos) {
-					int idx = str.find_first_of("=");
-					std::string val = str.substr(idx + 1);
-					// strip ' %' and following
-					if (val.find_first_of("%") != std::string::npos) {
-						int idx = val.find_first_of("%");
-						val = val.substr(0, idx - 1);
-					}
-					fields[1] = val;
-				}
-			}
-			if (str.find("Icon=") == 0) {
-				if (str.find_first_of("=") != std::string::npos) {
-					int idx = str.find_first_of("=");
-					std::string val = str.substr(idx + 1);
-					fields[2] = val;
-				}
-			}
-			std::string loc_comment = "Comment[" + lang + "]=";
-			if (str.find("Comment=") == 0 || str.find(loc_comment) == 0) {
-				if (str.find_first_of("=") != std::string::npos) {
-					int idx = str.find_first_of("=");
-					std::string val = str.substr(idx + 1);
-					fields[3] = val;
-				}
-			}
-		}
-		
-	}
-	return fields;
-}
-
-/* 
  * Returns output of a command as string 
  * */
 std::string get_output(std::string cmd) {
@@ -269,13 +121,8 @@ ns::json string_to_json(std::string jsonString) {
     return jsonObj;
 }
 
-void save_json(ns::json json_obj, std::string filename) {
-	std::ofstream o(filename);
-	o << std::setw(2) << json_obj << std::endl;
-}
-
 /* 
- * Returns json object out of the definitions file 
+ * Returns json object out of a template file
  * */
 ns::json get_bar_json(std::string custom_bar) {
     std::string bar_string = read_file_to_string(custom_bar);
@@ -284,7 +131,7 @@ ns::json get_bar_json(std::string custom_bar) {
 }
 
 /* 
- * Returns n cache items sorted by clicks; n should be the number of grid columns 
+ * Returns a vector of BarEntry data structs 
  * */
 std::vector<BarEntry> get_bar_entries(ns::json bar_json) {
     // read from json object
