@@ -53,13 +53,6 @@ Options:
 On first run the program creates the `nwgbar` folder in your .config directory. You'll find the `style.css` files inside.
 You may edit the style sheet to your liking.
 
-```
-mkdir ~/.config/nwggrid
-cp /usr/share/nwggrid/style.css ~/.config/nwggrid
-```
-
-Edit the style sheet to your liking.
-
 ## nwgbar
 
 This command creates a horizontal or vertical button bar, out of a template file.
