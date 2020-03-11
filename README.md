@@ -79,7 +79,7 @@ To uninstall:
 sudo make uninstall
 ```
 
-###Usage
+### Usage
 
 ```
 $ nwgbar -h
