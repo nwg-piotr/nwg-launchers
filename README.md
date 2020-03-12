@@ -123,5 +123,6 @@ Templates use json format. The default one defines an example Exit menu for sway
 ```
 
 You may use as many templates as you need, with the `-t` argument. All of them must be placed in the config directory.
+You may use own icon files instead of icon names, like `/path/to/the/file/my_icon.svg`.
 
 The style sheet makes the buttons look similar to `nwggrid`. You can customize them as well.
