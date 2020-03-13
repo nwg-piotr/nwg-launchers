@@ -65,6 +65,7 @@ int entries_limit (25);
 			void set_visual(Glib::RefPtr<Gdk::Visual> visual);
 			virtual ~MainWindow();
 
+			Gtk::Menu menu;
 			Gtk::SearchEntry searchbox;				// This will stay insensitive, updated with search_phrase value only
 			Gtk::Label label_desc;					// To display .desktop entry Comment field at the bottom
 			Glib::ustring search_phrase;			// updated on key_press_event

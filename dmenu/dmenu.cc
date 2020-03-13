@@ -205,100 +205,41 @@ int main(int argc, char *argv[]) {
 		std::cout << "x: " << x << " y: " << y << std::endl;
 		window.move(x, y); 	// needed in FVWM, otherwise grid always appears on screen 0
 	}
+
+	Gtk::MenuItem search_item;
+	search_item.add(window.searchbox);
+	window.menu.append(search_item);
+
+	cnt = 0;
+	for (Entry entry : all_entries) {
+		Gtk::MenuItem *item = new Gtk::MenuItem;
+		item -> set_label(entry.name);
+		item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), entry.exec));
+		window.menu.append(*item);
+		cnt++;
+		if (cnt > entries_limit - 1) {
+			break;
+		}
+	}
 	
 	Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
 	outer_box.set_spacing(15);
 
-	// hbox for searchbox
-    //~ Gtk::HBox hbox_header;
-    
-    //~ hbox_header.pack_start(window.searchbox, Gtk::PACK_EXPAND_PADDING);
-    
-    //~ outer_box.pack_start(hbox_header, Gtk::PACK_SHRINK, Gtk::PACK_EXPAND_PADDING);
-
-	Gtk::ScrolledWindow scrolled_window;
-	scrolled_window.set_propagate_natural_height(true);
-	scrolled_window.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_ALWAYS);
-	
-	//~ /* Create buttons for all desktop entries */
-	//~ for(auto it = desktop_entries.begin(); it != desktop_entries.end(); it++) {
-		//~ Gtk::Image* image = app_image(it -> icon);
-		//~ AppBox *ab = new AppBox(it -> name, it -> exec, it -> comment);
-		//~ ab -> set_image_position(Gtk::POS_TOP);
-		//~ ab -> set_image(*image);
-		//~ ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), it -> exec));
-		//~ ab -> signal_enter_notify_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered), it -> comment));
-		//~ ab -> signal_focus_in_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused), it -> comment));
-
-		//~ window.all_boxes.push_back(ab);
-	//~ }
-	//~ window.label_desc.set_text(std::to_string(window.all_boxes.size()));
-
-	//~ /* Create buttons for favourites */
-	//~ if (favs && favourites.size() > 0) {
-		//~ for (CacheEntry entry : favourites) {
-			//~ for(auto it = desktop_entries.begin(); it != desktop_entries.end(); it++) {
-				//~ if (it -> exec == entry.exec) {
-					//~ Gtk::Image* image = app_image(it -> icon);
-					//~ AppBox *ab = new AppBox(it -> name, it -> exec, it -> comment);
-					//~ ab -> set_image_position(Gtk::POS_TOP);
-					//~ ab -> set_image(*image);
-					//~ ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), it -> exec));
-					//~ ab -> signal_enter_notify_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered), it -> comment));
-					//~ ab -> signal_focus_in_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused), it -> comment));
-					
-					//~ window.fav_boxes.push_back(ab);
-				//~ }
-			//~ }
-		//~ }
-	//~ }
-
-	//~ int column = 0;
-	//~ int row = 0;
-
-	//~ if (favs && favourites.size() > 0) {
-		//~ for (AppBox *box : window.fav_boxes) {
-			//~ window.favs_grid.attach(*box, column, row, 1, 1);
-			//~ if (column < num_col - 1) {
-				//~ column++;
-			//~ } else {
-				//~ column = 0;
-				//~ row++;
-			//~ }
-		//~ }
-	//~ }
-
-	//~ column = 0;
-	//~ row = 0;
-	//~ for (AppBox *box : window.all_boxes) {
-		//~ window.apps_grid.attach(*box, column, row, 1, 1);
-		//~ if (column < num_col - 1) {
-			//~ column++;
-		//~ } else {
-			//~ column = 0;
-			//~ row++;
-		//~ }
-	//~ }
-
 	Gtk::VBox inner_vbox;
 
-	//~ Gtk::HBox favs_hbox;
-	//~ favs_hbox.pack_start(window.favs_grid, true, false, 0);
-	//~ inner_vbox.pack_start(favs_hbox, false, false, 5);
-	//~ if (favs && favourites.size() > 0) {
-		//~ inner_vbox.pack_start(window.separator, false, true, 0);
-	//~ }
-	
-	//~ Gtk::HBox apps_hbox;
-	//~ apps_hbox.pack_start(window.apps_grid, Gtk::PACK_EXPAND_PADDING);
-	//~ inner_vbox.pack_start(apps_hbox, true, true, 0);
+	Gtk::HBox inner_hbox;
 
-	scrolled_window.add(inner_vbox);
-	
-	outer_box.pack_start(scrolled_window, Gtk::PACK_EXPAND_WIDGET);
-	scrolled_window.show_all_children();
-	
-	outer_box.pack_start(window.label_desc, Gtk::PACK_SHRINK);
+	Gtk::Button anchor;
+	anchor.set_label("ANCHOR");
+
+	inner_hbox.pack_start(anchor, true, false);
+
+	inner_vbox.pack_start(inner_hbox, true, false);
+
+	outer_box.pack_start(inner_vbox, Gtk::PACK_EXPAND_WIDGET);
+
+	window.menu.popup_at_widget(&anchor, Gdk::GRAVITY_CENTER, Gdk::GRAVITY_CENTER, nullptr);
+	std::cout << window.menu.get_children().size() << std::endl;
     
     window.add(outer_box);
 	window.show_all_children();
