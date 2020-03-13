@@ -133,29 +133,23 @@ int main(int argc, char *argv[]) {
     std::vector<std::string> commands = list_commands(command_dirs);
     std::cout << commands.size() << " commands found\n";
 	
-	std::vector<Entry> all_entries {};
+	/* Create a vector of commands (w/o path) */
+	std::vector<Glib::ustring> all_commands {};
 	for (std::string command : commands) {
 		std::vector<std::string> parts = split_string(command, "/");
-		struct Entry e = {parts[parts.size() - 1], command};
-		all_entries.push_back(e);
-	}
-	sort(all_entries.begin(), all_entries.end(), [](const Entry& lhs, const Entry& rhs) {
-		return lhs.name < rhs.name;
-	});
-	
-	int cnt = 0;
-	for (Entry e : all_entries) {
-		std::cout << e.name << std::endl;
-		cnt++;
-		if (cnt > entries_limit) {
-			break;
-		}
+		all_commands.push_back(parts[parts.size() - 1]);
 	}
 	
-	//~ for (std::vector<Entry>::iterator it = all_entries.begin(); it != all_entries.end(); ++it) {
-		//~ std::cout << it -> name << " :: " << it -> exec << std::endl;
-	//~ }
-	
+	/* Sort case insensitive */
+	std::sort(all_commands.begin(), all_commands.end(), [](const std::string& a, const std::string& b) -> bool {
+        for (size_t c = 0; c < a.size() and c < b.size(); c++) {
+            if (std::tolower(a[c]) != std::tolower(b[c])) {
+				return (std::tolower(a[c]) < std::tolower(b[c]));
+			}
+        }
+        return a.size() < b.size();
+    });
+    
 	/* turn off borders, enable floating on sway */
 	if (wm == "sway") {
 		std::string cmd = "swaymsg for_window [title=\"~nwgdmenu*\"] floating enable";
@@ -206,16 +200,17 @@ int main(int argc, char *argv[]) {
 		window.move(x, y); 	// needed in FVWM, otherwise grid always appears on screen 0
 	}
 
-	Gtk::MenuItem search_item;
-	search_item.add(window.searchbox);
-	window.menu.append(search_item);
+	Gtk::MenuItem *search_item = new Gtk::MenuItem();
+	search_item -> add(window.searchbox);
+	window.menu.append(*search_item);
 
-	cnt = 0;
-	for (Entry entry : all_entries) {
-		Gtk::MenuItem *item = new Gtk::MenuItem;
-		item -> set_label(entry.name);
-		item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), entry.exec));
+	int cnt = 0;
+	for (Glib::ustring command : all_commands) {
+		Gtk::MenuItem *item = new Gtk::MenuItem(command);
+		item -> set_label(command);
+		item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), command));
 		window.menu.append(*item);
+		item -> show();
 		cnt++;
 		if (cnt > entries_limit - 1) {
 			break;
@@ -237,12 +232,13 @@ int main(int argc, char *argv[]) {
 	inner_vbox.pack_start(inner_hbox, true, false);
 
 	outer_box.pack_start(inner_vbox, Gtk::PACK_EXPAND_WIDGET);
-
-	window.menu.popup_at_widget(&anchor, Gdk::GRAVITY_CENTER, Gdk::GRAVITY_CENTER, nullptr);
-	std::cout << window.menu.get_children().size() << std::endl;
     
     window.add(outer_box);
 	window.show_all_children();
+	
+	window.menu.show_all();
+	window.menu.popup_at_widget(&anchor, Gdk::GRAVITY_SOUTH, Gdk::GRAVITY_NORTH, nullptr);
+	std::cout << window.menu.get_children().size() << std::endl;
 
 	gettimeofday(&tp, NULL);
 	long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;

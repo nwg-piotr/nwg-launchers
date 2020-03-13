@@ -88,11 +88,3 @@ int entries_limit (25);
 			bool _SUPPORTS_ALPHA = false;
 	};
 #endif // NWG_DMENU_MAIN_WINDOW_H
-	
-#ifndef NWG_DMENU_ENTRY_H
-#define NWG_DMENU_ENTRY_H
-	struct Entry {
-		std::string name;
-		std::string exec;
-	};
-#endif // NWG_DMENU_ENTRY_H
