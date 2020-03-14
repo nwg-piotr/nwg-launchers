@@ -56,14 +56,6 @@ gboolean on_window_clicked(GdkEventButton *event) {
 	return true;
 }
 
-AppBox::AppBox() {
-	//~ this -> set_always_show_image(true);
-	//~ this -> set_label(this -> name);
-}
-
-AppBox::~AppBox() {
-}
-
 void on_button_clicked(std::string cmd) {
 	int clicks = 0;
 	try {
@@ -90,6 +82,17 @@ bool on_button_entered(GdkEventCrossing* event, Glib::ustring comment) {
 bool on_button_focused(GdkEventFocus* event, Glib::ustring comment) {
 	description -> set_text(comment);
 	return true;
+}
+
+bool MainWindow::on_button_press_event(GdkEventButton* event) {
+	if ((event->type == GDK_BUTTON_PRESS) && (event -> button == 3)) {
+		//~ this -> menu.popup(event->button, event->time);
+		this -> menu.popup_at_widget(&anchor, Gdk::GRAVITY_CENTER, Gdk::GRAVITY_CENTER, nullptr);
+		std::cout << "Clicked!\n";
+		return true; //It has been handled.
+	} else {
+		return false;
+	}
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
@@ -122,56 +125,9 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
 
 void MainWindow::filter_view() {
 	if (this -> search_phrase.size() > 0) {
-		this -> filtered_boxes = {};
-		
-		for (AppBox* box : this -> all_boxes) {	
-			if (box -> name.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos
-				|| box -> exec.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos) {
-
-				this -> filtered_boxes.push_back(box);
-			}
-		}
-		this -> rebuild_grid(true);
-		this -> favs_grid.hide();
 		this -> separator.hide();
 	} else {
-		this -> rebuild_grid(false);
-		this -> favs_grid.show();
 		this -> separator.show();
-	}
-}
-
-void MainWindow::rebuild_grid(bool filtered) {
-	int column = 0;
-	int row = 0;
-	
-	for (Gtk::Widget *widget : this -> apps_grid.get_children()) {
-		this -> apps_grid.remove(*widget);
-		widget -> unset_state_flags(Gtk::STATE_FLAG_PRELIGHT);
-	} 
-	int cnt = 0;
-	if (filtered) {
-		for(AppBox* box : this -> filtered_boxes) {
-			this -> apps_grid.attach(*box, column, row, 1, 1);
-			if (column < num_col - 1) {
-				column++;
-			} else {
-				column = 0;
-				row++;
-			}
-			cnt++;
-		}
-	} else {
-		for(AppBox* box : this -> all_boxes) {
-			this -> apps_grid.attach(*box, column, row, 1, 1);
-			if (column < num_col - 1) {
-				column++;
-			} else {
-				column = 0;
-				row++;
-			}
-			cnt++;
-		}
 	}
 }
 

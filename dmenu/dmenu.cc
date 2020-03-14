@@ -224,10 +224,10 @@ int main(int argc, char *argv[]) {
 
 	Gtk::HBox inner_hbox;
 
-	Gtk::Button anchor;
-	anchor.set_label("ANCHOR");
+	window.anchor.set_label("ANCHOR");
+	window.menu.attach_to_widget(window.anchor);
 
-	inner_hbox.pack_start(anchor, true, false);
+	inner_hbox.pack_start(window.anchor, true, false);
 
 	inner_vbox.pack_start(inner_hbox, true, false);
 
@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
 	window.show_all_children();
 	
 	window.menu.show_all();
-	window.menu.popup_at_widget(&anchor, Gdk::GRAVITY_SOUTH, Gdk::GRAVITY_NORTH, nullptr);
+	//~ window.menu.popup_at_widget(&anchor, Gdk::GRAVITY_SOUTH, Gdk::GRAVITY_NORTH, nullptr);
 	std::cout << window.menu.get_children().size() << std::endl;
 
 	gettimeofday(&tp, NULL);
