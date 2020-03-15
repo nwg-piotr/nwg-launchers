@@ -137,7 +137,10 @@ int main(int argc, char *argv[]) {
 	std::vector<Glib::ustring> all_commands {};
 	for (std::string command : commands) {
 		std::vector<std::string> parts = split_string(command, "/");
-		all_commands.push_back(parts[parts.size() - 1]);
+		std::string cmd = parts[parts.size() - 1];
+		if (!cmd.find(".") == 0 && cmd.size() != 1) {
+			all_commands.push_back(cmd);
+		}
 	}
 	
 	/* Sort case insensitive */
@@ -178,6 +181,7 @@ int main(int argc, char *argv[]) {
     MainWindow window;
     
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
+    
     // This prevents openbox window from receiving keyboard enents
     if (wm != "openbox") {
 		window.set_skip_taskbar_hint(true);
@@ -204,18 +208,20 @@ int main(int argc, char *argv[]) {
 	search_item -> add(window.searchbox);
 	window.menu.append(*search_item);
 
+	window.menu.signal_deactivate().connect(sigc::ptr_fun(Gtk::Main::quit));
+
 	int cnt = 0;
 	for (Glib::ustring command : all_commands) {
-		Gtk::MenuItem *item = new Gtk::MenuItem(command);
+		Gtk::MenuItem *item = new Gtk::MenuItem();
 		item -> set_label(command);
 		item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), command));
 		window.menu.append(*item);
-		item -> show();
 		cnt++;
 		if (cnt > entries_limit - 1) {
 			break;
 		}
 	}
+	window.menu.set_reserve_toggle_size(false);
 	
 	Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
 	outer_box.set_spacing(15);
@@ -225,7 +231,6 @@ int main(int argc, char *argv[]) {
 	Gtk::HBox inner_hbox;
 
 	window.anchor.set_label("ANCHOR");
-	window.menu.attach_to_widget(window.anchor);
 
 	inner_hbox.pack_start(window.anchor, true, false);
 

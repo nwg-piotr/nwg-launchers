@@ -41,19 +41,19 @@ int entries_limit (25);
 
 			Gtk::Menu menu;
 			Gtk::Button anchor;
-			Gtk::SearchEntry searchbox;				// This will stay insensitive, updated with search_phrase value only
-			Gtk::Label label_desc;					// To display .desktop entry Comment field at the bottom
-			Glib::ustring search_phrase;			// updated on key_press_event
-			Gtk::Grid apps_grid;					// All application buttons grid
-			Gtk::Grid favs_grid;					// Favourites grid above
-			Gtk::Separator separator;				// between favs and all apps
+			Gtk::SearchEntry searchbox;		// This will stay insensitive, updated with search_phrase value only
+			Gtk::Label label_desc;			// To display .desktop entry Comment field at the bottom
+			Glib::ustring search_phrase;	// updated on key_press_event
+			Gtk::Grid apps_grid;			// All application buttons grid
+			Gtk::Grid favs_grid;			// Favourites grid above
+			Gtk::Separator separator;		// between favs and all apps
 
 		private:
 			//Override default signal handler:
 			bool on_key_press_event(GdkEventKey* event) override;
-			bool on_button_press_event(GdkEventButton* event) override;	
+			void on_window_show();
 			void filter_view();
-			void rebuild_grid(bool filtered);
+			//~ void rebuild_grid(bool filtered);
 		
 		protected:
 			virtual bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr);

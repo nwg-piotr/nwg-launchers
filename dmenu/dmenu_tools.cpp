@@ -159,67 +159,6 @@ std::vector<std::string> list_commands(std::vector<std::string> paths) {
 }
 
 /* 
- * Parses .desktop file to vector<string> {'name', 'exec', 'icon', 'comment'} 
- * */
-std::vector<std::string> desktop_entry(std::string path, std::string lang) {
-	std::vector<std::string> fields = {"", "", "", ""};
-	
-	std::ifstream file(path);
-	std::string str;
-	while (std::getline(file, str)) {
-		bool read_me = true;
-		if (str.find("[") == 0) {
-			read_me = (str.find("[Desktop Entry") != std::string::npos);
-			if (!read_me) {
-				break;
-			} else {
-				continue;
-			}
-		}
-		if (read_me) {
-			std::string loc_name = "Name[" + lang + "]=";
-			
-			if (str.find("Name=") == 0 || str.find(loc_name) == 0) {
-				if (str.find_first_of("=") != std::string::npos) {
-					int idx = str.find_first_of("=");
-					std::string val = str.substr(idx + 1);
-					fields[0] = val;
-				}
-			}
-			if (str.find("Exec=") == 0) {
-				if (str.find_first_of("=") != std::string::npos) {
-					int idx = str.find_first_of("=");
-					std::string val = str.substr(idx + 1);
-					// strip ' %' and following
-					if (val.find_first_of("%") != std::string::npos) {
-						int idx = val.find_first_of("%");
-						val = val.substr(0, idx - 1);
-					}
-					fields[1] = val;
-				}
-			}
-			if (str.find("Icon=") == 0) {
-				if (str.find_first_of("=") != std::string::npos) {
-					int idx = str.find_first_of("=");
-					std::string val = str.substr(idx + 1);
-					fields[2] = val;
-				}
-			}
-			std::string loc_comment = "Comment[" + lang + "]=";
-			if (str.find("Comment=") == 0 || str.find(loc_comment) == 0) {
-				if (str.find_first_of("=") != std::string::npos) {
-					int idx = str.find_first_of("=");
-					std::string val = str.substr(idx + 1);
-					fields[3] = val;
-				}
-			}
-		}
-		
-	}
-	return fields;
-}
-
-/* 
  * Returns output of a command as string 
  * */
 std::string get_output(std::string cmd) {

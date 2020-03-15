@@ -40,6 +40,7 @@ MainWindow::MainWindow() {
 	
 	signal_draw().connect(sigc::mem_fun(*this, &MainWindow::on_draw));
     signal_screen_changed().connect(sigc::mem_fun(*this, &MainWindow::on_screen_changed));
+    signal_show().connect(sigc::mem_fun(*this, &MainWindow::on_window_show));
     
     on_screen_changed(get_screen());
 
@@ -57,16 +58,6 @@ gboolean on_window_clicked(GdkEventButton *event) {
 }
 
 void on_button_clicked(std::string cmd) {
-	int clicks = 0;
-	try {
-		clicks = cache[cmd];
-		clicks++;
-	} catch (...) {
-		clicks = 1;
-	}
-	cache[cmd] = clicks;
-	save_json(cache, cache_file);
-
 	cmd = cmd + " &";
 	const char *command = cmd.c_str();
 	std::system(command);
@@ -84,15 +75,8 @@ bool on_button_focused(GdkEventFocus* event, Glib::ustring comment) {
 	return true;
 }
 
-bool MainWindow::on_button_press_event(GdkEventButton* event) {
-	if ((event->type == GDK_BUTTON_PRESS) && (event -> button == 3)) {
-		//~ this -> menu.popup(event->button, event->time);
-		this -> menu.popup_at_widget(&anchor, Gdk::GRAVITY_CENTER, Gdk::GRAVITY_CENTER, nullptr);
-		std::cout << "Clicked!\n";
-		return true; //It has been handled.
-	} else {
-		return false;
-	}
+void MainWindow::on_window_show() {
+	this -> menu.popup_at_widget(&anchor, Gdk::GRAVITY_CENTER, Gdk::GRAVITY_CENTER, nullptr);
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
