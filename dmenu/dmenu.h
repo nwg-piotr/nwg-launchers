@@ -39,7 +39,7 @@ int entries_limit (25);
 			void set_visual(Glib::RefPtr<Gdk::Visual> visual);
 			virtual ~MainWindow();
 
-			Gtk::Menu menu;
+			Gtk::Menu* menu;
 			Gtk::Button anchor;
 			Gtk::SearchEntry searchbox;		// This will stay insensitive, updated with search_phrase value only
 			Gtk::Label label_desc;			// To display .desktop entry Comment field at the bottom
@@ -51,7 +51,7 @@ int entries_limit (25);
 		private:
 			//Override default signal handler:
 			bool on_key_press_event(GdkEventKey* event) override;
-			void on_window_show();
+			bool on_button_press_event(GdkEventButton* button_event) override;
 			void filter_view();
 			//~ void rebuild_grid(bool filtered);
 		

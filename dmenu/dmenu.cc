@@ -179,6 +179,7 @@ int main(int argc, char *argv[]) {
 	g_object_unref(provider);
     
     MainWindow window;
+    window.menu = new Gtk::Menu();
     
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
     
@@ -206,22 +207,22 @@ int main(int argc, char *argv[]) {
 
 	Gtk::MenuItem *search_item = new Gtk::MenuItem();
 	search_item -> add(window.searchbox);
-	window.menu.append(*search_item);
+	window.menu -> append(*search_item);
 
-	window.menu.signal_deactivate().connect(sigc::ptr_fun(Gtk::Main::quit));
+	window.menu -> signal_deactivate().connect(sigc::ptr_fun(Gtk::Main::quit));
 
 	int cnt = 0;
 	for (Glib::ustring command : all_commands) {
 		Gtk::MenuItem *item = new Gtk::MenuItem();
 		item -> set_label(command);
 		item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), command));
-		window.menu.append(*item);
+		window.menu -> append(*item);
 		cnt++;
 		if (cnt > entries_limit - 1) {
 			break;
 		}
 	}
-	window.menu.set_reserve_toggle_size(false);
+	window.menu -> set_reserve_toggle_size(false);
 	
 	Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
 	outer_box.set_spacing(15);
@@ -241,9 +242,9 @@ int main(int argc, char *argv[]) {
     window.add(outer_box);
 	window.show_all_children();
 	
-	window.menu.show_all();
+	window.menu -> show_all();
 	//~ window.menu.popup_at_widget(&anchor, Gdk::GRAVITY_SOUTH, Gdk::GRAVITY_NORTH, nullptr);
-	std::cout << window.menu.get_children().size() << std::endl;
+	std::cout << window.menu -> get_children().size() << std::endl;
 
 	gettimeofday(&tp, NULL);
 	long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;

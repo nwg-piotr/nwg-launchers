@@ -14,7 +14,7 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
-MainWindow::MainWindow() {
+MainWindow::MainWindow() : menu(nullptr) {
     set_title("~nwgdmenu");
     set_role("~nwgdmenu");
     //~ set_skip_taskbar_hint(true);
@@ -40,7 +40,7 @@ MainWindow::MainWindow() {
 	
 	signal_draw().connect(sigc::mem_fun(*this, &MainWindow::on_draw));
     signal_screen_changed().connect(sigc::mem_fun(*this, &MainWindow::on_screen_changed));
-    signal_show().connect(sigc::mem_fun(*this, &MainWindow::on_window_show));
+    //~ signal_show().connect(sigc::mem_fun(*this, &MainWindow::on_window_show));
     
     on_screen_changed(get_screen());
 
@@ -65,18 +65,19 @@ void on_button_clicked(std::string cmd) {
 	Gtk::Main::quit();
 }
 
-bool on_button_entered(GdkEventCrossing* event, Glib::ustring comment) {
-	description -> set_text(comment);
-	return true;
-}
-
-bool on_button_focused(GdkEventFocus* event, Glib::ustring comment) {
-	description -> set_text(comment);
-	return true;
-}
-
-void MainWindow::on_window_show() {
-	this -> menu.popup_at_widget(&anchor, Gdk::GRAVITY_CENTER, Gdk::GRAVITY_CENTER, nullptr);
+bool MainWindow::on_button_press_event(GdkEventButton* button_event) {
+	if((button_event->type == GDK_BUTTON_PRESS) && (button_event->button == 3)) {
+		if(!menu->get_attach_widget()) {
+		  menu->attach_to_widget(*this);
+		}
+		if(menu) {
+			//~ menu->popup_at_pointer((GdkEvent*)button_event);
+			menu -> popup_at_widget(&anchor, Gdk::GRAVITY_CENTER, Gdk::GRAVITY_CENTER, nullptr);
+		}
+		return true; //It has been handled.
+	} else {
+		return false;
+	}
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
