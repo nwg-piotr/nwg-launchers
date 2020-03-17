@@ -54,6 +54,7 @@ std::vector<Glib::ustring> all_commands {};
 		private:
 			bool on_key_press_event(GdkEventKey* event) override;
 			void filter_view();
+			void on_button_clicked(std::string cmd);
 	};
 #endif // NWG_DMENU_DMENU_H
 

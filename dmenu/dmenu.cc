@@ -211,6 +211,7 @@ int main(int argc, char *argv[]) {
 	Gtk::MenuItem *search_item = new Gtk::MenuItem();
 	search_item -> add(menu.searchbox);
 	search_item -> set_name("search_item");
+	search_item -> set_sensitive(false);
 	menu.append(*search_item);
 
 	menu.signal_deactivate().connect(sigc::ptr_fun(Gtk::Main::quit));

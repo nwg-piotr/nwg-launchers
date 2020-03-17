@@ -44,7 +44,11 @@ bool DMenu::on_key_press_event(GdkEventKey* key_event) {
 
 	} else if (((key_event -> keyval >= GDK_KEY_A && key_event -> keyval <= GDK_KEY_Z)
 			|| (key_event -> keyval >= GDK_KEY_a && key_event -> keyval <= GDK_KEY_z)
-			|| (key_event -> keyval >= GDK_KEY_0 && key_event -> keyval <= GDK_KEY_9))
+			|| (key_event -> keyval >= GDK_KEY_0 && key_event -> keyval <= GDK_KEY_9)
+			|| key_event -> keyval == GDK_KEY_plus 
+			|| key_event -> keyval == GDK_KEY_minus 
+			|| key_event -> keyval == GDK_KEY_underscore
+			|| key_event -> keyval == GDK_KEY_hyphen)
 			&& key_event->type == GDK_KEY_PRESS) {
 
 		char character = key_event -> keyval;
@@ -66,6 +70,22 @@ bool DMenu::on_key_press_event(GdkEventKey* key_event) {
 	return Gtk::Menu::on_key_press_event(key_event);
 }
 
+void on_button_clicked(std::string cmd) {
+	cmd = cmd + " &";
+	const char *command = cmd.c_str();
+	std::system(command);
+	
+	Gtk::Main::quit();
+}
+
+void DMenu::on_button_clicked(std::string cmd) {
+	cmd = cmd + " &";
+	const char *command = cmd.c_str();
+	std::system(command);
+	
+	Gtk::Main::quit();
+}
+
 /* Rebuild menu to match the search phrase */
 void DMenu::filter_view() {
 	if (this -> search_phrase.size() > 0) {
@@ -76,12 +96,17 @@ void DMenu::filter_view() {
 			}
 		}
 		// create and add items matching the search phrase
+		int cnt = 0;
 		for (Glib::ustring command : all_commands) {
 			if (command.find(this -> search_phrase) == 0) {
 				Gtk::MenuItem *item = new Gtk::MenuItem();
 				item -> set_label(command);
 				//~ item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), command));
 				this -> append(*item);
+				cnt++;
+				if (cnt > entries_limit - 1) {
+					break;
+				}
 			}			
 		}
 		this -> show_all();
@@ -98,7 +123,7 @@ void DMenu::filter_view() {
 		for (Glib::ustring command : all_commands) {
 			Gtk::MenuItem *item = new Gtk::MenuItem();
 			item -> set_label(command);
-			//~ item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), command));
+			//~ item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&DMenu::on_button_clicked), command));
 			this -> append(*item);
 			cnt++;
 			if (cnt > entries_limit - 1) {
@@ -136,13 +161,7 @@ gboolean on_window_clicked(GdkEventButton *event) {
 	return true;
 }
 
-void on_button_clicked(std::string cmd) {
-	cmd = cmd + " &";
-	const char *command = cmd.c_str();
-	std::system(command);
-	
-	Gtk::Main::quit();
-}
+
 
 bool MainWindow::on_button_press_event(GdkEventButton* button_event) {
 	if((button_event->type == GDK_BUTTON_PRESS) && (button_event->button == 3)) {
