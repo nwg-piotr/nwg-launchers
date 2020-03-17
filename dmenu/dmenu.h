@@ -28,7 +28,8 @@ double opacity (0.3);			// overlay window opacity
 std::string wm;					// detected window manager name
 ns::json cache;
 std::string cache_file {};
-int entries_limit (25);
+int entries_limit (20);
+std::vector<Glib::ustring> all_commands {};
 
 #ifndef NWG_DMENU_ANCHOR_H
 #define NWG_DMENU_ANCHOR_H

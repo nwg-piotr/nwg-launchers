@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
     std::cout << commands.size() << " commands found\n";
 	
 	/* Create a vector of commands (w/o path) */
-	std::vector<Glib::ustring> all_commands {};
+	all_commands = {};
 	for (std::string command : commands) {
 		std::vector<std::string> parts = split_string(command, "/");
 		std::string cmd = parts[parts.size() - 1];
@@ -209,7 +209,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	Gtk::MenuItem *search_item = new Gtk::MenuItem();
-	search_item->add(menu.searchbox);
+	search_item -> add(menu.searchbox);
+	search_item -> set_name("search_item");
 	menu.append(*search_item);
 
 	menu.signal_deactivate().connect(sigc::ptr_fun(Gtk::Main::quit));

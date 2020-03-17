@@ -66,11 +66,46 @@ bool DMenu::on_key_press_event(GdkEventKey* key_event) {
 	return Gtk::Menu::on_key_press_event(key_event);
 }
 
+/* Rebuild menu to match the search phrase */
 void DMenu::filter_view() {
 	if (this -> search_phrase.size() > 0) {
-		//~ this -> separator.hide();
+		// remove all items except searchbox
+		for (auto item : this -> get_children()) {	
+			if (item -> get_name() != "search_item") {
+				delete item;
+			}
+		}
+		// create and add items matching the search phrase
+		for (Glib::ustring command : all_commands) {
+			if (command.find(this -> search_phrase) == 0) {
+				Gtk::MenuItem *item = new Gtk::MenuItem();
+				item -> set_label(command);
+				//~ item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), command));
+				this -> append(*item);
+			}			
+		}
+		this -> show_all();
+		
 	} else {
-		//~ this -> separator.show();
+		this -> searchbox.set_text("Type to search");
+		// remove all items except searchbox
+		for (auto item : this -> get_children()) {	
+			if (item -> get_name() != "search_item") {
+				delete item;
+			}
+		}
+		int cnt = 0;
+		for (Glib::ustring command : all_commands) {
+			Gtk::MenuItem *item = new Gtk::MenuItem();
+			item -> set_label(command);
+			//~ item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), command));
+			this -> append(*item);
+			cnt++;
+			if (cnt > entries_limit - 1) {
+				break;
+			}
+		}
+		this -> show_all();
 	}
 }
 
