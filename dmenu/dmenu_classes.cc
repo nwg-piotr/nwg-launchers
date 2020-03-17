@@ -65,7 +65,6 @@ bool DMenu::on_key_press_event(GdkEventKey* key_event) {
 		return true;
 	}
 	//if the event has not been handled, call the base class
-	std::cout << "Key pressed\n";
 	return Gtk::Menu::on_key_press_event(key_event);
 }
 
@@ -103,7 +102,7 @@ void DMenu::filter_view() {
 				item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun(*this, &DMenu::on_button_clicked), command));
 				this -> append(*item);
 				cnt++;
-				if (cnt > entries_limit - 1) {
+				if (cnt > rows - 1) {
 					break;
 				}
 			}			
@@ -125,7 +124,7 @@ void DMenu::filter_view() {
 			item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun(*this, &DMenu::on_button_clicked), command));
 			this -> append(*item);
 			cnt++;
-			if (cnt > entries_limit - 1) {
+			if (cnt > rows - 1) {
 				break;
 			}
 		}

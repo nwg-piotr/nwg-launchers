@@ -21,14 +21,13 @@
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-int num_col (6);				// number of grid columns
-int image_size (72);			// button image size in pixels
-bool favs (false);				// whether to display favourites
+std::string h_align {""};		// horizontal alignment
+std::string v_align {""};		// vertical alignment
 double opacity (0.3);			// overlay window opacity
 std::string wm;					// detected window manager name
 ns::json cache;
 std::string cache_file {};
-int entries_limit (20);
+int rows (20);
 std::vector<Glib::ustring> all_commands {};
 
 #ifndef NWG_DMENU_ANCHOR_H

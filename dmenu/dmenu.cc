@@ -38,37 +38,34 @@ int main(int argc, char *argv[]) {
 
 	InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
-        std::cout << "GTK application grid: nwgdmenu 0.0.1 (c) Piotr Miller 2020\n\n";
+        std::cout << "GTK command menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020\n\n";
         std::cout << "nwgdmenu [-h] [-f] [-o <opacity>] [-c <col>] [-s <size>] [-l <ln>]\n\n";
         std::cout << "Options:\n";
         std::cout << "-h            show this help message and exit\n";
-        std::cout << "-f            display favourites\n";
+        std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
+        std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
+        std::cout << "-r <rows>     number of rows (default: " << rows <<")\n";
         std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n";
-        std::cout << "-c <col>      number of grid columns (default: 6)\n";
-        std::cout << "-s <size>     button image size (default: 72)\n";
-        std::cout << "-l <ln>       force use of <ln> language\n";
         std::exit(0);
     }
-    if (input.cmdOptionExists("-f")){
-        favs = true;
-    }
-    const std::string &forced_lang = input.getCmdOption("-l");
-    if (!forced_lang.empty()){
-        lang = forced_lang;
-    }
-    const std::string &cols = input.getCmdOption("-c");
-    if (!cols.empty()){
-        try {
-			int n_c = std::stoi(cols);
-			if (n_c > 0 && n_c < 100) {
-				num_col = n_c;
-			} else {
-				std::cout << "\nERROR: Columns must be in range 1 - 99\n\n";
-			}
-		} catch (...) {
-			std::cout << "\nERROR: Invalid number of columns\n\n";
+
+	const std::string &halign = input.getCmdOption("-ha");
+    if (!halign.empty()){
+		if (halign == "l" || halign == "left") {
+			h_align = "l";
+		} else if (halign == "r" || halign == "right") {
+			h_align = "r";
 		}
-    }
+	}
+
+	const std::string &valign = input.getCmdOption("-va");
+    if (!valign.empty()){
+		if (valign == "t" || valign == "top") {
+			v_align = "t";
+		} else if (valign == "b" || valign == "bottom") {
+			v_align = "b";
+		}
+	}
     
     const std::string &opa = input.getCmdOption("-o");
     if (!opa.empty()){
@@ -84,17 +81,17 @@ int main(int argc, char *argv[]) {
 		}
     }
     
-    const std::string &i_size = input.getCmdOption("-s");
-    if (!i_size.empty()){
+    const std::string &rw = input.getCmdOption("-r");
+    if (!rw.empty()){
         try {
-			int i_s = std::stoi(i_size);
-			if (i_s >= 16 && i_s <= 256) {
-				image_size = i_s;
+			int r = std::stoi(rw);
+			if (r > 0 && r <= 100) {
+				rows = r;
 			} else {
-				std::cout << "\nERROR: Size must be in range 16 - 256\n\n";
+				std::cout << "\nERROR: Number of rows must be in range 1 - 100\n\n";
 			}
 		} catch (...) {
-			std::cout << "\nERROR: Invalid image size\n\n";
+			std::cout << "\nERROR: Invalid rows number\n\n";
 		}
     }
 
@@ -223,7 +220,7 @@ int main(int argc, char *argv[]) {
 		item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), command));
 		menu.append(*item);
 		cnt++;
-		if (cnt > entries_limit - 1) {
+		if (cnt > rows - 1) {
 			break;
 		}
 	}
@@ -236,8 +233,6 @@ int main(int argc, char *argv[]) {
 
 	Gtk::HBox inner_hbox;
 
-	//~ window.anchor.set_label("ANCHOR");
-
 	inner_hbox.pack_start(anchor, true, false);
 
 	inner_vbox.pack_start(inner_hbox, true, false);
@@ -248,8 +243,6 @@ int main(int argc, char *argv[]) {
 	window.show_all_children();
 	
 	menu.show_all();
-	//~ window.menu->popup_at_widget(&anchor, Gdk::GRAVITY_SOUTH, Gdk::GRAVITY_NORTH, nullptr);
-	std::cout << menu.get_children().size() << std::endl;
 
 	gettimeofday(&tp, NULL);
 	long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
