@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 	InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
         std::cout << "GTK command menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020\n\n";
-        std::cout << "nwgdmenu [-h] [-f] [-o <opacity>] [-c <col>] [-s <size>] [-l <ln>]\n\n";
+        std::cout << "nwgdmenu [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-o <opacity>]\n\n";
         std::cout << "Options:\n";
         std::cout << "-h            show this help message and exit\n";
         std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
@@ -234,10 +234,21 @@ int main(int argc, char *argv[]) {
 
 	Gtk::HBox inner_hbox;
 
-	inner_hbox.pack_start(anchor, true, false);
+	if (h_align == "l") {
+		inner_hbox.pack_start(anchor, false, false);
+	} else if (h_align == "r") {
+		inner_hbox.pack_end(anchor, false, false);
+	} else {
+		inner_hbox.pack_start(anchor, true, false);
+	}
 
-	inner_vbox.pack_start(inner_hbox, true, false);
-
+	if (v_align == "t") {
+		inner_vbox.pack_start(inner_hbox, false, false);
+	} else if (v_align == "b") {
+		inner_vbox.pack_end(inner_hbox, false, false);
+	} else {
+		inner_vbox.pack_start(inner_hbox, true, false);
+	}
 	outer_box.pack_start(inner_vbox, Gtk::PACK_EXPAND_WIDGET);
     
     window.add(outer_box);

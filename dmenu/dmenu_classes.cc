@@ -96,7 +96,7 @@ void DMenu::filter_view() {
 		// create and add items matching the search phrase
 		int cnt = 0;
 		for (Glib::ustring command : all_commands) {
-			if (command.find(this -> search_phrase) == 0) {
+			if (command.find(this -> search_phrase) != std::string::npos) {
 				Gtk::MenuItem *item = new Gtk::MenuItem();
 				item -> set_label(command);
 				item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun(*this, &DMenu::on_button_clicked), command));
