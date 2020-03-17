@@ -15,14 +15,13 @@
  * */
 
 Anchor::Anchor() {
-	set_label("Anchor");
+	//~ set_label("Anchor");
 }
 
 Anchor::~Anchor() {
 }
 
 bool Anchor::on_focus_in_event(GdkEventFocus* focus_event) {
-	std::cout << "Anchor shown\n";
 	main_menu->popup_at_widget(this, Gdk::GRAVITY_CENTER, Gdk::GRAVITY_CENTER, nullptr);
 	return true;
 }
@@ -40,7 +39,7 @@ DMenu::~DMenu() {
 bool DMenu::on_key_press_event(GdkEventKey* key_event) {
 	if (key_event -> keyval == GDK_KEY_Escape) {
 		Gtk::Main::quit();
-		return true;
+		return Gtk::Menu::on_key_press_event(key_event);
 
 	} else if (((key_event -> keyval >= GDK_KEY_A && key_event -> keyval <= GDK_KEY_Z)
 			|| (key_event -> keyval >= GDK_KEY_a && key_event -> keyval <= GDK_KEY_z)
@@ -78,7 +77,7 @@ void on_button_clicked(std::string cmd) {
 	Gtk::Main::quit();
 }
 
-void DMenu::on_button_clicked(std::string cmd) {
+void DMenu::on_button_clicked(Glib::ustring cmd) {
 	cmd = cmd + " &";
 	const char *command = cmd.c_str();
 	std::system(command);
@@ -101,7 +100,7 @@ void DMenu::filter_view() {
 			if (command.find(this -> search_phrase) == 0) {
 				Gtk::MenuItem *item = new Gtk::MenuItem();
 				item -> set_label(command);
-				//~ item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), command));
+				item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun(*this, &DMenu::on_button_clicked), command));
 				this -> append(*item);
 				cnt++;
 				if (cnt > entries_limit - 1) {
@@ -123,7 +122,7 @@ void DMenu::filter_view() {
 		for (Glib::ustring command : all_commands) {
 			Gtk::MenuItem *item = new Gtk::MenuItem();
 			item -> set_label(command);
-			//~ item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&DMenu::on_button_clicked), command));
+			item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun(*this, &DMenu::on_button_clicked), command));
 			this -> append(*item);
 			cnt++;
 			if (cnt > entries_limit - 1) {

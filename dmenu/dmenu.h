@@ -54,7 +54,7 @@ std::vector<Glib::ustring> all_commands {};
 		private:
 			bool on_key_press_event(GdkEventKey* event) override;
 			void filter_view();
-			void on_button_clicked(std::string cmd);
+			void on_button_clicked(Glib::ustring cmd);
 	};
 #endif // NWG_DMENU_DMENU_H
 
@@ -73,11 +73,7 @@ DMenu* main_menu;
 
 
 		private:
-			//Override default signal handler:
-			//~ bool on_key_press_event(GdkEventKey* event) override;
 			bool on_button_press_event(GdkEventButton* button_event) override;
-			//~ void filter_view();
-			//~ void rebuild_grid(bool filtered);
 		
 		protected:
 			virtual bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr);
