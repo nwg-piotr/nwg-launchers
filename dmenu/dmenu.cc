@@ -225,6 +225,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	menu.set_reserve_toggle_size(false);
+	menu.set_property("width_request", (int)(w / 8));
 	
 	Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
 	outer_box.set_spacing(15);
