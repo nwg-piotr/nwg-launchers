@@ -21,7 +21,6 @@
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-static Gtk::Label *description;
 int num_col (6);				// number of grid columns
 int image_size (72);			// button image size in pixels
 bool favs (false);				// whether to display favourites
@@ -30,6 +29,34 @@ std::string wm;					// detected window manager name
 ns::json cache;
 std::string cache_file {};
 int entries_limit (25);
+
+#ifndef NWG_DMENU_ANCHOR_H
+#define NWG_DMENU_ANCHOR_H
+	class Anchor : public Gtk::Button {
+		public:
+			Anchor();
+			virtual ~Anchor();
+		private:
+			bool on_focus_in_event(GdkEventFocus* focus_event) override;
+	};
+#endif // NWG_DMENU_ANCHOR_H
+
+#ifndef NWG_DMENU_DMENU_H
+#define NWG_DMENU_DMENU_H
+	class DMenu : public Gtk::Menu {
+		public:
+			DMenu();
+			virtual ~DMenu();
+			Gtk::SearchEntry searchbox;
+			Glib::ustring search_phrase;
+			
+		private:
+			bool on_key_press_event(GdkEventKey* event) override;
+			void filter_view();
+	};
+#endif // NWG_DMENU_DMENU_H
+
+DMenu* main_menu;
 
 #ifndef NWG_DMENU_MAIN_WINDOW_H
 #define NWG_DMENU_MAIN_WINDOW_H
@@ -40,19 +67,14 @@ int entries_limit (25);
 			virtual ~MainWindow();
 
 			Gtk::Menu* menu;
-			Gtk::Button anchor;
-			Gtk::SearchEntry searchbox;		// This will stay insensitive, updated with search_phrase value only
-			Gtk::Label label_desc;			// To display .desktop entry Comment field at the bottom
-			Glib::ustring search_phrase;	// updated on key_press_event
-			Gtk::Grid apps_grid;			// All application buttons grid
-			Gtk::Grid favs_grid;			// Favourites grid above
-			Gtk::Separator separator;		// between favs and all apps
+			Gtk::Button* anchor;
+
 
 		private:
 			//Override default signal handler:
-			bool on_key_press_event(GdkEventKey* event) override;
+			//~ bool on_key_press_event(GdkEventKey* event) override;
 			bool on_button_press_event(GdkEventButton* button_event) override;
-			void filter_view();
+			//~ void filter_view();
 			//~ void rebuild_grid(bool filtered);
 		
 		protected:
