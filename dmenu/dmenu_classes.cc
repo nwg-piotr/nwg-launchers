@@ -146,8 +146,8 @@ MainWindow::MainWindow() : menu(nullptr) {
     
     on_screen_changed(get_screen());
 
-    if (wm != "sway") {
-		fullscreen();
+    if (wm == "sway" || wm == "i3") {
+		set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
 	}
 }
 

@@ -176,6 +176,7 @@ int main(int argc, char *argv[]) {
 	g_object_unref(provider);
     
     MainWindow window;
+    
     DMenu menu;
     main_menu = &menu;
     Anchor anchor;
@@ -198,11 +199,32 @@ int main(int argc, char *argv[]) {
 	int w = geometry[2];
 	int h = geometry[3];
 
-	if (wm == "sway") {
+	if (wm == "sway" || wm == "i3") {
 		window.resize(w, h);
 	} else {
-		std::cout << "x: " << x << " y: " << y << std::endl;
-		window.move(x, y); 	// needed in FVWM, otherwise grid always appears on screen 0
+		window.resize(1, 1);
+		if (!h_align.empty() || !v_align.empty()) {
+			window.move(x, y);
+		}
+		int x_org;
+		int y_org;
+		window.get_position(x_org, y_org);
+		std::cout << x_org << " : " << y_org << std::endl;
+		if (h_align == "l") {
+			window.move(x, y_org);
+			window.get_position(x_org, y_org);
+		}
+		if (h_align == "r") {
+			window.move(x + w - 50, y_org);
+			window.get_position(x_org, y_org);
+		}
+		if (v_align == "t") {
+			window.move(x_org, y);
+			window.get_position(x_org, y_org);
+		}
+		if (v_align == "b") {
+			window.move(x_org, y + h);
+		}
 	}
 
 	Gtk::MenuItem *search_item = new Gtk::MenuItem();
