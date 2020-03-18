@@ -59,6 +59,10 @@ This command creates a horizontal or vertical button bar, out of a template file
 
 [screenshot](http://nwg.pl/Lychee/uploads/big/d84cc934ccf639eb5dc8c01304b155db.png) - `nwgbar` as the Exit menu.
 
+### Dependencies
+
+- as above
+
 ### Installation
 
 ```
@@ -133,6 +137,10 @@ This command creates a menu of all commands found in `$PATH`, with a search box 
 
 [screenshot](http://nwg.pl/Lychee/uploads/big/d853d2e5f4ef713a4d0c1d37b11ab22e.png)
 
+### Dependencies
+
+- as above
+
 ### Installation
 
 ```
@@ -152,7 +160,7 @@ sudo make uninstall
 $ nwgdmenu -h
 GTK command menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020
 
-nwgdmenu [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-o <opacity>]
+nwgdmenu [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]
 
 Options:
 -h            show this help message and exit
@@ -162,3 +170,8 @@ Options:
 -c <name>     css file name (default: style.css)
 -o <opacity>  background opacity (0.0 - 1.0, default 0.3)
 ```
+
+### Custom styling
+
+On first run the program creates the `nwgdmenu` folder in your .config directory. You'll find the 
+default `style.css` files inside. Use it to adjust styling and a vertical margin to the menu, if needed.
