@@ -39,14 +39,14 @@ int main(int argc, char *argv[]) {
 	InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
         std::cout << "GTK command menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020\n\n";
-        std::cout << "nwgdmenu [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-o <opacity>]\n\n";
+        std::cout << "nwgdmenu [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]\n\n";
         std::cout << "Options:\n";
         std::cout << "-h            show this help message and exit\n";
         std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
         std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
         std::cout << "-r <rows>     number of rows (default: " << rows <<")\n";
         std::cout << "-c <name>     css file name (default: style.css)\n";
-        std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n";
+        std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n";
         std::exit(0);
     }
 
