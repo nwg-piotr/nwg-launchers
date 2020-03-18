@@ -6,7 +6,7 @@ to css style sheets.
 
 For now first 3 launchers seem to work pretty well:
 
-## nwggrid
+# nwggrid
 
 This command creates a GNOME-like application grid, with the search box, optionally prepended with a row of favourites
 (most frequently used apps).
@@ -53,7 +53,7 @@ Options:
 On first run the program creates the `nwgbar` folder in your .config directory. You'll find the `style.css` files inside.
 You may edit the style sheet to your liking.
 
-## nwgbar
+# nwgbar
 
 This command creates a horizontal or vertical button bar, out of a template file.
 
@@ -131,7 +131,7 @@ You may use own icon files instead of icon names, like `/path/to/the/file/my_ico
 
 The style sheet makes the buttons look similar to `nwggrid`. You can customize them as well.
 
-## nwgdmenu
+# nwgdmenu
 
 This command creates a menu of all commands found in `$PATH`, with a search box on top.
 
