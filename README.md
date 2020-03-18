@@ -4,7 +4,7 @@ As it's never too late to learn something new, I decided to try and code my
 By the way I'm trying to simplify their usage, by reducing the number of arguments. Whatever possible, is being moved
 to css style sheets.
 
-For now first 2 launchers (and my favourites) seem to work pretty well:
+For now first 3 launchers seem to work pretty well:
 
 ## nwggrid
 

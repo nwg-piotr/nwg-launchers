@@ -22,7 +22,15 @@ Anchor::~Anchor() {
 }
 
 bool Anchor::on_focus_in_event(GdkEventFocus* focus_event) {
-	main_menu->popup_at_widget(this, Gdk::GRAVITY_CENTER, Gdk::GRAVITY_CENTER, nullptr);
+	Gdk::Gravity gravity {Gdk::GRAVITY_CENTER};
+	if (v_align == "t") {
+		std::cout << "TOP\n";
+		gravity = Gdk::GRAVITY_NORTH;
+	} else if (v_align == "b") {
+		std::cout << "BOTTOM\n";
+		gravity = Gdk::GRAVITY_SOUTH;
+	}
+	main_menu->popup_at_widget(this, gravity, gravity, nullptr);
 	return true;
 }
 
