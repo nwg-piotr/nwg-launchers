@@ -15,7 +15,7 @@ This command creates a GNOME-like application grid, with the search box, optiona
 
 ### Dependencies
 
-- `gtkmm3`
+- `gtkmm3` (Debian: `libgtkmm-3.0-dev`)
 - `nlohmann-json`
 
 ### Installation
@@ -126,3 +126,39 @@ You may use as many templates as you need, with the `-t` argument. All of them m
 You may use own icon files instead of icon names, like `/path/to/the/file/my_icon.svg`.
 
 The style sheet makes the buttons look similar to `nwggrid`. You can customize them as well.
+
+## nwgdmenu
+
+This command creates a menu of all commands found in `$PATH`, with a search box on top.
+
+[screenshot](http://nwg.pl/Lychee/uploads/big/d853d2e5f4ef713a4d0c1d37b11ab22e.png)
+
+### Installation
+
+```
+git clone https://github.com/nwg-piotr/nwg-launchers.git
+cd nwg-launchers/dmenu
+sudo make clean install
+```
+To uninstall:
+
+```
+sudo make uninstall
+```
+
+### Usage
+
+```
+$ nwgdmenu -h
+GTK command menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020
+
+nwgdmenu [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-o <opacity>]
+
+Options:
+-h            show this help message and exit
+-ha <l>|<r>   horizontal alignment left/right (default: center)
+-va <t>|<b>   vertical alignment top/bottom (default: middle)
+-r <rows>     number of rows (default: 20)
+-c <name>     css file name (default: style.css)
+-o <opacity>  background opacity (0.0 - 1.0, default 0.3)
+```
