@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
         std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
         std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
         std::cout << "-r <rows>     number of rows (default: " << rows <<")\n";
+        std::cout << "-c <name>     css file name (default: style.css)\n";
         std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n";
         std::exit(0);
     }
@@ -65,6 +66,11 @@ int main(int argc, char *argv[]) {
 		} else if (valign == "b" || valign == "bottom") {
 			v_align = "b";
 		}
+	}
+    
+    const std::string &css_name = input.getCmdOption("-c");
+    if (!css_name.empty()){
+		custom_css_file = css_name;
 	}
     
     const std::string &opa = input.getCmdOption("-o");
@@ -100,12 +106,17 @@ int main(int argc, char *argv[]) {
 		std::cout << "Config dir not found, creating...\n";
 		fs::create_directory(config_dir);
 	}
-
-    std::string css_file = config_dir + "/style.css";
+	
+    // default and custom style sheet
+    std::string default_css_file = config_dir + "/style.css";
+    // css file to be used
+    std::string css_file = config_dir + "/" + custom_css_file;
+    std::cout << css_file << std::endl;
+    // copy default file if not found
     const char *custom_css = css_file.c_str();
-    if (!fs::exists(css_file)) {
+    if (!fs::exists(default_css_file)) {
 		fs::path source_file = "/usr/share/nwgdmenu/style.css";
-		fs::path target = css_file;
+		fs::path target = default_css_file;
 		try {
 			fs::copy_file("/usr/share/nwgdmenu/style.css", target, fs::copy_options::overwrite_existing);
 		} catch (...) {

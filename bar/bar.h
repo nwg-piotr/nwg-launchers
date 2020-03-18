@@ -25,6 +25,7 @@ int image_size (72);			// button image size in pixels
 double opacity (0.9);			// overlay window opacity
 std::string wm;					// detected window manager name
 std::string definition_file {"bar.json"};
+std::string custom_css_file {"style.css"};
 std::string orientation {"h"};
 std::string h_align {""};
 std::string v_align {""};

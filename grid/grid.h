@@ -29,6 +29,7 @@ double opacity (0.9);			// overlay window opacity
 std::string wm;					// detected window manager name
 ns::json cache;
 std::string cache_file {};
+std::string custom_css_file {"style.css"};
 
 #ifndef CGTK_APP_BOX_H
 #define CGTK_APP_BOX_H

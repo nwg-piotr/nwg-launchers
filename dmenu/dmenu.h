@@ -27,6 +27,7 @@ double opacity (0.3);			// overlay window opacity
 std::string wm;					// detected window manager name
 ns::json cache;
 std::string cache_file {};
+std::string custom_css_file {"style.css"};
 int rows (20);
 std::vector<Glib::ustring> all_commands {};
 

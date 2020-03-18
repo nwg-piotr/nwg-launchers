@@ -44,8 +44,9 @@ int main(int argc, char *argv[]) {
         std::cout << "-h            show this help message and exit\n";
         std::cout << "-f            display favourites\n";
         std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n";
-        std::cout << "-c <col>      number of grid columns (default: 6)\n";
+        std::cout << "-n <col>      number of grid columns (default: 6)\n";
         std::cout << "-s <size>     button image size (default: 72)\n";
+        std::cout << "-c <name>     css file name (default: style.css)\n";
         std::cout << "-l <ln>       force use of <ln> language\n";
         std::exit(0);
     }
@@ -56,7 +57,7 @@ int main(int argc, char *argv[]) {
     if (!forced_lang.empty()){
         lang = forced_lang;
     }
-    const std::string &cols = input.getCmdOption("-c");
+    const std::string &cols = input.getCmdOption("-n");
     if (!cols.empty()){
         try {
 			int n_c = std::stoi(cols);
@@ -69,6 +70,11 @@ int main(int argc, char *argv[]) {
 			std::cout << "\nERROR: Invalid number of columns\n\n";
 		}
     }
+    
+    const std::string &css_name = input.getCmdOption("-c");
+    if (!css_name.empty()){
+		custom_css_file = css_name;
+	}
     
     const std::string &opa = input.getCmdOption("-o");
     if (!opa.empty()){
@@ -113,13 +119,18 @@ int main(int argc, char *argv[]) {
 		fs::create_directory(config_dir);
 	}
 
-    std::string css_file = config_dir + "/style.css";
+    // default and custom style sheet
+    std::string default_css_file = config_dir + "/style.css";
+    // css file to be used
+    std::string css_file = config_dir + "/" + custom_css_file;
+    std::cout << css_file << std::endl;
+    // copy default file if not found
     const char *custom_css = css_file.c_str();
-    if (!fs::exists(css_file)) {
-		fs::path source_file = "/usr/share/nwggrid/style.css";
-		fs::path target = css_file;
+    if (!fs::exists(default_css_file)) {
+		fs::path source_file = "/usr/share/nwgdmenu/style.css";
+		fs::path target = default_css_file;
 		try {
-			fs::copy_file("/usr/share/nwggrid/style.css", target, fs::copy_options::overwrite_existing);
+			fs::copy_file("/usr/share/nwgdmenu/style.css", target, fs::copy_options::overwrite_existing);
 		} catch (...) {
 			std::cout << "Failed copying default style.css\n";
 		}
