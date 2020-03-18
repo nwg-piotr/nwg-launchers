@@ -1,15 +1,22 @@
-/* Don't delete: the menu anchor is a button */
+/* Don't delete, just in case: the menu anchor is a button */
 button {
-	background: none;
+	background: #none;
 	border-style: none;
 	box-shadow: none;
 }
 
+box {
+	/* Uncomment to set vertical margin
+	margin-top: 30px;
+	margin-bottom: 30px;
+	*/
+}
+
 #searchbox {
-	margin-bottom: 5px
+	/* Adjust to your taste */
 }
 
 /* Menu items */
 label {
-  padding-left: 5px
+	padding-left: 5px
 }
