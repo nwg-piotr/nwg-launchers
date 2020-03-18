@@ -21,14 +21,12 @@
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-std::string h_align {""};		// horizontal alignment
-std::string v_align {""};		// vertical alignment
-double opacity (0.3);			// overlay window opacity
-std::string wm;					// detected window manager name
-ns::json cache;
-std::string cache_file {};
+std::string h_align {""};					// horizontal alignment
+std::string v_align {""};					// vertical alignment
+double opacity (0.3);						// overlay window opacity
+std::string wm;								// detected window manager name
 std::string custom_css_file {"style.css"};
-int rows (20);
+int rows (20);								// number of menu items to display
 std::vector<Glib::ustring> all_commands {};
 
 #ifndef NWG_DMENU_ANCHOR_H

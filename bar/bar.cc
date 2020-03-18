@@ -126,10 +126,10 @@ int main(int argc, char *argv[]) {
     // copy default file if not found
     const char *custom_css = css_file.c_str();
     if (!fs::exists(default_css_file)) {
-		fs::path source_file = "/usr/share/nwgdmenu/style.css";
+		fs::path source_file = "/usr/share/nwgbar/style.css";
 		fs::path target = default_css_file;
 		try {
-			fs::copy_file("/usr/share/nwgdmenu/style.css", target, fs::copy_options::overwrite_existing);
+			fs::copy_file("/usr/share/nwgbar/style.css", target, fs::copy_options::overwrite_existing);
 		} catch (...) {
 			std::cout << "Failed copying default style.css\n";
 		}
