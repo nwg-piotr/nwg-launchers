@@ -28,11 +28,12 @@ std::string get_config_dir() {
 	char* val = getenv("XDG_CONFIG_HOME");
 	if (val) {
 		s = val;
+		s += "/nwgbar";
 	} else {
 		char* val = getenv("HOME");
 		s = val;
+		s += "/.config/nwgbar";
 	}
-	s += "/.config/nwgbar";
 	fs::path dir (s);
 	return s;
 }

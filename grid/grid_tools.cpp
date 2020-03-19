@@ -49,11 +49,12 @@ std::string get_config_dir() {
 	char* val = getenv("XDG_CONFIG_HOME");
 	if (val) {
 		s = val;
+		s += "/nwggrid";
 	} else {
 		char* val = getenv("HOME");
 		s = val;
+		s += "/.config/nwggrid";
 	}
-	s += "/.config/nwggrid";
 	fs::path dir (s);
 	return s;
 }
