@@ -8,8 +8,8 @@
  * */
  
 #include "bar.h"
-#include "tools.cpp"
-#include "gtk-classes.cc"
+#include "bar_tools.cpp"
+#include "bar_classes.cc"
 #include <sys/time.h>
 
 int main(int argc, char *argv[]) {
