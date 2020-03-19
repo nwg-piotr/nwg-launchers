@@ -1,6 +1,6 @@
 /* Don't delete, just in case: the menu anchor is a button */
 button {
-	background: #none;
+	background: none;
 	border-style: none;
 	box-shadow: none;
 }
