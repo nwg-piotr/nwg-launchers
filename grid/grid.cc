@@ -8,8 +8,8 @@
  * */
  
 #include "grid.h"
-#include "tools.cpp"
-#include "gtk-classes.cc"
+#include "grid_tools.cpp"
+#include "grid_classes.cc"
 #include <sys/time.h>
 
 int main(int argc, char *argv[]) {
