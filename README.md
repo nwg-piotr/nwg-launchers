@@ -175,3 +175,11 @@ Options:
 
 On first run the program creates the `nwgdmenu` folder in your .config directory. You'll find the 
 default `style.css` files inside. Use it to adjust styling and a vertical margin to the menu, if needed.
+
+## i3 Window Manager
+
+In case you use default window borders, an exclusion like this may be necessary:
+
+```
+for_window [title="~nwg"] border none
+```

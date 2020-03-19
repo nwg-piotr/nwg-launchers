@@ -187,7 +187,6 @@ bool MainWindow::on_button_press_event(GdkEventButton* button_event) {
 		  menu->attach_to_widget(*this);
 		}
 		if(menu) {
-			//~ menu->popup_at_pointer((GdkEvent*)button_event);
 			menu -> popup_at_widget(this->anchor, Gdk::GRAVITY_CENTER, Gdk::GRAVITY_CENTER, nullptr);
 		}
 		return true; //It has been handled.
