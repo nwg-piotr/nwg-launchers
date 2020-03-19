@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Lock",
+    "exec": "i3lock-fancy-rapid 5 3",
+    "icon": "system-lock-screen"
+  },
+  {
+    "name": "Logout",
+    "exec": "killall fvwm",
+    "icon": "system-log-out"
+  },
+  {
+    "name": "Reboot",
+    "exec": "systemctl reboot",
+    "icon": "system-reboot"
+  },
+  {
+    "name": "Shutdown",
+    "exec": "systemctl -i poweroff",
+    "icon": "system-shutdown"
+  }
+]

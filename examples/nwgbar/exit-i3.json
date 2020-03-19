@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Lock screen",
+    "exec": "i3lock -c 000000",
+    "icon": "system-lock-screen"
+  },
+  {
+    "name": "Logout",
+    "exec": "i3-msg exit",
+    "icon": "system-log-out"
+  },
+  {
+    "name": "Reboot",
+    "exec": "systemctl reboot",
+    "icon": "system-reboot"
+  },
+  {
+    "name": "Shutdown",
+    "exec": "systemctl -i poweroff",
+    "icon": "system-shutdown"
+  }
+]
