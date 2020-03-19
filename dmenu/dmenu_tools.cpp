@@ -32,8 +32,8 @@ std::string get_config_dir() {
 	} else {
 		char* val = getenv("HOME");
 		s = val;
-		s += "/.config/nwgdmenu";
 	}
+	s += "/.config/nwgdmenu";
 	fs::path dir (s);
 	return s;
 }

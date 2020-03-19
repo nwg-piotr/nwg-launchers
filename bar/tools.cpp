@@ -31,8 +31,8 @@ std::string get_config_dir() {
 	} else {
 		char* val = getenv("HOME");
 		s = val;
-		s += "/.config/nwgbar";
 	}
+	s += "/.config/nwgbar";
 	fs::path dir (s);
 	return s;
 }
