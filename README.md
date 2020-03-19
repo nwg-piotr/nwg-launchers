@@ -1,10 +1,10 @@
 # nwg-launchers
 As it's never too late to learn something new, I decided to try and code my 
-[sgtk-menu](https://github.com/nwg-piotr/sgtk-menu) set of launchers (written in python) from scratch in C++.
+[sgtk-menu](https://github.com/nwg-piotr/sgtk-menu) set of launchers, written in python, from scratch in C++.
 By the way I'm trying to simplify their usage, by reducing the number of arguments. Whatever possible, is being moved
 to css style sheets.
 
-For now first 3 launchers seem to work pretty well, at least on Arch Linux:
+For now first three launchers seem to work pretty well, at least on Arch Linux:
 
 # nwggrid
 
@@ -176,7 +176,7 @@ Options:
 On first run the program creates the `nwgdmenu` folder in your .config directory. You'll find the 
 default `style.css` files inside. Use it to adjust styling and a vertical margin to the menu, if needed.
 
-## i3 Window Manager
+## i3 note
 
 In case you use default window borders, an exclusion like this may be necessary:
 
