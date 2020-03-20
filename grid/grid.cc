@@ -276,7 +276,16 @@ int main(int argc, char *argv[]) {
 					ab -> signal_enter_notify_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered), it -> comment));
 					ab -> signal_focus_in_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused), it -> comment));
 					
-					window.fav_boxes.push_back(ab);
+					// avoid adding twice the same exec w/ another name
+					bool already_added {false};
+					for (AppBox *app_box : window.fav_boxes) {
+						if (app_box -> exec == it -> exec) {
+							already_added = true;
+						}
+					}
+					if (!already_added) {
+						window.fav_boxes.push_back(ab);
+					}
 				}
 			}
 		}
