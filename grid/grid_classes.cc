@@ -95,7 +95,7 @@ bool on_button_focused(GdkEventFocus* event, Glib::ustring comment) {
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
 	if (key_event -> keyval == GDK_KEY_Escape) {
 		Gtk::Main::quit();
-		return true;
+		return Gtk::Window::on_key_press_event(key_event);
 
 	} else if (((key_event -> keyval >= GDK_KEY_A && key_event -> keyval <= GDK_KEY_Z)
 			|| (key_event -> keyval >= GDK_KEY_a && key_event -> keyval <= GDK_KEY_z)

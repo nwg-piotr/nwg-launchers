@@ -195,10 +195,6 @@ int main(int argc, char *argv[]) {
     MainWindow window;
     
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
-    // This prevents openbox window from receiving keyboard enents
-    if (wm != "openbox") {
-		window.set_skip_taskbar_hint(true);
-	}
 
     /* Detect focused display geometry: {x, y, width, height} */
     std::vector<int> geometry = display_geometry(wm, window);

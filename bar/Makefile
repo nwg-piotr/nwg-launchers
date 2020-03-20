@@ -9,7 +9,7 @@ PREFIX ?= /usr
 all: $(SOURCES) $(EXECUTABLE) 
 
 $(EXECUTABLE): $(OBJECTS) 
-	$(CC) $(OBJECTS) -o $@ `pkg-config gtkmm-3.0 --libs --cflags`
+	$(CC) $(OBJECTS) -o $@ `pkg-config gtkmm-3.0 --libs --cflags` -lstdc++fs
 
 .cc.o:
 	$(CC) $(CFLAGS) $< -o $@ `pkg-config gtkmm-3.0 --libs --cflags`
