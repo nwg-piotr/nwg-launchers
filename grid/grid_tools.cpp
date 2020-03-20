@@ -300,7 +300,7 @@ std::vector<CacheEntry> get_favourites(ns::json cache, int number) {
 	});
 	// Trim to the number of columns, as we need just 1 row of favourites
 	std::vector<CacheEntry>::const_iterator first = sorted_cache.begin();
-	std::vector<CacheEntry>::const_iterator last = sorted_cache.begin() + number;
+	std::vector<CacheEntry>::const_iterator last = sorted_cache.begin() + number - 1;
 	std::vector<CacheEntry> favourites(first, last);
 	return favourites;
 }
