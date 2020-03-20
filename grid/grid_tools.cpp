@@ -346,7 +346,7 @@ Gtk::Image* app_image(std::string icon) {
 
 	if (icon.find_first_of("/") != 0) {
 		try {
-			pixbuf = icon_theme->load_icon(icon, image_size, Gtk::ICON_LOOKUP_USE_BUILTIN);
+			pixbuf = icon_theme->load_icon(icon, image_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
 		} catch (...) {
 			pixbuf = Gdk::Pixbuf::create_from_file("/usr/share/nwggrid/icon-missing.svg", image_size, image_size, true);
 		}
