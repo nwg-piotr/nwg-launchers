@@ -57,7 +57,7 @@ You may edit the style sheet to your liking.
 
 This command creates a horizontal or vertical button bar, out of a template file.
 
-[screenshot](http://nwg.pl/Lychee/uploads/big/d84cc934ccf639eb5dc8c01304b155db.png) - `nwgbar` as the Exit menu.
+[screenshots](http://nwg.pl/Lychee/#15848398399400)
 
 ### Dependencies
 
