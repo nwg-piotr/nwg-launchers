@@ -22,3 +22,7 @@ button:hover {
 button:focus {
 	box-shadow: 0 0 2px;
 }
+
+grid {
+	/* e.g. for common background to all buttons */
+}
