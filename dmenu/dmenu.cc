@@ -20,9 +20,28 @@ int main(int argc, char *argv[]) {
 	 * Either to use json format or try to achieve compatibility w/ rofi needs to be decided.
 	 * */
 	
+	InputParser input(argc, argv);
+    if(input.cmdOptionExists("-h")){
+        std::cout << "GTK dynamic menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020\n\n";
+        std::cout << "nwgdmenu - displays newline-separated input stdin as a GTK menu\n";
+        std::cout << "nwgdmenu_run - creates a GTK menu out of commands found in $PATH\n\n";
+        std::cout << "Options [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]\n\n";
+        std::cout << "Options:\n";
+        std::cout << "-h            show this help message and exit\n";
+        std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
+        std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
+        std::cout << "-r <rows>     number of rows (default: " << rows <<")\n";
+        std::cout << "-c <name>     css file name (default: style.css)\n";
+        std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n";
+        std::exit(0);
+    }
+	
+	all_commands = {};
 	for (std::string line; std::getline(std::cin, line);) {
-		std::cout << line << std::endl;
+		Glib::ustring cmd = line;
+		all_commands.push_back(cmd);
 	}
+	dmenu_run = all_commands[0].empty();
 
 	struct timeval tp;
 	gettimeofday(&tp, NULL);
@@ -44,22 +63,6 @@ int main(int argc, char *argv[]) {
 		std::system(command);
 		std::exit(0);
 	}
-
-	std::string lang ("");
-
-	InputParser input(argc, argv);
-    if(input.cmdOptionExists("-h")){
-        std::cout << "GTK command menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020\n\n";
-        std::cout << "nwgdmenu [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]\n\n";
-        std::cout << "Options:\n";
-        std::cout << "-h            show this help message and exit\n";
-        std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
-        std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
-        std::cout << "-r <rows>     number of rows (default: " << rows <<")\n";
-        std::cout << "-c <name>     css file name (default: style.css)\n";
-        std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n";
-        std::exit(0);
-    }
 
 	const std::string &halign = input.getCmdOption("-ha");
     if (!halign.empty()){
@@ -139,38 +142,34 @@ int main(int argc, char *argv[]) {
     wm = detect_wm();
     std::cout << "WM: " << wm << "\n";
     
-    /* get lang (2 chars long string) if not yet forced */
-    if (lang.length() != 2) {
-		lang = get_locale();
-	}
-    std::cout << "Locale: " << lang << "\n";
-    
-    /* get all applications dirs */
-    std::vector<std::string> command_dirs = get_command_dirs();
-	
-    /* get a list of paths to all commands */
-    std::vector<std::string> commands = list_commands(command_dirs);
-    std::cout << commands.size() << " commands found\n";
-	
-	/* Create a vector of commands (w/o path) */
-	all_commands = {};
-	for (std::string command : commands) {
-		std::vector<std::string> parts = split_string(command, "/");
-		std::string cmd = parts[parts.size() - 1];
-		if (!cmd.find(".") == 0 && cmd.size() != 1) {
-			all_commands.push_back(cmd);
-		}
-	}
-	
-	/* Sort case insensitive */
-	std::sort(all_commands.begin(), all_commands.end(), [](const std::string& a, const std::string& b) -> bool {
-        for (size_t c = 0; c < a.size() and c < b.size(); c++) {
-            if (std::tolower(a[c]) != std::tolower(b[c])) {
-				return (std::tolower(a[c]) < std::tolower(b[c]));
+    if (dmenu_run) {
+		/* get all applications dirs */
+		std::vector<std::string> command_dirs = get_command_dirs();
+		
+		/* get a list of paths to all commands */
+		std::vector<std::string> commands = list_commands(command_dirs);
+		std::cout << commands.size() << " commands found\n";
+		
+		/* Create a vector of commands (w/o path) */
+		all_commands = {};
+		for (std::string command : commands) {
+			std::vector<std::string> parts = split_string(command, "/");
+			std::string cmd = parts[parts.size() - 1];
+			if (!cmd.find(".") == 0 && cmd.size() != 1) {
+				all_commands.push_back(cmd);
 			}
-        }
-        return a.size() < b.size();
-    });
+		}
+		
+		/* Sort case insensitive */
+		std::sort(all_commands.begin(), all_commands.end(), [](const std::string& a, const std::string& b) -> bool {
+			for (size_t c = 0; c < a.size() and c < b.size(); c++) {
+				if (std::tolower(a[c]) != std::tolower(b[c])) {
+					return (std::tolower(a[c]) < std::tolower(b[c]));
+				}
+			}
+			return a.size() < b.size();
+		});
+	}
     
 	/* turn off borders, enable floating on sway */
 	if (wm == "sway") {
@@ -256,7 +255,7 @@ int main(int argc, char *argv[]) {
 	for (Glib::ustring command : all_commands) {
 		Gtk::MenuItem *item = new Gtk::MenuItem();
 		item -> set_label(command);
-		item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), command));
+		item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_item_clicked), command));
 		menu.append(*item);
 		cnt++;
 		if (cnt > rows - 1) {
