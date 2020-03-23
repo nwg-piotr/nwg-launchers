@@ -133,7 +133,10 @@ The style sheet makes the buttons look similar to `nwggrid`. You can customize t
 
 # nwgdmenu
 
-This command creates a menu of all commands found in `$PATH`, with a search box on top.
+This program provides 2 commands:
+
+- `nwgdmenu` - displays newline-separated stdin input as a GTK menu
+- `nwgdmenu_run` - creates a GTK menu out of commands found in $PATH
 
 [![Swappshot-Mon-Mar-23-211702-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211702-2020.th.png)](https://scrot.cloud/image/jfHK) [![Swappshot-Mon-Mar-23-211911-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211911-2020.th.png)](https://scrot.cloud/image/j3MG) [![Swappshot-Mon-Mar-23-211736-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211736-2020.th.png)](https://scrot.cloud/image/jvOi)
 
@@ -158,9 +161,12 @@ sudo make uninstall
 
 ```
 $ nwgdmenu -h
-GTK command menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020
+GTK dynamic menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020
 
-nwgdmenu [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]
+nwgdmenu - displays newline-separated input stdin as a GTK menu
+nwgdmenu_run - creates a GTK menu out of commands found in $PATH
+
+Options [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]
 
 Options:
 -h            show this help message and exit
