@@ -135,7 +135,7 @@ The style sheet makes the buttons look similar to `nwggrid`. You can customize t
 
 This command creates a menu of all commands found in `$PATH`, with a search box on top.
 
-[screenshot](http://nwg.pl/Lychee/uploads/big/d853d2e5f4ef713a4d0c1d37b11ab22e.png)
+[![Swappshot-Mon-Mar-23-211702-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211702-2020.th.png)](https://scrot.cloud/image/jfHK) [![Swappshot-Mon-Mar-23-211911-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211911-2020.th.png)](https://scrot.cloud/image/j3MG) [![Swappshot-Mon-Mar-23-211736-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211736-2020.th.png)](https://scrot.cloud/image/jvOi)
 
 ### Dependencies
 
