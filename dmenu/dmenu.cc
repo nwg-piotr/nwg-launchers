@@ -13,6 +13,17 @@
 #include <sys/time.h>
 
 int main(int argc, char *argv[]) {
+
+	/* We'll need a `nwgdmenu_run` shell script to start the program, e.g:
+	 * $ echo -e "" | nwgdmenu
+	 * to start w/o attempting to build a pipe menu and searching $PATH instead.
+	 * Either to use json format or try to achieve compatibility w/ rofi needs to be decided.
+	 * */
+	
+	for (std::string line; std::getline(std::cin, line);) {
+		std::cout << line << std::endl;
+	}
+
 	struct timeval tp;
 	gettimeofday(&tp, NULL);
 	long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
