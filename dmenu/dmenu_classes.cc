@@ -94,7 +94,7 @@ void on_item_clicked(std::string cmd) {
 		const char *command = cmd.c_str();
 		std::system(command);
 	} else {
-		std::cout << cmd << std::endl;
+		std::cout << cmd;
 	}
 	Gtk::Main::quit();
 }
@@ -105,7 +105,7 @@ void DMenu::on_item_clicked(Glib::ustring cmd) {
 		const char *command = cmd.c_str();
 		std::system(command);
 	} else {
-		std::cout << cmd << std::endl;
+		std::cout << cmd;
 	}
 	
 	Gtk::Main::quit();
