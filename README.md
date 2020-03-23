@@ -57,7 +57,7 @@ You may edit the style sheet to your liking.
 
 This command creates a horizontal or vertical button bar, out of a template file.
 
-[screenshots](http://nwg.pl/Lychee/#15848398399400)
+[![Swappshot-Mon-Mar-23-210713-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-210713-2020.th.png)](https://scrot.cloud/image/jRPQ) [![Swappshot-Mon-Mar-23-210652-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-210652-2020.th.png)](https://scrot.cloud/image/j8LU)
 
 ### Dependencies
 
