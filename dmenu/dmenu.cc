@@ -13,9 +13,35 @@
 #include <sys/time.h>
 
 int main(int argc, char *argv[]) {
-	struct timeval tp;
-	gettimeofday(&tp, NULL);
-	long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+
+	/* We'll need a `nwgdmenu_run` shell script to start the program, e.g:
+	 * $ echo -e "" | nwgdmenu
+	 * to start w/o attempting to build a pipe menu and searching $PATH instead.
+	 * Either to use json format or try to achieve compatibility w/ rofi needs to be decided.
+	 * */
+	
+	InputParser input(argc, argv);
+    if(input.cmdOptionExists("-h")){
+        std::cout << "GTK dynamic menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020\n\n";
+        std::cout << "nwgdmenu - displays newline-separated input stdin as a GTK menu\n";
+        std::cout << "nwgdmenu_run - creates a GTK menu out of commands found in $PATH\n\n";
+        std::cout << "Options [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]\n\n";
+        std::cout << "Options:\n";
+        std::cout << "-h            show this help message and exit\n";
+        std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
+        std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
+        std::cout << "-r <rows>     number of rows (default: " << rows <<")\n";
+        std::cout << "-c <name>     css file name (default: style.css)\n";
+        std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n";
+        std::exit(0);
+    }
+	
+	all_commands = {};
+	for (std::string line; std::getline(std::cin, line);) {
+		Glib::ustring cmd = line;
+		all_commands.push_back(cmd);
+	}
+	dmenu_run = all_commands[0].empty();
 	
 	/* Try to lock /tmp/nwgdmenu.lock file. This will return -1 if the command is already running.
 	 * Thanks to chmike at https://stackoverflow.com/a/1643134 */
@@ -33,22 +59,6 @@ int main(int argc, char *argv[]) {
 		std::system(command);
 		std::exit(0);
 	}
-
-	std::string lang ("");
-
-	InputParser input(argc, argv);
-    if(input.cmdOptionExists("-h")){
-        std::cout << "GTK command menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020\n\n";
-        std::cout << "nwgdmenu [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]\n\n";
-        std::cout << "Options:\n";
-        std::cout << "-h            show this help message and exit\n";
-        std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
-        std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
-        std::cout << "-r <rows>     number of rows (default: " << rows <<")\n";
-        std::cout << "-c <name>     css file name (default: style.css)\n";
-        std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n";
-        std::exit(0);
-    }
 
 	const std::string &halign = input.getCmdOption("-ha");
     if (!halign.empty()){
@@ -111,7 +121,6 @@ int main(int argc, char *argv[]) {
     std::string default_css_file = config_dir + "/style.css";
     // css file to be used
     std::string css_file = config_dir + "/" + custom_css_file;
-    std::cout << css_file << std::endl;
     // copy default file if not found
     const char *custom_css = css_file.c_str();
     if (!fs::exists(default_css_file)) {
@@ -126,40 +135,35 @@ int main(int argc, char *argv[]) {
 
     /* get current WM name */
     wm = detect_wm();
-    std::cout << "WM: " << wm << "\n";
     
-    /* get lang (2 chars long string) if not yet forced */
-    if (lang.length() != 2) {
-		lang = get_locale();
-	}
-    std::cout << "Locale: " << lang << "\n";
-    
-    /* get all applications dirs */
-    std::vector<std::string> command_dirs = get_command_dirs();
-	
-    /* get a list of paths to all commands */
-    std::vector<std::string> commands = list_commands(command_dirs);
-    std::cout << commands.size() << " commands found\n";
-	
-	/* Create a vector of commands (w/o path) */
-	all_commands = {};
-	for (std::string command : commands) {
-		std::vector<std::string> parts = split_string(command, "/");
-		std::string cmd = parts[parts.size() - 1];
-		if (!cmd.find(".") == 0 && cmd.size() != 1) {
-			all_commands.push_back(cmd);
-		}
-	}
-	
-	/* Sort case insensitive */
-	std::sort(all_commands.begin(), all_commands.end(), [](const std::string& a, const std::string& b) -> bool {
-        for (size_t c = 0; c < a.size() and c < b.size(); c++) {
-            if (std::tolower(a[c]) != std::tolower(b[c])) {
-				return (std::tolower(a[c]) < std::tolower(b[c]));
+    if (dmenu_run) {
+		/* get all applications dirs */
+		std::vector<std::string> command_dirs = get_command_dirs();
+		
+		/* get a list of paths to all commands */
+		std::vector<std::string> commands = list_commands(command_dirs);
+		std::cout << commands.size() << " commands found\n";
+		
+		/* Create a vector of commands (w/o path) */
+		all_commands = {};
+		for (std::string command : commands) {
+			std::vector<std::string> parts = split_string(command, "/");
+			std::string cmd = parts[parts.size() - 1];
+			if (!cmd.find(".") == 0 && cmd.size() != 1) {
+				all_commands.push_back(cmd);
 			}
-        }
-        return a.size() < b.size();
-    });
+		}
+		
+		/* Sort case insensitive */
+		std::sort(all_commands.begin(), all_commands.end(), [](const std::string& a, const std::string& b) -> bool {
+			for (size_t c = 0; c < a.size() and c < b.size(); c++) {
+				if (std::tolower(a[c]) != std::tolower(b[c])) {
+					return (std::tolower(a[c]) < std::tolower(b[c]));
+				}
+			}
+			return a.size() < b.size();
+		});
+	}
     
 	/* turn off borders, enable floating on sway */
 	if (wm == "sway") {
@@ -179,10 +183,8 @@ int main(int argc, char *argv[]) {
 	gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
 	if (std::ifstream(custom_css)) {
 		gtk_css_provider_load_from_path(provider, custom_css, NULL);
-		std::cout << "Using " << custom_css << std::endl;
 	} else {
 		gtk_css_provider_load_from_path(provider, "/usr/share/nwgdmenu/style.css", NULL);
-		std::cout << "Using /usr/share/nwgdmenu/style.css\n";
 	}
 	g_object_unref(provider);
     
@@ -197,8 +199,6 @@ int main(int argc, char *argv[]) {
 
     /* Detect focused display geometry: {x, y, width, height} */
     std::vector<int> geometry = display_geometry(wm, window);
-    std::cout << "Focused display: " << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", " 
-		<< geometry[3] << '\n';
 
 	int x = geometry[0];
 	int y = geometry[1];
@@ -245,7 +245,7 @@ int main(int argc, char *argv[]) {
 	for (Glib::ustring command : all_commands) {
 		Gtk::MenuItem *item = new Gtk::MenuItem();
 		item -> set_label(command);
-		item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), command));
+		item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_item_clicked), command));
 		menu.append(*item);
 		cnt++;
 		if (cnt > rows - 1) {
@@ -283,11 +283,6 @@ int main(int argc, char *argv[]) {
 	window.show_all_children();
 	
 	menu.show_all();
-
-	gettimeofday(&tp, NULL);
-	long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-	std::cout << "Time: " << end_ms - start_ms << std::endl;
 	
     Gtk::Main::run(window);
     

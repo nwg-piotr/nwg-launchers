@@ -21,6 +21,8 @@ install: all
 	mkdir -p ${DESTDIR}${PREFIX}/bin
 	cp -f dmenu.sh ${DESTDIR}${PREFIX}/bin/nwgdmenu
 	chmod 755 ${DESTDIR}${PREFIX}/bin/nwgdmenu
+	cp -f dmenu_run.sh ${DESTDIR}${PREFIX}/bin/nwgdmenu_run
+	chmod 755 ${DESTDIR}${PREFIX}/bin/nwgdmenu_run
 	
 	mkdir -p ${DESTDIR}${PREFIX}/lib/nwgdmenu
 	cp -f nwgdmenu ${DESTDIR}${PREFIX}/lib/nwgdmenu
@@ -31,6 +33,7 @@ install: all
 
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/nwgdmenu
+	rm -f ${DESTDIR}${PREFIX}/bin/nwgdmenu_run
 	rm -rf ${DESTDIR}${PREFIX}/lib/nwgdmenu
 	rm -rf ${DESTDIR}${PREFIX}/share/nwgdmenu
 	rm -f /tmp/nwgdmenu.lock

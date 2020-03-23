@@ -28,6 +28,7 @@ std::string wm;								// detected window manager name
 std::string custom_css_file {"style.css"};
 int rows (20);								// number of menu items to display
 std::vector<Glib::ustring> all_commands {};
+bool dmenu_run = false;
 
 #ifndef NWG_DMENU_ANCHOR_H
 #define NWG_DMENU_ANCHOR_H
@@ -52,7 +53,7 @@ std::vector<Glib::ustring> all_commands {};
 		private:
 			bool on_key_press_event(GdkEventKey* event) override;
 			void filter_view();
-			void on_button_clicked(Glib::ustring cmd);
+			void on_item_clicked(Glib::ustring cmd);
 	};
 #endif // NWG_DMENU_DMENU_H
 
