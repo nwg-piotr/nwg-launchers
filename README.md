@@ -11,9 +11,7 @@ For now first three launchers seem to work pretty well, at least on Arch Linux:
 This command creates a GNOME-like application grid, with the search box, optionally prepended with a row of favourites
 (most frequently used apps).
 
-[![Swappshot-Mon-Mar-23-205030-2020.md.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205030-2020.md.png)](https://scrot.cloud/image/jb3k)
-[![Swappshot-Mon-Mar-23-205157-2020.md.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205157-2020.md.png)](https://scrot.cloud/image/jOWg)
-[![Swappshot-Mon-Mar-23-205248-2020.md.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205248-2020.md.png)](https://scrot.cloud/image/joh5)
+[![Swappshot-Mon-Mar-23-205030-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205030-2020.th.png)](https://scrot.cloud/image/jb3k) [![Swappshot-Mon-Mar-23-205157-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205157-2020.th.png)](https://scrot.cloud/image/jOWg) [![Swappshot-Mon-Mar-23-205248-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205248-2020.th.png)](https://scrot.cloud/image/joh5)
 
 ### Dependencies
 
