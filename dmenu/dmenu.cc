@@ -42,10 +42,6 @@ int main(int argc, char *argv[]) {
 		all_commands.push_back(cmd);
 	}
 	dmenu_run = all_commands[0].empty();
-
-	struct timeval tp;
-	gettimeofday(&tp, NULL);
-	long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 	
 	/* Try to lock /tmp/nwgdmenu.lock file. This will return -1 if the command is already running.
 	 * Thanks to chmike at https://stackoverflow.com/a/1643134 */
@@ -125,7 +121,6 @@ int main(int argc, char *argv[]) {
     std::string default_css_file = config_dir + "/style.css";
     // css file to be used
     std::string css_file = config_dir + "/" + custom_css_file;
-    std::cout << css_file << std::endl;
     // copy default file if not found
     const char *custom_css = css_file.c_str();
     if (!fs::exists(default_css_file)) {
@@ -140,7 +135,6 @@ int main(int argc, char *argv[]) {
 
     /* get current WM name */
     wm = detect_wm();
-    std::cout << "WM: " << wm << "\n";
     
     if (dmenu_run) {
 		/* get all applications dirs */
@@ -189,10 +183,8 @@ int main(int argc, char *argv[]) {
 	gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
 	if (std::ifstream(custom_css)) {
 		gtk_css_provider_load_from_path(provider, custom_css, NULL);
-		std::cout << "Using " << custom_css << std::endl;
 	} else {
 		gtk_css_provider_load_from_path(provider, "/usr/share/nwgdmenu/style.css", NULL);
-		std::cout << "Using /usr/share/nwgdmenu/style.css\n";
 	}
 	g_object_unref(provider);
     
@@ -207,8 +199,6 @@ int main(int argc, char *argv[]) {
 
     /* Detect focused display geometry: {x, y, width, height} */
     std::vector<int> geometry = display_geometry(wm, window);
-    std::cout << "Focused display: " << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", " 
-		<< geometry[3] << '\n';
 
 	int x = geometry[0];
 	int y = geometry[1];
@@ -293,11 +283,6 @@ int main(int argc, char *argv[]) {
 	window.show_all_children();
 	
 	menu.show_all();
-
-	gettimeofday(&tp, NULL);
-	long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-	std::cout << "Time: " << end_ms - start_ms << std::endl;
 	
     Gtk::Main::run(window);
     
