@@ -167,10 +167,10 @@ int main(int argc, char *argv[]) {
     
 	/* turn off borders, enable floating on sway */
 	if (wm == "sway") {
-		std::string cmd = "swaymsg for_window [title=\"~nwgdmenu*\"] floating enable";
+		std::string cmd = "swaymsg -q for_window [title=\"~nwgdmenu*\"] floating enable";
 		const char *command = cmd.c_str();
 		std::system(command);
-		cmd = "swaymsg for_window [title=\"~nwgdmenu*\"] border none";
+		cmd = "swaymsg -q for_window [title=\"~nwgdmenu*\"] border none";
 		command = cmd.c_str();
 		std::system(command);
 	}
