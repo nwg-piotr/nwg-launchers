@@ -201,16 +201,13 @@ int main(int argc, char *argv[]) {
     std::cout << "Focused display: " << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", " 
 		<< geometry[3] << '\n';
 
-	int x = geometry[0];
-	int y = geometry[1];
+	//~ int x = geometry[0];
+	//~ int y = geometry[1];
 	int w = geometry[2];
 	int h = geometry[3];
 
 	if (wm == "sway") {
 		window.resize(w, h);
-	} else {
-		std::cout << "x: " << x << " y: " << y << std::endl;
-		window.move(x, y); 	// needed in FVWM, otherwise grid always appears on screen 0
 	}
 	
 	Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
