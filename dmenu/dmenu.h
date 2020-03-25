@@ -7,6 +7,7 @@
  * */
 
 #include <iostream>
+#include "../version.h"
 #include <fstream>
 #include <filesystem>
 #include <gtkmm.h>

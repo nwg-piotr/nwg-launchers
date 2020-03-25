@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
      * */
     InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
-        std::cout << "GTK dynamic menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020\n\n";
+        std::cout << "GTK dynamic menu: nwgdmenu " << version << " (c) Piotr Miller 2020\n\n";
         std::cout << "nwgdmenu - displays newline-separated input stdin as a GTK menu\n";
         std::cout << "nwgdmenu_run - creates a GTK menu out of commands found in $PATH\n\n";
         std::cout << "Options [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]\n\n";
