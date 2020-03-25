@@ -5,7 +5,7 @@
  * Project: https://github.com/nwg-piotr/nwg-launchers
  * License: GPL3
  * *
- * Credits for window transparency go to AthanasiusOfAlex at https://stackoverflow.com/a/21460337 
+ * Credits for window transparency go to AthanasiusOfAlex at https://stackoverflow.com/a/21460337
  * transparent.cpp
  * Code adapted from 'alphademo.c' by Mike
  * (http://plan99.net/~mike/blog--now a dead link--unable to find it.)
@@ -17,62 +17,57 @@
 MainWindow::MainWindow() {
     set_title("~nwgbar");
     set_role("~nwgbar");
-    //~ set_skip_taskbar_hint(true);
     set_skip_pager_hint(true);
-	favs_grid.set_column_spacing(5);
-	favs_grid.set_row_spacing(5);
-	favs_grid.set_column_homogeneous(true);
-	add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
-	
-	set_app_paintable(true);
-	
-	signal_draw().connect(sigc::mem_fun(*this, &MainWindow::on_draw));
+    favs_grid.set_column_spacing(5);
+    favs_grid.set_row_spacing(5);
+    favs_grid.set_column_homogeneous(true);
+    add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
+
+    set_app_paintable(true);
+
+    signal_draw().connect(sigc::mem_fun(*this, &MainWindow::on_draw));
     signal_screen_changed().connect(sigc::mem_fun(*this, &MainWindow::on_screen_changed));
-    
+
     on_screen_changed(get_screen());
 
     if (wm != "sway") {
-		fullscreen();
-	}
+        fullscreen();
+    }
 }
 
 MainWindow::~MainWindow() {
 }
 
 gboolean on_window_clicked(GdkEventButton *event) {
-	Gtk::Main::quit();
-	return true;
+    Gtk::Main::quit();
+    return true;
 }
 
 AppBox::AppBox() {
-	//~ this -> set_always_show_image(true);
-	//~ this -> set_label(this -> name);
+    this -> set_always_show_image(true);
 }
 
 AppBox::~AppBox() {
 }
 
 void on_button_clicked(std::string cmd) {
+    cmd = cmd + " &";
+    const char *command = cmd.c_str();
+    std::system(command);
 
-	cmd = cmd + " &";
-	const char *command = cmd.c_str();
-	std::system(command);
-	
-	Gtk::Main::quit();
+    Gtk::Main::quit();
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
-	if (key_event -> keyval == GDK_KEY_Escape) {
-		Gtk::Main::quit();
-		return true;
-
-	}
-	//if the event has not been handled, call the base class
-	return Gtk::Window::on_key_press_event(key_event);
+    if (key_event -> keyval == GDK_KEY_Escape) {
+        Gtk::Main::quit();
+        return true;
+    }
+    //if the event has not been handled, call the base class
+    return Gtk::Window::on_key_press_event(key_event);
 }
 
-bool MainWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
-{
+bool MainWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     cr->save();
     if (_SUPPORTS_ALPHA) {
         cr->set_source_rgba(0.0, 0.0, 0.0, opacity);    // transparent
@@ -95,7 +90,6 @@ void MainWindow::on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_scr
     } else {
         _SUPPORTS_ALPHA = TRUE;
     }
-
     set_visual(visual);
 }
 

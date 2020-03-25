@@ -7,163 +7,160 @@
  * */
 
 /* Try to lock the lock file
- * Thanks to chmike at https://stackoverflow.com/a/1643134 
+ * Thanks to chmike at https://stackoverflow.com/a/1643134
  * */
 int tryGetLock(char const *lockName) {
     mode_t m = umask( 0 );
     int fd = open( lockName, O_RDWR|O_CREAT, 0666 );
     umask( m );
-    if( fd >= 0 && flock( fd, LOCK_EX | LOCK_NB ) < 0 )
-    {
+    if( fd >= 0 && flock( fd, LOCK_EX | LOCK_NB ) < 0 ) {
         close( fd );
         fd = -1;
     }
     return fd;
 }
 
-/* 
- * Returns config dir 
+/*
+ * Returns config dir
  * */
 std::string get_config_dir() {
-	std::string s = "";
-	char* val = getenv("XDG_CONFIG_HOME");
-	if (val) {
-		s = val;
-		s += "/nwgdmenu";
-	} else {
-		char* val = getenv("HOME");
-		s = val;
-		s += "/.config/nwgdmenu";
-	}
-	fs::path dir (s);
-	return s;
+    std::string s = "";
+    char* val = getenv("XDG_CONFIG_HOME");
+    if (val) {
+        s = val;
+        s += "/nwgdmenu";
+    } else {
+        char* val = getenv("HOME");
+        s = val;
+        s += "/.config/nwgdmenu";
+    }
+    fs::path dir (s);
+    return s;
 }
 
-/* 
- * Returns a file content as a string 
+/*
+ * Returns a file content as a string
  * */
 std::string read_file_to_string(std::string filename) {
-	std::ifstream input(filename);
-	std::stringstream sstr;
-
-	while(input >> sstr.rdbuf());
-
-	return sstr.str();
+    std::ifstream input(filename);
+    std::stringstream sstr;
+    while(input >> sstr.rdbuf());
+    return sstr.str();
 }
 
-/* 
- * Saves a string to a file 
+/*
+ * Saves a string to a file
  * */
 void save_string_to_file(std::string s, std::string filename) {
-	std::ofstream file(filename);
-	file << s;
+    std::ofstream file(filename);
+    file << s;
 }
 
-/* 
- * Returns window manager name 
+/*
+ * Returns window manager name
  * */
 std::string detect_wm() {
     /* Actually we only need to check if we're on sway or not,
      * but let's try to find a WM name if possible. If not, let it be just "other" */
-	const char *env_var[2] = {"DESKTOP_SESSION", "SWAYSOCK"};
-	char *env_val[2];
+    const char *env_var[2] = {"DESKTOP_SESSION", "SWAYSOCK"};
+    char *env_val[2];
     std::string wm_name{"other"};
 
-	for(int i=0; i<2; i++) {
-		// get environment values
-		env_val[i] = getenv(env_var[i]);
-		if (env_val[i] != NULL) {
+    for(int i=0; i<2; i++) {
+        // get environment values
+        env_val[i] = getenv(env_var[i]);
+        if (env_val[i] != NULL) {
             std::string s(env_val[i]);
             if (s.find("sway") != std::string::npos) {
                 wm_name = "sway";
                 break;
             } else {
-				// is the value a full path or just a name?
-				if (s.find("/") == std::string::npos) {
-					// full value is the name
-					wm_name = s;
-					break;
-				} else {
-					// path given
-					int idx = s.find_last_of("/") + 1;
-					wm_name = s.substr(idx);
-					break;
-				}
-			}
-		}
-	}
+                // is the value a full path or just a name?
+                if (s.find("/") == std::string::npos) {
+                    // full value is the name
+                    wm_name = s;
+                    break;
+                } else {
+                    // path given
+                    int idx = s.find_last_of("/") + 1;
+                    wm_name = s.substr(idx);
+                    break;
+                }
+            }
+        }
+    }
     return wm_name;
 }
 
-/* 
- * Returns first 2 chars of current locale string 
+/*
+ * Returns first 2 chars of current locale string
  * */
 std::string get_locale() {
-	char* env_val = getenv("LANG");
-	std::string loc(env_val);
-	std::string l = "en";
-	if (loc.find("_") != std::string::npos) {
-		int idx = loc.find_first_of("_");
-		l = loc.substr(0, idx);
-	}
-	return l;
+    char* env_val = getenv("LANG");
+    std::string loc(env_val);
+    std::string l = "en";
+    if (loc.find("_") != std::string::npos) {
+        int idx = loc.find_first_of("_");
+        l = loc.substr(0, idx);
+    }
+    return l;
 }
 
 /*
  * Splits string into vector of strings by delimiter
  * */
 std::vector<std::string> split_string(std::string str, std::string delimiter) {
-	std::vector<std::string> result;
-	std::size_t current, previous = 0;
-	current = str.find_first_of(delimiter);
-	while (current != std::string::npos) {
-		result.push_back(str.substr(previous, current - previous));
-		previous = current + 1;
-		current = str.find_first_of(delimiter, previous);
-	}
-	result.push_back(str.substr(previous, current - previous));	
-	
-	return result;
+    std::vector<std::string> result;
+    std::size_t current, previous = 0;
+    current = str.find_first_of(delimiter);
+    while (current != std::string::npos) {
+        result.push_back(str.substr(previous, current - previous));
+        previous = current + 1;
+        current = str.find_first_of(delimiter, previous);
+    }
+    result.push_back(str.substr(previous, current - previous));
+
+    return result;
 }
 
-/* 
- * Returns locations of .desktop files 
+/*
+ * Returns locations of .desktop files
  * */
 std::vector<std::string> get_command_dirs() {
-	std::vector<std::string> result = {};
-	auto command_dirs = getenv("PATH");
-	if (command_dirs != NULL) {
-		std::vector<std::string> dirs = split_string(command_dirs, ":");
-		for (std::string dir : dirs) {
-			result.push_back(dir);
-		}
-	}
-	return result;
+    std::vector<std::string> result = {};
+    auto command_dirs = getenv("PATH");
+    if (command_dirs != NULL) {
+        std::vector<std::string> dirs = split_string(command_dirs, ":");
+        for (std::string dir : dirs) {
+            result.push_back(dir);
+        }
+    }
+    return result;
 }
 
-/* 
- * Returns all .desktop files paths 
+/*
+ * Returns all .desktop files paths
  * */
 std::vector<std::string> list_commands(std::vector<std::string> paths) {
-	std::vector<std::string> command_paths;
-	for (std::string dir : paths) {
-		struct stat st;
-		char* c = const_cast<char*>(dir.c_str());
-		// if directory exists
-		if (stat(c, &st) == 0) {
-			for (const auto & entry : fs::directory_iterator(dir)) {
-				command_paths.push_back(entry.path());
-			}
-		}
-	}
-	return command_paths;
+    std::vector<std::string> command_paths;
+    for (std::string dir : paths) {
+        struct stat st;
+        char* c = const_cast<char*>(dir.c_str());
+        // if directory exists
+        if (stat(c, &st) == 0) {
+            for (const auto & entry : fs::directory_iterator(dir)) {
+                command_paths.push_back(entry.path());
+            }
+        }
+    }
+    return command_paths;
 }
 
-/* 
- * Returns output of a command as string 
+/*
+ * Returns output of a command as string
  * */
 std::string get_output(std::string cmd) {
-	const char *command = cmd.c_str();
+    const char *command = cmd.c_str();
     std::array<char, 128> buffer;
     std::string result;
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command, "r"), pclose);
@@ -188,12 +185,12 @@ ns::json string_to_json(std::string jsonString) {
 }
 
 void save_json(ns::json json_obj, std::string filename) {
-	std::ofstream o(filename);
-	o << std::setw(2) << json_obj << std::endl;
+    std::ofstream o(filename);
+    o << std::setw(2) << json_obj << std::endl;
 }
 
-/* 
- * Returns json object out of the cache file 
+/*
+ * Returns json object out of the cache file
  * */
 ns::json get_cache(std::string cache_file) {
     std::string cache_string = read_file_to_string(cache_file);
@@ -201,39 +198,39 @@ ns::json get_cache(std::string cache_file) {
     return string_to_json(cache_string);
 }
 
-/* 
- * Returns x, y, width, hight of focused display 
+/*
+ * Returns x, y, width, hight of focused display
  * */
 std::vector<int> display_geometry(std::string wm, MainWindow &window) {
-	std::vector<int> geo = {0, 0, 0, 0};
-	if (wm == "sway") {
-		std::string jsonString = get_output("swaymsg -t get_outputs");
-		ns::json jsonObj = string_to_json(jsonString);
-		for (ns::json::iterator it = jsonObj.begin(); it != jsonObj.end(); ++it) {
-			int index = std::distance(jsonObj.begin(), it);
-			if (jsonObj[index].at("focused") == true) {
-				geo[0] = jsonObj[index].at("rect").at("x");
-				geo[1] = jsonObj[index].at("rect").at("y");
-				geo[2] = jsonObj[index].at("rect").at("width");
-				geo[3] = jsonObj[index].at("rect").at("height");
-			}
-		}
-	} else {
-		Glib::RefPtr<Gdk::Screen> screen = window.get_screen();
-		int display_number = screen -> get_monitor_at_window(screen -> get_active_window());
-		Gdk::Rectangle rect;
-		screen -> get_monitor_geometry(display_number, rect);
-		geo[0] = rect.get_x();
-		geo[1] = rect.get_y();
-		geo[2] = rect.get_width();
-		geo[3] = rect.get_height();
-	}
-	return geo;
+    std::vector<int> geo = {0, 0, 0, 0};
+    if (wm == "sway") {
+        std::string jsonString = get_output("swaymsg -t get_outputs");
+        ns::json jsonObj = string_to_json(jsonString);
+        for (ns::json::iterator it = jsonObj.begin(); it != jsonObj.end(); ++it) {
+            int index = std::distance(jsonObj.begin(), it);
+            if (jsonObj[index].at("focused") == true) {
+                geo[0] = jsonObj[index].at("rect").at("x");
+                geo[1] = jsonObj[index].at("rect").at("y");
+                geo[2] = jsonObj[index].at("rect").at("width");
+                geo[3] = jsonObj[index].at("rect").at("height");
+            }
+        }
+    } else {
+        Glib::RefPtr<Gdk::Screen> screen = window.get_screen();
+        int display_number = screen -> get_monitor_at_window(screen -> get_active_window());
+        Gdk::Rectangle rect;
+        screen -> get_monitor_geometry(display_number, rect);
+        geo[0] = rect.get_x();
+        geo[1] = rect.get_y();
+        geo[2] = rect.get_width();
+        geo[3] = rect.get_height();
+    }
+    return geo;
 }
 
-/* 
+/*
  * Argument parser
- * Credits for this cool class go to iain at https://stackoverflow.com/a/868894 
+ * Credits for this cool class go to iain at https://stackoverflow.com/a/868894
  * */
 class InputParser{
     public:

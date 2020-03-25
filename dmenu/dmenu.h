@@ -5,8 +5,9 @@
  * Project: https://github.com/nwg-piotr/nwg-launchers
  * License: GPL3
  * */
- 
+
 #include <iostream>
+#include "../version.h"
 #include <fstream>
 #include <filesystem>
 #include <gtkmm.h>
@@ -32,51 +33,50 @@ bool dmenu_run = false;
 
 #ifndef NWG_DMENU_ANCHOR_H
 #define NWG_DMENU_ANCHOR_H
-	class Anchor : public Gtk::Button {
-		public:
-			Anchor();
-			virtual ~Anchor();
-		private:
-			bool on_focus_in_event(GdkEventFocus* focus_event) override;
-	};
+    class Anchor : public Gtk::Button {
+        public:
+        Anchor();
+        virtual ~Anchor();
+        private:
+        bool on_focus_in_event(GdkEventFocus* focus_event) override;
+    };
 #endif // NWG_DMENU_ANCHOR_H
 
 #ifndef NWG_DMENU_DMENU_H
 #define NWG_DMENU_DMENU_H
-	class DMenu : public Gtk::Menu {
-		public:
-			DMenu();
-			virtual ~DMenu();
-			Gtk::SearchEntry searchbox;
-			Glib::ustring search_phrase;
-			
-		private:
-			bool on_key_press_event(GdkEventKey* event) override;
-			void filter_view();
-			void on_item_clicked(Glib::ustring cmd);
-	};
+    class DMenu : public Gtk::Menu {
+        public:
+        DMenu();
+        virtual ~DMenu();
+        Gtk::SearchEntry searchbox;
+        Glib::ustring search_phrase;
+
+        private:
+        bool on_key_press_event(GdkEventKey* event) override;
+        void filter_view();
+        void on_item_clicked(Glib::ustring cmd);
+    };
 #endif // NWG_DMENU_DMENU_H
 
 DMenu* main_menu;
 
 #ifndef NWG_DMENU_MAIN_WINDOW_H
 #define NWG_DMENU_MAIN_WINDOW_H
-	class MainWindow : public Gtk::Window {
-		public:
-			MainWindow();
-			void set_visual(Glib::RefPtr<Gdk::Visual> visual);
-			virtual ~MainWindow();
+    class MainWindow : public Gtk::Window {
+        public:
+        MainWindow();
+        void set_visual(Glib::RefPtr<Gdk::Visual> visual);
+        virtual ~MainWindow();
 
-			Gtk::Menu* menu;
-			Gtk::Button* anchor;
+        Gtk::Menu* menu;
+        Gtk::Button* anchor;
 
+        private:
+        bool on_button_press_event(GdkEventButton* button_event) override;
 
-		private:
-			bool on_button_press_event(GdkEventButton* button_event) override;
-		
-		protected:
-			virtual bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr);
-			void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen);
-			bool _SUPPORTS_ALPHA = false;
-	};
+        protected:
+        virtual bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr);
+        void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen);
+        bool _SUPPORTS_ALPHA = false;
+    };
 #endif // NWG_DMENU_MAIN_WINDOW_H
