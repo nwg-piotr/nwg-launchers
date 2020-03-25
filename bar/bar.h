@@ -10,7 +10,7 @@
 #include <fstream>
 #include <filesystem>
 #include <gtkmm.h>
-#include "nlohmann/json.hpp"	// nlohmann-json package
+#include "nlohmann/json.hpp"    // nlohmann-json package
 #include <glibmm/ustring.h>
 #include <sys/stat.h>
 
@@ -21,9 +21,9 @@
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-int image_size (72);			// button image size in pixels
-double opacity (0.9);			// overlay window opacity
-std::string wm;					// detected window manager name
+int image_size (72);            // button image size in pixels
+double opacity (0.9);           // overlay window opacity
+std::string wm;                 // detected window manager name
 std::string definition_file {"bar.json"};
 std::string custom_css_file {"style.css"};
 std::string orientation {"h"};
