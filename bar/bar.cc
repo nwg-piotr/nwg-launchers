@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
     int w = geometry[2];
     int h = geometry[3];
 
-    if (wm == "sway") {
+    if (wm == "sway" or wm == "i3") {
         window.resize(w, h);
     }
 
