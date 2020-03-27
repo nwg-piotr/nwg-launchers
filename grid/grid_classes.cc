@@ -43,6 +43,8 @@ MainWindow::MainWindow() {
 
     on_screen_changed(get_screen());
 
+    // On sway the window would become opaque - we don't wat it
+    // On i3 all windows below will be hidden, but this is acceptable
     if (wm != "sway") {
         fullscreen();
     }

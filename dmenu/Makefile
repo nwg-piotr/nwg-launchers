@@ -15,7 +15,7 @@ $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(CFLAGS) $< -o $@ `pkg-config gtkmm-3.0 --libs --cflags`
 
 clean:
-	rm -rf *.o dmenu
+	rm -rf *.o nwgdmenu
 
 install: all
 	mkdir -p ${DESTDIR}${PREFIX}/bin

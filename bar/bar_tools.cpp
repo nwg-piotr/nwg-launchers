@@ -163,14 +163,23 @@ std::vector<int> display_geometry(std::string wm, MainWindow &window) {
             }
         }
     } else {
-        Glib::RefPtr<Gdk::Screen> screen = window.get_screen();
-        int display_number = screen -> get_monitor_at_window(screen -> get_active_window());
-        Gdk::Rectangle rect;
-        screen -> get_monitor_geometry(display_number, rect);
-        geo[0] = rect.get_x();
-        geo[1] = rect.get_y();
-        geo[2] = rect.get_width();
-        geo[3] = rect.get_height();
+        // it's going to fail until the window is actually open
+        int retry = 0;
+        while (geo[2] == 0 || geo[3] == 0) {
+            Glib::RefPtr<Gdk::Screen> screen = window.get_screen();
+            int display_number = screen -> get_monitor_at_window(screen -> get_active_window());
+            Gdk::Rectangle rect;
+            screen -> get_monitor_geometry(display_number, rect);
+            geo[0] = rect.get_x();
+            geo[1] = rect.get_y();
+            geo[2] = rect.get_width();
+            geo[3] = rect.get_height();
+            retry++;
+            if (retry > 100) {
+                std::cout << "\nERROR: Failed checking display geometry\n\n";
+                break;
+            }
+        }
     }
     return geo;
 }
