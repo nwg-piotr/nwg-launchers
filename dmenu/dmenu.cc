@@ -189,9 +189,10 @@ int main(int argc, char *argv[]) {
 
     MainWindow window;
     // For openbox and similar we'll need the window x, y coordinates
-    if (wm != "sway" and wm != "i3") {
-        window.show();
-    }
+    //~ if (wm != "sway" and wm != "i3") {
+        //~ window.show();
+    //~ }
+    window.show();
 
     DMenu menu;
     main_menu = &menu;
@@ -208,10 +209,12 @@ int main(int argc, char *argv[]) {
     int w = geometry[2];
     int h = geometry[3];
 
-    //~ std::cout << "x = " << x << ", y = " << y << ", w = " << w << ", h = " << h << std::endl;
+    std::cout << "x = " << x << ", y = " << y << ", w = " << w << ", h = " << h << std::endl;
 
     if (wm == "sway" or wm == "i3") {
         window.resize(w, h);
+        window.move(x, y);
+        window.hide();
     } else {
         window.resize(1, 1);
         if (!h_align.empty() || !v_align.empty()) {

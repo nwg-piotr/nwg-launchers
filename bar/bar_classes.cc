@@ -30,10 +30,15 @@ MainWindow::MainWindow() {
 
     on_screen_changed(get_screen());
 
-    if (wm == "sway" || wm == "i3") {
+    // We can not go fullscreen() here:
+    // On sway the window would become opaque - we don't wat it
+    // On i3 all windows below will be hidden - we don't want it too
+    if (wm != "sway" && wm != "i3") {
+        fullscreen();
+    } else {
         set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
+        set_decorated(false);
     }
-    set_decorated(false);
 }
 
 MainWindow::~MainWindow() {

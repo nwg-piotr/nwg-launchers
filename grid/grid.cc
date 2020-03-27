@@ -213,6 +213,7 @@ int main(int argc, char *argv[]) {
     g_object_unref(provider);
 
     MainWindow window;
+    window.show();
 
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
 

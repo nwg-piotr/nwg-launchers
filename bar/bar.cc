@@ -192,6 +192,7 @@ int main(int argc, char *argv[]) {
     g_object_unref(provider);
 
     MainWindow window;
+    window.show();
 
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
 
@@ -200,13 +201,19 @@ int main(int argc, char *argv[]) {
     std::cout << "Focused display: " << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", "
     << geometry[3] << '\n';
 
-    //~ int x = geometry[0];
-    //~ int y = geometry[1];
+    std::ofstream myfile;
+    myfile.open ("/home/piotr/geometry.txt");
+    myfile << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", " << geometry[3];
+    myfile.close();
+
+    int x = geometry[0];
+    int y = geometry[1];
     int w = geometry[2];
     int h = geometry[3];
 
-    if (wm == "sway" or wm == "i3") {
+    if (wm == "sway" || wm == "i3") {
         window.resize(w, h);
+        window.move(x, y);
     }
 
     Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
