@@ -189,9 +189,6 @@ int main(int argc, char *argv[]) {
 
     MainWindow window;
     // For openbox and similar we'll need the window x, y coordinates
-    //~ if (wm != "sway" and wm != "i3") {
-        //~ window.show();
-    //~ }
     window.show();
 
     DMenu menu;
@@ -210,19 +207,22 @@ int main(int argc, char *argv[]) {
     int h = geometry[3];
 
     std::cout << "x = " << x << ", y = " << y << ", w = " << w << ", h = " << h << std::endl;
+    //~ std::cout << ">>>>>>>>>> v_align = " << v_align << ", h_align = " << h_align << std::endl;
 
-    if (wm == "sway" or wm == "i3") {
+    if (wm == "sway" || wm == "i3") {
         window.resize(w, h);
         window.move(x, y);
         window.hide();
     } else {
+        window.hide();
+        int x_org;
+        int y_org;
         window.resize(1, 1);
         if (!h_align.empty() || !v_align.empty()) {
             window.move(x, y);
+            window.get_position(x_org, y_org);
         }
         // We assume that the window has been opened at mouse pointer coordinates
-        int x_org;
-        int y_org;
         window.get_position(x_org, y_org);
 
         //~ std::cout << x_org << " : " << y_org << std::endl;
@@ -241,7 +241,7 @@ int main(int argc, char *argv[]) {
         if (v_align == "b") {
             window.move(x_org, y + h);
         }
-        window.hide();
+        //~ window.hide();
     }
 
     Gtk::MenuItem *search_item = new Gtk::MenuItem();
