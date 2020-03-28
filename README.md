@@ -11,7 +11,13 @@ It's damned difficult to make all the stuff behave properly on all window manage
 
 Feel free to report issues you encounter on other window managers / desktop environments, but they may or may not be resolved.
 
-For now first three launchers seem to work pretty well, at least on Arch Linux:
+For now the first three launchers seem to work pretty well, at least on Arch Linux.
+
+# Packages
+
+The [very first release](https://aur.archlinux.org/packages/nwg-launchers) has been published in Arch User Repository.
+You may consider donwloading and unpacking [the latest release](https://github.com/nwg-piotr/nwg-launchers/releases/latest)
+instead of cloning the repository as described below.
 
 # nwggrid
 
