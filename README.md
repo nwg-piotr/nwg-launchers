@@ -4,6 +4,13 @@ As it's never too late to learn something new, I decided to try and code my
 By the way I'm trying to simplify their usage, by reducing the number of arguments. Whatever possible, is being moved
 to css style sheets.
 
+It's damned difficult to make all the stuff behave properly on all window managers. My priorities are:
+
+1. it **must work well** on sway;
+2. it **should work as well as possible** on i3 and Openbox.
+
+Feel free to report issues you encounter on other window managers / desktop environments, but they may or may not be resolved.
+
 For now first three launchers seem to work pretty well, at least on Arch Linux:
 
 # nwggrid
@@ -182,10 +189,16 @@ Options:
 On first run the program creates the `nwgdmenu` folder in your .config directory. You'll find the 
 default `style.css` files inside. Use it to adjust styling and a vertical margin to the menu, if needed.
 
-## i3 note
+### i3 note
 
 In case you use default window borders, an exclusion like this may be necessary:
 
 ```
 for_window [title="~nwg"] border none
 ```
+
+### Known issues
+
+- `nwgdmenu -va <alignment> -ha <alignment>`, when started from terminal, behaves properly on sway only. On i3 and
+Openbox the window appears in random places. However, when started from a key binding, it behaves as expected.
+For now I have no idea what's the reason.
