@@ -7,7 +7,7 @@ to css style sheets.
 It's damned difficult to make all the stuff behave properly on all window managers. My priorities are:
 
 1. it **must work well** on sway;
-2. it **should work as well as possible** on i3 and Openbox.
+2. it **should work as well as possible** on i3, dwm and Openbox.
 
 Feel free to report issues you encounter on other window managers / desktop environments, but they may or may not be resolved.
 
@@ -15,7 +15,7 @@ For now the first three launchers seem to work pretty well, at least on Arch Lin
 
 # Packages
 
-The [very first release](https://aur.archlinux.org/packages/nwg-launchers) has been published in Arch User Repository.
+The latest published version is [available](https://aur.archlinux.org/packages/nwg-launchers) in Arch User Repository.
 You may consider donwloading and unpacking [the latest release](https://github.com/nwg-piotr/nwg-launchers/releases/latest)
 instead of cloning the repository as described below.
 
@@ -212,6 +212,6 @@ for_window [title="~nwg"] border none
 
 ### Known issues
 
-- `nwgdmenu -va <alignment> -ha <alignment>`, when started from terminal, behaves properly on sway only. On i3 and
-Openbox the window appears in random places. However, when started from a key binding, it behaves as expected.
-For now I have no idea what's the reason.
+- `nwgdmenu -va <alignment> -ha <alignment>`, when started from terminal, behaves properly on sway only. Anywhere else
+ the window shows up in random places. However, when started from a key binding, it behaves as expected.
+For now I have no idea on what's the reason.
