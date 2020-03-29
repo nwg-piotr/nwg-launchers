@@ -174,7 +174,7 @@ sudo make uninstall
 
 ```
 $ nwgdmenu -h
-GTK dynamic menu: nwgdmenu 0.0.1 (c) Piotr Miller 2020
+GTK dynamic menu: nwgdmenu v0.1.0 (c) Piotr Miller 2020
 
 nwgdmenu - displays newline-separated input stdin as a GTK menu
 nwgdmenu_run - creates a GTK menu out of commands found in $PATH
@@ -188,7 +188,14 @@ Options:
 -r <rows>     number of rows (default: 20)
 -c <name>     css file name (default: style.css)
 -o <opacity>  background opacity (0.0 - 1.0, default 0.3)
+-wm <wmname>  window manager name (if can not be detected)
 ```
+
+Notice: if you start your WM from a script (w/o DM), only sway and i3 will be auto-detected. You may need to pass the WM name as the argument:
+
+`nwgdmenu_run -wm dwm`
+
+The generic name `tiling` will be accepted as well.
 
 ### Custom styling
 

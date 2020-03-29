@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
         std::cout << "-r <rows>     number of rows (default: " << rows <<")\n";
         std::cout << "-c <name>     css file name (default: style.css)\n";
         std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n";
+        std::cout << "-wm <wmname>  window manager name (if can not be detected)\n";
         std::exit(0);
     }
 
@@ -80,6 +81,11 @@ int main(int argc, char *argv[]) {
     const std::string &css_name = input.getCmdOption("-c");
     if (!css_name.empty()){
         custom_css_file = css_name;
+    }
+
+    const std::string &wm_name = input.getCmdOption("-wm");
+    if (!wm_name.empty()){
+        wm = wm_name;
     }
 
     const std::string &opa = input.getCmdOption("-o");
@@ -132,8 +138,10 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* get current WM name */
-    wm = detect_wm();
+    /* get current WM name if not forced */
+    if (wm.empty()) {
+        wm = detect_wm();
+    }
 
     if (dmenu_run) {
         /* get all applications dirs */
@@ -206,8 +214,7 @@ int main(int argc, char *argv[]) {
     int w = geometry[2];
     int h = geometry[3];
 
-    std::cout << "x = " << x << ", y = " << y << ", w = " << w << ", h = " << h << std::endl;
-    //~ std::cout << ">>>>>>>>>> v_align = " << v_align << ", h_align = " << h_align << std::endl;
+    //~ std::cout << "x = " << x << ", y = " << y << ", w = " << w << ", h = " << h << std::endl;
 
     if (wm == "sway" || wm == "i3") {
         window.resize(w, h);
