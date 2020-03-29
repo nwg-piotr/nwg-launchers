@@ -11,7 +11,7 @@
 #include <fstream>
 #include <filesystem>
 #include <gtkmm.h>
-#include "nlohmann/json.hpp"	// nlohmann-json package
+#include "nlohmann/json.hpp"                // nlohmann-json package
 #include <glibmm/ustring.h>
 #include <sys/stat.h>
 
@@ -22,12 +22,12 @@
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-std::string h_align {""};					// horizontal alignment
-std::string v_align {""};					// vertical alignment
-double opacity (0.3);						// overlay window opacity
-std::string wm;								// detected window manager name
+std::string h_align {""};                   // horizontal alignment
+std::string v_align {""};                   // vertical alignment
+double opacity (0.3);                       // overlay window opacity
+std::string wm {""};                        // detected or forced window manager name
 std::string custom_css_file {"style.css"};
-int rows (20);								// number of menu items to display
+int rows (20);                              // number of menu items to display
 std::vector<Glib::ustring> all_commands {};
 bool dmenu_run = false;
 

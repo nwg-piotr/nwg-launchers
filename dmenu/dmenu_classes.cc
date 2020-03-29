@@ -168,7 +168,9 @@ MainWindow::MainWindow() : menu(nullptr) {
 
     on_screen_changed(get_screen());
 
-    if (wm == "sway" || wm == "i3") {
+    if (wm == "dwm" || wm == "bspwm" || wm == "qtile" || wm == "bspwm" || wm == "tiling") {
+        fullscreen();
+    } else if (wm == "sway" || wm == "i3") {
         set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
     }
     set_decorated(false);
