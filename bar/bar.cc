@@ -210,11 +210,6 @@ int main(int argc, char *argv[]) {
     std::cout << "Focused display: " << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", "
     << geometry[3] << '\n';
 
-    std::ofstream myfile;
-    myfile.open ("/home/piotr/geometry.txt");
-    myfile << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", " << geometry[3];
-    myfile.close();
-
     int x = geometry[0];
     int y = geometry[1];
     int w = geometry[2];
