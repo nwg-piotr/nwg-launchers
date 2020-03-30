@@ -48,6 +48,7 @@ int main(int argc, char *argv[]) {
         std::cout << "-c <name>     css file name (default: style.css)\n";
         std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n";
         std::cout << "-s <size>     button image size (default: 72)\n";
+        std::cout << "-wm <wmname>  window manager name (if can not be detected)\n";
         std::exit(0);
     }
 
@@ -81,6 +82,11 @@ int main(int argc, char *argv[]) {
     const std::string &css_name = input.getCmdOption("-c");
     if (!css_name.empty()){
         custom_css_file = css_name;
+    }
+    
+    const std::string &wm_name = input.getCmdOption("-wm");
+    if (!wm_name.empty()){
+        wm = wm_name;
     }
 
     const std::string &opa = input.getCmdOption("-o");
@@ -162,8 +168,11 @@ int main(int argc, char *argv[]) {
         bar_entries = get_bar_entries(bar_json);
     }
 
-    /* get current WM name */
-    wm = detect_wm();
+    /* get current WM name if not forced */
+    if (wm.empty()) {
+        wm = detect_wm();
+    }
+    
     std::cout << "WM: " << wm << "\n";
 
     /* turn off borders, enable floating on sway */
@@ -201,17 +210,12 @@ int main(int argc, char *argv[]) {
     std::cout << "Focused display: " << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", "
     << geometry[3] << '\n';
 
-    std::ofstream myfile;
-    myfile.open ("/home/piotr/geometry.txt");
-    myfile << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", " << geometry[3];
-    myfile.close();
-
     int x = geometry[0];
     int y = geometry[1];
     int w = geometry[2];
     int h = geometry[3];
 
-    if (wm == "sway" || wm == "i3") {
+    if (wm == "sway" || wm == "i3" || wm == "openbox") {
         window.resize(w, h);
         window.move(x, y);
     }
