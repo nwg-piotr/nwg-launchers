@@ -57,30 +57,32 @@ DMenu::~DMenu() {
 }
 
 bool DMenu::on_key_press_event(GdkEventKey* key_event) {
-    if (key_event -> keyval == GDK_KEY_Escape) {
-        Gtk::Main::quit();
-        return Gtk::Menu::on_key_press_event(key_event);
-    } else if (((key_event -> keyval >= GDK_KEY_A && key_event -> keyval <= GDK_KEY_Z)
-        || (key_event -> keyval >= GDK_KEY_a && key_event -> keyval <= GDK_KEY_z)
-        || (key_event -> keyval >= GDK_KEY_0 && key_event -> keyval <= GDK_KEY_9)
-        || key_event -> keyval == GDK_KEY_plus
-        || key_event -> keyval == GDK_KEY_minus
-        || key_event -> keyval == GDK_KEY_underscore
-        || key_event -> keyval == GDK_KEY_hyphen)
-        && key_event->type == GDK_KEY_PRESS) {
+    if (show_searchbox) {
+        if (key_event -> keyval == GDK_KEY_Escape) {
+            Gtk::Main::quit();
+            return Gtk::Menu::on_key_press_event(key_event);
+        } else if (((key_event -> keyval >= GDK_KEY_A && key_event -> keyval <= GDK_KEY_Z)
+            || (key_event -> keyval >= GDK_KEY_a && key_event -> keyval <= GDK_KEY_z)
+            || (key_event -> keyval >= GDK_KEY_0 && key_event -> keyval <= GDK_KEY_9)
+            || key_event -> keyval == GDK_KEY_plus
+            || key_event -> keyval == GDK_KEY_minus
+            || key_event -> keyval == GDK_KEY_underscore
+            || key_event -> keyval == GDK_KEY_hyphen)
+            && key_event->type == GDK_KEY_PRESS) {
 
-        char character = key_event -> keyval;
-        this -> search_phrase += character;
+            char character = key_event -> keyval;
+            this -> search_phrase += character;
 
-        this -> searchbox.set_text(this -> search_phrase);
-        this -> filter_view();
-        return true;
+            this -> searchbox.set_text(this -> search_phrase);
+            this -> filter_view();
+            return true;
 
-    } else if (key_event -> keyval == GDK_KEY_BackSpace && this -> search_phrase.size() > 0) {
-        this -> search_phrase = this -> search_phrase.substr(0, this -> search_phrase.size() - 1);
-        this -> searchbox.set_text(this -> search_phrase);
-        this -> filter_view();
-        return true;
+        } else if (key_event -> keyval == GDK_KEY_BackSpace && this -> search_phrase.size() > 0) {
+            this -> search_phrase = this -> search_phrase.substr(0, this -> search_phrase.size() - 1);
+            this -> searchbox.set_text(this -> search_phrase);
+            this -> filter_view();
+            return true;
+        }
     }
     //if the event has not been handled, call the base class
     return Gtk::Menu::on_key_press_event(key_event);

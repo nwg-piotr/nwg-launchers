@@ -27,6 +27,7 @@ int main(int argc, char *argv[]) {
         std::cout << "Options [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]\n\n";
         std::cout << "Options:\n";
         std::cout << "-h            show this help message and exit\n";
+        std::cout << "-n            no search box\n";
         std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
         std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
         std::cout << "-r <rows>     number of rows (default: " << rows <<")\n";
@@ -58,6 +59,10 @@ int main(int argc, char *argv[]) {
         const char *command = cmd.c_str();
         std::system(command);
         std::exit(0);
+    }
+
+    if (input.cmdOptionExists("-n")){
+        show_searchbox = false;
     }
 
     const std::string &halign = input.getCmdOption("-ha");
@@ -251,11 +256,13 @@ int main(int argc, char *argv[]) {
         //~ window.hide();
     }
 
-    Gtk::MenuItem *search_item = new Gtk::MenuItem();
-    search_item -> add(menu.searchbox);
-    search_item -> set_name("search_item");
-    search_item -> set_sensitive(false);
-    menu.append(*search_item);
+    if (show_searchbox) {
+        Gtk::MenuItem *search_item = new Gtk::MenuItem();
+        search_item -> add(menu.searchbox);
+        search_item -> set_name("search_item");
+        search_item -> set_sensitive(false);
+        menu.append(*search_item);
+    }
 
     menu.signal_deactivate().connect(sigc::ptr_fun(Gtk::Main::quit));
 
@@ -270,6 +277,7 @@ int main(int argc, char *argv[]) {
             break;
         }
     }
+    
     menu.set_reserve_toggle_size(false);
     menu.set_property("width_request", (int)(w / 8));
 
