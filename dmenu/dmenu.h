@@ -30,6 +30,7 @@ std::string custom_css_file {"style.css"};
 int rows (20);                              // number of menu items to display
 std::vector<Glib::ustring> all_commands {};
 bool dmenu_run = false;
+bool show_searchbox = true;                 // if to show search box
 
 #ifndef NWG_DMENU_ANCHOR_H
 #define NWG_DMENU_ANCHOR_H
