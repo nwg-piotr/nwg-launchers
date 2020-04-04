@@ -103,7 +103,8 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
         return Gtk::Window::on_key_press_event(key_event);
     } else if (((key_event -> keyval >= GDK_KEY_A && key_event -> keyval <= GDK_KEY_Z)
         || (key_event -> keyval >= GDK_KEY_a && key_event -> keyval <= GDK_KEY_z)
-        || (key_event -> keyval >= GDK_KEY_0 && key_event -> keyval <= GDK_KEY_9))
+        || (key_event -> keyval >= GDK_KEY_0 && key_event -> keyval <= GDK_KEY_9)
+        || (key_event -> keyval == GDK_KEY_space))
         && key_event->type == GDK_KEY_PRESS) {
 
         char character = key_event -> keyval;
@@ -154,6 +155,9 @@ void MainWindow::rebuild_grid(bool filtered) {
     if (filtered) {
         for(AppBox* box : this -> filtered_boxes) {
             this -> apps_grid.attach(*box, column, row, 1, 1);
+            if (this -> filtered_boxes.size() == 1) {
+                box -> set_property("has_focus", true);
+            }
             if (column < num_col - 1) {
                 column++;
             } else {
