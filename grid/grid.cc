@@ -346,6 +346,19 @@ int main(int argc, char *argv[]) {
     window.add(outer_box);
     window.show_all_children();
 
+    // Set keyboard focus to the first visible button
+    if (favs && favourites.size() > 0) {
+        auto* first = window.favs_grid.get_child_at(0, 0);
+        if (first) {
+            first -> set_property("has_focus", true);
+        }
+    } else {
+        auto* first = window.apps_grid.get_child_at(0, 0);
+        if (first) {
+            first -> set_property("has_focus", true);
+        }
+    }
+
     gettimeofday(&tp, NULL);
     long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 

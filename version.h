@@ -1,1 +1,1 @@
-std::string version {"v0.1.3"};
+std::string version {"v0.1.4"};
