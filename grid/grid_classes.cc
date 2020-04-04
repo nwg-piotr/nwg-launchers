@@ -133,13 +133,13 @@ void MainWindow::filter_view() {
                 this -> filtered_boxes.push_back(box);
             }
         }
-        this -> rebuild_grid(true);
         this -> favs_grid.hide();
         this -> separator.hide();
+        this -> rebuild_grid(true);
     } else {
-        this -> rebuild_grid(false);
         this -> favs_grid.show();
         this -> separator.show();
+        this -> rebuild_grid(false);
     }
 }
 
@@ -155,9 +155,6 @@ void MainWindow::rebuild_grid(bool filtered) {
     if (filtered) {
         for(AppBox* box : this -> filtered_boxes) {
             this -> apps_grid.attach(*box, column, row, 1, 1);
-            if (this -> filtered_boxes.size() == 1) {
-                box -> set_property("has_focus", true);
-            }
             if (column < num_col - 1) {
                 column++;
             } else {
@@ -176,6 +173,18 @@ void MainWindow::rebuild_grid(bool filtered) {
                 row++;
             }
             cnt++;
+        }
+    }
+    // Set keyboard focus to the first visible button
+    if (this -> favs_grid.is_visible()) {
+        auto* first = favs_grid.get_child_at(0, 0);
+        if (first) {
+            first -> set_property("has_focus", true);
+        }
+    } else {
+        auto* first = apps_grid.get_child_at(0, 0);
+        if (first) {
+            first -> set_property("has_focus", true);
         }
     }
 }
