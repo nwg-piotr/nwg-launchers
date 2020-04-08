@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <sys/file.h>
 #include <fcntl.h>
+#include <regex>
 
 namespace fs = std::filesystem;
 namespace ns = nlohmann;

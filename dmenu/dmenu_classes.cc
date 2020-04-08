@@ -119,17 +119,34 @@ void DMenu::filter_view() {
                 delete item;
             }
         }
-        // create and add items matching the search phrase
         int cnt = 0;
+        bool limit_exhausted = false;
         for (Glib::ustring command : all_commands) {
-            if (command.find(this -> search_phrase) != std::string::npos) {
+            if (command.find(this -> search_phrase) == 0) {
                 Gtk::MenuItem *item = new Gtk::MenuItem();
                 item -> set_label(command);
-                item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun(*this, &DMenu::on_item_clicked), command));
+                item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun
+                    (*this, &DMenu::on_item_clicked), command));
                 this -> append(*item);
                 cnt++;
                 if (cnt > rows - 1) {
+                    limit_exhausted = true;
                     break;
+                }
+            }
+        }
+        if (!limit_exhausted) {
+            for (Glib::ustring command : all_commands) {
+                if (command.find(this -> search_phrase) != std::string::npos && command.find(this -> search_phrase) != 0) {
+                    Gtk::MenuItem *item = new Gtk::MenuItem();
+                    item -> set_label(command);
+                    item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun
+                        (*this, &DMenu::on_item_clicked), command));
+                    this -> append(*item);
+                    cnt++;
+                    if (cnt > rows - 1) {
+                        break;
+                    }
                 }
             }
         }
