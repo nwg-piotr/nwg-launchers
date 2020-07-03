@@ -133,6 +133,7 @@ std::vector<std::string> get_command_dirs() {
         std::vector<std::string> dirs = split_string(command_dirs, ":");
         for (std::string dir : dirs) {
             result.push_back(dir);
+            std::cout << dir << std::endl;
         }
     }
     return result;

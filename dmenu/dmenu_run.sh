@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-cd /usr/lib/nwgdmenu
+# cd /usr/lib/nwgdmenu
 exec echo -e | ./nwgdmenu "$@"
