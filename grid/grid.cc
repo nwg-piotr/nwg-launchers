@@ -413,6 +413,11 @@ int main(int argc, char *argv[]) {
         if (first) {
             first -> set_property("has_focus", true);
         }
+    } else if (pins && pinned.size() > 0) {
+		auto* first = window.pinned_grid.get_child_at(0, 0);
+        if (first) {
+            first -> set_property("has_focus", true);
+        }
     } else {
         auto* first = window.apps_grid.get_child_at(0, 0);
         if (first) {
