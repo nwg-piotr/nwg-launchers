@@ -9,6 +9,7 @@
 #include <iostream>
 #include "../version.h"
 #include <fstream>
+#include <iostream>
 #include <filesystem>
 #include <gtkmm.h>
 #include "nlohmann/json.hpp"	// nlohmann-json package
@@ -26,10 +27,13 @@ static Gtk::Label *description;
 int num_col (6);				// number of grid columns
 int image_size (72);			// button image size in pixels
 bool favs (false);				// whether to display favourites
+bool pins (false);				// whether to display pinned
 double opacity (0.9);			// overlay window opacity
 std::string wm {""};            // detected or forced window manager name
 ns::json cache;
 std::string cache_file {};
+std::string pinned_file {};
+std::vector<std::string> pinned;	// list of commands of pinned icons
 std::string custom_css_file {"style.css"};
 
 #ifndef CGTK_APP_BOX_H
@@ -70,10 +74,13 @@ std::string custom_css_file {"style.css"};
         Glib::ustring search_phrase;			// updated on key_press_event
         Gtk::Grid apps_grid;					// All application buttons grid
         Gtk::Grid favs_grid;					// Favourites grid above
+        Gtk::Grid pinned_grid;					// Pinned entries grid above
         Gtk::Separator separator;				// between favs and all apps
+        Gtk::Separator separator1;				// below pinned
         std::list<AppBox*> all_boxes {};		// attached to apps_grid unfiltered view
         std::list<AppBox*> filtered_boxes {};	// attached to apps_grid filtered view
         std::list<AppBox*> fav_boxes {};		// attached to favs_grid
+        std::list<AppBox*> pinned_boxes {};		// attached to pinned_grid
 
         private:
         //Override default signal handler:

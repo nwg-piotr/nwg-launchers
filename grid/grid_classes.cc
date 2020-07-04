@@ -29,11 +29,16 @@ MainWindow::MainWindow() {
     favs_grid.set_column_spacing(5);
     favs_grid.set_row_spacing(5);
     favs_grid.set_column_homogeneous(true);
+    pinned_grid.set_column_spacing(5);
+    pinned_grid.set_row_spacing(5);
+    pinned_grid.set_column_homogeneous(true);
     label_desc.set_text("");
     label_desc.set_name("description");
     description = &label_desc;
     separator.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
     separator.set_name("separator");
+    separator1.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
+    separator1.set_name("separator");
     add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
 
     set_app_paintable(true);
@@ -44,8 +49,8 @@ MainWindow::MainWindow() {
     on_screen_changed(get_screen());
 
     // We can not go fullscreen() here:
-    // On sway the window would become opaque - we don't wat it
-    // On i3 all windows below will be hidden - we don't want it too
+    // On sway the window would become opaque - we don't want it
+    // On i3 all windows below will be hidden - we don't want it as well
     if (wm != "sway" && wm != "i3") {
         fullscreen();
     } else {
@@ -95,6 +100,22 @@ bool on_button_entered(GdkEventCrossing* event, Glib::ustring comment) {
 bool on_button_focused(GdkEventFocus* event, Glib::ustring comment) {
     description -> set_text(comment);
     return true;
+}
+
+bool on_grid_button_press(GdkEventButton* event, Glib::ustring exec) {
+	if (pins && event -> button == 3) {
+		add_and_save_pinned(exec);
+		Gtk::Main::quit();
+	}
+	return true;
+}
+
+bool on_pinned_button_press(GdkEventButton* event, Glib::ustring exec) {
+	if (pins && event -> button == 3) {
+		remove_and_save_pinned(exec);
+		Gtk::Main::quit();
+	}
+	return true;
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {

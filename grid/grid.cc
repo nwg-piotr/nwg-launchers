@@ -41,7 +41,8 @@ int main(int argc, char *argv[]) {
         std::cout << "nwggrid [-h] [-f] [-o <opacity>] [-c <col>] [-s <size>] [-l <ln>]\n\n";
         std::cout << "Options:\n";
         std::cout << "-h            show this help message and exit\n";
-        std::cout << "-f            display favourites\n";
+        std::cout << "-f            display favourites (most used entries)\n";
+        std::cout << "-p            display pinned entries \n";
         std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n";
         std::cout << "-n <col>      number of grid columns (default: 6)\n";
         std::cout << "-s <size>     button image size (default: 72)\n";
@@ -52,6 +53,9 @@ int main(int argc, char *argv[]) {
     }
     if (input.cmdOptionExists("-f")){
         favs = true;
+    }
+    if (input.cmdOptionExists("-p")){
+        pins = true;
     }
     const std::string &forced_lang = input.getCmdOption("-l");
     if (!forced_lang.empty()){
@@ -109,14 +113,32 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    cache_file = get_cache_path();
-    try {
-        cache = get_cache(cache_file);
-    }  catch (...) {
-        std::cout << "Cache file not found, creating...\n";
-        save_json(cache, cache_file);
-    }
-    std::cout << cache.size() << " cache entries loaded\n";
+    if (favs) {
+		cache_file = get_cache_path();
+		try {
+			cache = get_cache(cache_file);
+		}  catch (...) {
+			std::cout << "Cache file not found, creating...\n";
+			save_json(cache, cache_file);
+		}
+		if (cache.size() > 0) {
+			std::cout << cache.size() << " cache entries loaded\n";
+		} else {
+			std::cout << "No cached favourites found\n";
+			favs = false;	// ignore -f argument from now on
+		}	
+	}
+    
+    if (pins) {
+		pinned_file = get_pinned_path();
+		pinned = get_pinned(pinned_file);
+		if (pinned.size() > 0) {
+			std::cout << pinned.size() << " pinned entries loaded\n";
+		} else {
+			std::cout << "No pinned entries found\n";
+			pins = false;	// ignore -p argument from now on
+		}
+	}
 
     std::string config_dir = get_config_dir();
     if (!fs::is_directory(config_dir)) {
@@ -128,7 +150,6 @@ int main(int argc, char *argv[]) {
     std::string default_css_file = config_dir + "/style.css";
     // css file to be used
     std::string css_file = config_dir + "/" + custom_css_file;
-    std::cout << css_file << std::endl;
     // copy default file if not found
     const char *custom_css = css_file.c_str();
     if (!fs::exists(default_css_file)) {
@@ -256,15 +277,17 @@ int main(int argc, char *argv[]) {
 
     /* Create buttons for all desktop entries */
     for(auto it = desktop_entries.begin(); it != desktop_entries.end(); it++) {
-        Gtk::Image* image = app_image(it -> icon);
-        AppBox *ab = new AppBox(it -> name, it -> exec, it -> comment);
-        ab -> set_image_position(Gtk::POS_TOP);
-        ab -> set_image(*image);
-        ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), it -> exec));
-        ab -> signal_enter_notify_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered), it -> comment));
-        ab -> signal_focus_in_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused), it -> comment));
-
-        window.all_boxes.push_back(ab);
+        if (std::find(pinned.begin(), pinned.end(), it -> exec) == pinned.end()) {
+			Gtk::Image* image = app_image(it -> icon);
+			AppBox *ab = new AppBox(it -> name, it -> exec, it -> comment);
+			ab -> set_image_position(Gtk::POS_TOP);
+			ab -> set_image(*image);
+			ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), it -> exec));
+			ab -> signal_enter_notify_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered), it -> comment));
+			ab -> signal_focus_in_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused), it -> comment));
+			ab -> signal_button_press_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_grid_button_press), it -> exec));
+			window.all_boxes.push_back(ab);
+		}
     }
     window.label_desc.set_text(std::to_string(window.all_boxes.size()));
 
@@ -280,6 +303,7 @@ int main(int argc, char *argv[]) {
                     ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), it -> exec));
                     ab -> signal_enter_notify_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered), it -> comment));
                     ab -> signal_focus_in_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused), it -> comment));
+                    ab -> signal_button_press_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_grid_button_press), it -> exec));
 
                     // avoid adding twice the same exec w/ another name
                     bool already_added {false};
@@ -295,10 +319,40 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+    
+    /* Create buttons for pinned entries */
+    if (pins && pinned.size() > 0) {
+		for(auto it = desktop_entries.begin(); it != desktop_entries.end(); it++) {
+			if (std::find(pinned.begin(), pinned.end(), it -> exec) != pinned.end()) {
+				Gtk::Image* image = app_image(it -> icon);
+				AppBox *ab = new AppBox(it -> name, it -> exec, it -> comment);
+				ab -> set_image_position(Gtk::POS_TOP);
+				ab -> set_image(*image);
+				ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), it -> exec));
+				ab -> signal_enter_notify_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered), it -> comment));
+				ab -> signal_focus_in_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused), it -> comment));
+				ab -> signal_button_press_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_pinned_button_press), it -> exec));
+				window.pinned_boxes.push_back(ab);
+			}
+		}
+	}
 
     int column = 0;
     int row = 0;
-
+    if (pins && pinned.size() > 0) {
+        for (AppBox *box : window.pinned_boxes) {
+            window.pinned_grid.attach(*box, column, row, 1, 1);
+            if (column < num_col - 1) {
+                column++;
+            } else {
+                column = 0;
+                row++;
+            }
+        }
+    }
+    
+    column = 0;
+    row = 0;
     if (favs && favourites.size() > 0) {
         for (AppBox *box : window.fav_boxes) {
             window.favs_grid.attach(*box, column, row, 1, 1);
@@ -325,6 +379,13 @@ int main(int argc, char *argv[]) {
 
     Gtk::VBox inner_vbox;
 
+    Gtk::HBox pinned_hbox;
+    pinned_hbox.pack_start(window.pinned_grid, true, false, 0);
+    inner_vbox.pack_start(pinned_hbox, false, false, 5);
+    if (pins && pinned.size() > 0) {
+        inner_vbox.pack_start(window.separator1, false, true, 0);
+    }
+    
     Gtk::HBox favs_hbox;
     favs_hbox.pack_start(window.favs_grid, true, false, 0);
     inner_vbox.pack_start(favs_hbox, false, false, 5);
@@ -349,6 +410,11 @@ int main(int argc, char *argv[]) {
     // Set keyboard focus to the first visible button
     if (favs && favourites.size() > 0) {
         auto* first = window.favs_grid.get_child_at(0, 0);
+        if (first) {
+            first -> set_property("has_focus", true);
+        }
+    } else if (pins && pinned.size() > 0) {
+		auto* first = window.pinned_grid.get_child_at(0, 0);
         if (first) {
             first -> set_property("has_focus", true);
         }

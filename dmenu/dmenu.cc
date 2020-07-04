@@ -219,8 +219,6 @@ int main(int argc, char *argv[]) {
     int w = geometry[2];
     int h = geometry[3];
 
-    //~ std::cout << "x = " << x << ", y = " << y << ", w = " << w << ", h = " << h << std::endl;
-
     if (wm == "sway" || wm == "i3") {
         window.resize(w, h);
         window.move(x, y);
@@ -237,7 +235,6 @@ int main(int argc, char *argv[]) {
         // We assume that the window has been opened at mouse pointer coordinates
         window.get_position(x_org, y_org);
 
-        //~ std::cout << x_org << " : " << y_org << std::endl;
         if (h_align == "l") {
             window.move(x, y_org);
             window.get_position(x_org, y_org);

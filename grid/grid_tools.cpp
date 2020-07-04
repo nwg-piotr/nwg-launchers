@@ -41,6 +41,26 @@ std::string get_cache_path() {
 }
 
 /*
+ * Returns pinned cache file path
+ * */
+std::string get_pinned_path() {
+    std::string s = "";
+    char* val = getenv("XDG_CACHE_HOME");
+    if (val) {
+        s = val;
+    } else {
+        char* val = getenv("HOME");
+        s = val;
+        s += "/.cache";
+    }
+    fs::path dir (s);
+    fs::path file ("nwg-pin-cache");
+    fs::path full_path = dir / file;
+
+    return full_path;
+}
+
+/*
  * Returns config dir
  * */
 std::string get_config_dir() {
@@ -76,6 +96,42 @@ std::string read_file_to_string(std::string filename) {
 void save_string_to_file(std::string s, std::string filename) {
     std::ofstream file(filename);
     file << s;
+}
+
+/*
+ * Adds pinned entry and saves pinned cache file
+ * */
+void add_and_save_pinned(std::string command) {
+	// Add if not yet pinned
+	if (std::find(pinned.begin(), pinned.end(), command) == pinned.end()) {
+		std::cout << "Pinning " << command << std::endl;
+		pinned.push_back(command);
+		std::ofstream out_file(pinned_file);
+		for (const auto &e : pinned) out_file << e << "\n";
+	}
+}
+
+/*
+ * Removes pinned entry and saves pinned cache file
+ * */
+void remove_and_save_pinned(std::string command) {
+	// Find the item index
+	bool found = false;
+	int idx (-1);
+	for (int i = 0; i < (int)pinned.size(); i++) {
+		if (pinned[i] == command) {
+			found = true;
+			idx = i;
+			break;
+		}
+	}
+	
+	if (found && idx > 0) {
+		std::cout << "Unpinning " << command << std::endl;
+		pinned.erase(pinned.begin() + idx);
+		std::ofstream out_file(pinned_file);
+		for (const auto &e : pinned) out_file << e << "\n";
+	}
 }
 
 /*
@@ -280,6 +336,29 @@ ns::json get_cache(std::string cache_file) {
 
     return string_to_json(cache_string);
 }
+
+/*
+ * Returns vector of strings out of the pinned cache file content
+ * */
+ std::vector<std::string> get_pinned(std::string pinned_file) {
+    std::vector<std::string> lines;
+    std::ifstream in(pinned_file.c_str());
+    if(!in) {
+        std::cerr << "Could not find " << pinned_file << ", creating!" << std::endl;
+        save_string_to_file("", pinned_file);
+        return lines;
+    }
+    std::string str;
+
+    while (std::getline(in, str)) {
+        // add non-empty lines to the vector
+        if(str.size() > 0) {
+			lines.push_back(str);
+		}
+    }
+    in.close();
+    return lines;
+ }
 
 /*
  * Returns n cache items sorted by clicks; n should be the number of grid columns
