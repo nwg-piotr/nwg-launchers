@@ -19,10 +19,17 @@ The latest published version is [available](https://aur.archlinux.org/packages/n
 You may consider donwloading and unpacking [the latest release](https://github.com/nwg-piotr/nwg-launchers/releases/latest)
 instead of cloning the repository as described below.
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/nwg-launchers.svg)](https://repology.org/project/nwg-launchers/versions)
+
 # nwggrid
 
-This command creates a GNOME-like application grid, with the search box, optionally prepended with a row of favourites
-(most frequently used apps).
+This command creates a GNOME-like application grid, with the search box, optionally prepended with a row of `-f` favourites
+(most frequently used apps) or `-p` pinned program icons.
+
+This only works with the `-p` argument:
+
+- to pin up a program icon, right click its icon in the applications grid;
+- to unpin a program, right click its icon in the pinned programs grid.
 
 [![Swappshot-Mon-Mar-23-205030-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205030-2020.th.png)](https://scrot.cloud/image/jb3k) [![Swappshot-Mon-Mar-23-205157-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205157-2020.th.png)](https://scrot.cloud/image/jOWg) [![Swappshot-Mon-Mar-23-205248-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205248-2020.th.png)](https://scrot.cloud/image/joh5)
 
@@ -94,9 +101,7 @@ sudo make uninstall
 
 ```
 $ nwgbar -h
-GTK button bar: nwgbar 0.0.1 (c) Piotr Miller 2020
-
-nwgbar [-h] [-v] [-ha <l>|<r>] [-va <t>|<b>] [-t <name>] [-o <opacity>] [-s <size>]
+GTK button bar: nwgbar v0.1.8 (c) Piotr Miller 2020
 
 Options:
 -h            show this help message and exit
@@ -104,8 +109,10 @@ Options:
 -ha <l>|<r>   horizontal alignment left/right (default: center)
 -va <t>|<b>   vertical alignment top/bottom (default: middle)
 -t <name>     template file name (default: bar.json)
+-c <name>     css file name (default: style.css)
 -o <opacity>  background opacity (0.0 - 1.0, default 0.9)
 -s <size>     button image size (default: 72)
+-wm <wmname>  window manager name (if can not be detected)
 ```
 
 ### Customization
@@ -175,15 +182,14 @@ sudo make uninstall
 
 ```
 $ nwgdmenu -h
-GTK dynamic menu: nwgdmenu v0.1.0 (c) Piotr Miller 2020
+GTK dynamic menu: nwgdmenu v0.1.8 (c) Piotr Miller 2020
 
-nwgdmenu - displays newline-separated input stdin as a GTK menu
+nwgdmenu - displays newline-separated stdin input as a GTK menu
 nwgdmenu_run - creates a GTK menu out of commands found in $PATH
-
-Options [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]
 
 Options:
 -h            show this help message and exit
+-n            no search box
 -ha <l>|<r>   horizontal alignment left/right (default: center)
 -va <t>|<b>   vertical alignment top/bottom (default: middle)
 -r <rows>     number of rows (default: 20)
@@ -210,9 +216,3 @@ In case you use default window borders, an exclusion like this may be necessary:
 ```
 for_window [title="~nwg"] border none
 ```
-
-### Known issues
-
-- `nwgdmenu -va <alignment> -ha <alignment>`, when started from terminal, behaves properly on sway only. Anywhere else
- the window shows up in random places. However, when started from a key binding, it behaves as expected.
-For now I have no idea on what's the reason.
