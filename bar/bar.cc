@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
         std::cout << "GTK button bar: nwgbar " << version << " (c) Piotr Miller 2020\n\n";
-        std::cout << "nwgbar [-h] [-v] [-ha <l>|<r>] [-va <t>|<b>] [-t <name>] [-o <opacity>] [-s <size>]\n\n";
+
         std::cout << "Options:\n";
         std::cout << "-h            show this help message and exit\n";
         std::cout << "-v            arrange buttons vertically\n";

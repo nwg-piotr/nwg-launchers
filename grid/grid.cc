@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
         std::cout << "GTK application grid: nwggrid " << version << " (c) Piotr Miller 2020\n\n";
-        std::cout << "nwggrid [-h] [-f] [-o <opacity>] [-c <col>] [-s <size>] [-l <ln>]\n\n";
+
         std::cout << "Options:\n";
         std::cout << "-h            show this help message and exit\n";
         std::cout << "-f            display favourites (most used entries)\n";

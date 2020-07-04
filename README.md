@@ -48,17 +48,18 @@ sudo make uninstall
 
 ```
 $ nwggrid -h
-GTK application grid: nwggrid 0.0.1 (c) Piotr Miller 2020
-
-nwggrid [-h] [-f] [-o <opacity>] [-c <col>] [-s <size>] [-l <ln>]
+GTK application grid: nwggrid v0.1.8 (c) Piotr Miller 2020
 
 Options:
 -h            show this help message and exit
--f            display favourites
+-f            display favourites (most used entries)
+-p            display pinned entries
 -o <opacity>  background opacity (0.0 - 1.0, default 0.9)
--c <col>      number of grid columns (default: 6)
+-n <col>      number of grid columns (default: 6)
 -s <size>     button image size (default: 72)
+-c <name>     css file name (default: style.css)
 -l <ln>       force use of <ln> language
+-wm <wmname>  window manager name (if can not be detected)
 ```
 
 ### Custom styling
