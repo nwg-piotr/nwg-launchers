@@ -149,7 +149,8 @@ void MainWindow::filter_view() {
 
         for (AppBox* box : this -> all_boxes) {
             if (box -> name.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos
-                || box -> exec.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos) {
+                || box -> exec.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos
+                || box -> comment.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos) {
 
                 this -> filtered_boxes.push_back(box);
             }
