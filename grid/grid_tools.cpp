@@ -50,17 +50,16 @@ std::string get_pinned_path() {
  * Returns config dir
  * */
 std::string get_config_dir() {
-    std::string s = "";
+    std::string s;
     char* val = getenv("XDG_CONFIG_HOME");
     if (val) {
         s = val;
-        s += "/nwggrid";
+        s += "/nwg-launchers/nwggrid";
     } else {
-        char* val = getenv("HOME");
+        val = getenv("HOME");
         s = val;
-        s += "/.config/nwggrid";
+        s += "/.config/nwg-launchers/nwggrid";
     }
-    fs::path dir (s);
     return s;
 }
 
@@ -451,13 +450,13 @@ Gtk::Image* app_image(std::string icon) {
         try {
             pixbuf = icon_theme->load_icon(icon, image_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
         } catch (...) {
-            pixbuf = Gdk::Pixbuf::create_from_file("/usr/share/nwggrid/icon-missing.svg", image_size, image_size, true);
+            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwggrid/icon-missing.svg", image_size, image_size, true);
         }
     } else {
         try {
             pixbuf = Gdk::Pixbuf::create_from_file(icon, image_size, image_size, true);
         } catch (...) {
-            pixbuf = Gdk::Pixbuf::create_from_file("/usr/share/nwggrid/icon-missing.svg", image_size, image_size, true);
+            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwggrid/icon-missing.svg", image_size, image_size, true);
         }
     }
     auto image = Gtk::manage(new Gtk::Image(pixbuf));

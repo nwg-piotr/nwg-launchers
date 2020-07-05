@@ -1,0 +1,3 @@
+option('bar', type: 'boolean', value: true, description: 'Build the bar app.')
+option('dmenu', type: 'boolean', value: true, description: 'Build the dmenu app.')
+option('grid', type: 'boolean', value: true, description: 'Build the grid app.')

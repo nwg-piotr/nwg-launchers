@@ -33,3 +33,6 @@
 
 # Project files
 *.geany
+
+subprojects/nlohmann_json
+builddir

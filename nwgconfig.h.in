@@ -1,0 +1,3 @@
+#define VERSION_STR "@version@"
+#define INSTALL_PREFIX_STR "@prefix@"
+#define DATA_DIR_STR "@datadir@"
