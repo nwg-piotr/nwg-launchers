@@ -244,6 +244,15 @@ std::vector<std::string> desktop_entry(std::string path, std::string lang) {
 
     std::ifstream file(path);
     std::string str;
+    
+    std::string name {""};          // Name=
+    std::string name_ln {""};       // localized: Name[ln]=
+    std::string loc_name = "Name[" + lang + "]=";
+    
+    std::string comment {""};       // Comment=
+    std::string comment_ln {""};    // localized: Comment[ln]=
+    std::string loc_comment = "Comment[" + lang + "]=";
+    
     while (std::getline(file, str)) {
         bool read_me = true;
         if (str.find("[") == 0) {
@@ -255,12 +264,18 @@ std::vector<std::string> desktop_entry(std::string path, std::string lang) {
             }
         }
         if (read_me) {
-            std::string loc_name = "Name[" + lang + "]=";
-            if (str.find("Name=") == 0 || str.find(loc_name) == 0) {
+            if (str.find(loc_name) == 0) {
                 if (str.find_first_of("=") != std::string::npos) {
                     int idx = str.find_first_of("=");
                     std::string val = str.substr(idx + 1);
-                    fields[0] = val;
+                    name_ln = val;
+                }
+            }
+            if (str.find("Name=") == 0) {
+                if (str.find_first_of("=") != std::string::npos) {
+                    int idx = str.find_first_of("=");
+                    std::string val = str.substr(idx + 1);
+                    name = val;
                 }
             }
             if (str.find("Exec=") == 0) {
@@ -282,16 +297,33 @@ std::vector<std::string> desktop_entry(std::string path, std::string lang) {
                     fields[2] = val;
                 }
             }
-            std::string loc_comment = "Comment[" + lang + "]=";
-            if (str.find("Comment=") == 0 || str.find(loc_comment) == 0) {
+            if (str.find("Comment=") == 0) {
                 if (str.find_first_of("=") != std::string::npos) {
                     int idx = str.find_first_of("=");
                     std::string val = str.substr(idx + 1);
-                    fields[3] = val;
+                    comment = val;
+                }
+            }
+            if (str.find(loc_comment) == 0) {
+                if (str.find_first_of("=") != std::string::npos) {
+                    int idx = str.find_first_of("=");
+                    std::string val = str.substr(idx + 1);
+                    comment_ln = val;
                 }
             }
         }
     }
+    if (name_ln.empty()) {
+		fields[0] = name;
+	} else {
+		fields[0] = name_ln;
+	}
+	
+	if (comment_ln.empty()) {
+		fields[3] = comment;
+	} else {
+		fields[3] = comment_ln;
+	}
     return fields;
 }
 

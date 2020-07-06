@@ -11,27 +11,32 @@
 #include "grid_tools.cpp"
 #include "grid_classes.cc"
 #include <sys/time.h>
+#include <unistd.h>
 
 int main(int argc, char *argv[]) {
     struct timeval tp;
     gettimeofday(&tp, NULL);
     long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-    /* Try to lock /tmp/nwggrid.lock file. This will return -1 if the command is already running.
-     * Thanks to chmike at https://stackoverflow.com/a/1643134 */
-    // Create pid file if not yet exists
-    if (!std::ifstream("/tmp/nwggrid.lock")) {
-        save_string_to_file("nwggrid lock file", "/tmp/nwggrid.lock");
+    
+    pid_t pid = getpid();
+    std::string mypid = std::to_string(pid);
+    
+    std::string pid_file = "/var/run/user/" + std::to_string(getuid()) + "/nwggrid.pid";
+    
+    int saved_pid {};
+    if (std::ifstream(pid_file)) {
+        try {
+			saved_pid = std::stoi(read_file_to_string(pid_file));
+			if (kill(saved_pid, 0) != -1) {  // found running instance!
+				kill(saved_pid, 9);
+				save_string_to_file(mypid, pid_file);
+				std::exit(0);
+			}
+		} catch (...) {
+            std::cout << "\nError reading pid file\n\n";
+        }
     }
-
-    if (tryGetLock("/tmp/nwggrid.lock") == -1) {
-        // kill if already running
-        std::remove("/tmp/nwggrid.lock");
-        std::string cmd = "pkill -f nwggrid";
-        const char *command = cmd.c_str();
-        std::system(command);
-        std::exit(0);
-    }
+    save_string_to_file(mypid, pid_file);
 
     std::string lang ("");
 
