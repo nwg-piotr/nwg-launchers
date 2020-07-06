@@ -35,4 +35,3 @@ uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/nwgbar
 	rm -rf ${DESTDIR}${PREFIX}/lib/nwgbar
 	rm -rf ${DESTDIR}${PREFIX}/share/nwgbar
-	rm -f /tmp/nwgbar.lock

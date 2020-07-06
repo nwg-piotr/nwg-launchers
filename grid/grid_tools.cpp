@@ -6,20 +6,6 @@
  * License: GPL3
  * */
 
-/* Try to lock the lock file
- * Thanks to chmike at https://stackoverflow.com/a/1643134
- * */
-int tryGetLock(char const *lockName) {
-    mode_t m = umask( 0 );
-    int fd = open( lockName, O_RDWR|O_CREAT, 0666 );
-    umask( m );
-    if( fd >= 0 && flock( fd, LOCK_EX | LOCK_NB ) < 0 ) {
-        close( fd );
-        fd = -1;
-    }
-    return fd;
-}
-
 /*
  * Returns cache file path
  * */

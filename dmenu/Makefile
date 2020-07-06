@@ -36,4 +36,3 @@ uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/nwgdmenu_run
 	rm -rf ${DESTDIR}${PREFIX}/lib/nwgdmenu
 	rm -rf ${DESTDIR}${PREFIX}/share/nwgdmenu
-	rm -f /tmp/nwgdmenu.lock

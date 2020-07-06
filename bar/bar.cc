@@ -17,21 +17,25 @@ int main(int argc, char *argv[]) {
     gettimeofday(&tp, NULL);
     long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-    /* Try to lock /tmp/nwgbar.lock file. This will return -1 if the command is already running.
-     * Thanks to chmike at https://stackoverflow.com/a/1643134 */
-    // Create pid file if not yet exists
-    if (!std::ifstream("/tmp/nwgbar.lock")) {
-        save_string_to_file("nwgbar lock file", "/tmp/nwgbar.lock");
+    pid_t pid = getpid();
+    std::string mypid = std::to_string(pid);
+    
+    std::string pid_file = "/var/run/user/" + std::to_string(getuid()) + "/nwgbar.pid";
+    
+    int saved_pid {};
+    if (std::ifstream(pid_file)) {
+        try {
+			saved_pid = std::stoi(read_file_to_string(pid_file));
+			if (kill(saved_pid, 0) != -1) {  // found running instance!
+				kill(saved_pid, 9);
+				save_string_to_file(mypid, pid_file);
+				std::exit(0);
+			}
+		} catch (...) {
+            std::cout << "\nError reading pid file\n\n";
+        }
     }
-
-    if (tryGetLock("/tmp/nwgbar.lock") == -1) {
-        // kill if already running
-        std::remove("/tmp/nwgbar.lock");
-        std::string cmd = "pkill -f nwgbar";
-        const char *command = cmd.c_str();
-        std::system(command);
-        std::exit(0);
-    }
+    save_string_to_file(mypid, pid_file);
 
     std::string lang ("");
 
@@ -127,7 +131,6 @@ int main(int argc, char *argv[]) {
     std::string default_css_file = config_dir + "/style.css";
     // css file to be used
     std::string css_file = config_dir + "/" + custom_css_file;
-    std::cout << css_file << std::endl;
     // copy default file if not found
     const char *custom_css = css_file.c_str();
     if (!fs::exists(default_css_file)) {
