@@ -19,12 +19,8 @@ clean:
 
 install: all
 	mkdir -p ${DESTDIR}${PREFIX}/bin
-	cp -f grid.sh ${DESTDIR}${PREFIX}/bin/nwggrid
+	cp -f nwggrid ${DESTDIR}${PREFIX}/bin/nwggrid
 	chmod 755 ${DESTDIR}${PREFIX}/bin/nwggrid
-	
-	mkdir -p ${DESTDIR}${PREFIX}/lib/nwggrid
-	cp -f nwggrid ${DESTDIR}${PREFIX}/lib/nwggrid
-	chmod 755 ${DESTDIR}${PREFIX}/lib/nwggrid/nwggrid
 	
 	mkdir -p ${DESTDIR}${PREFIX}/share/nwggrid
 	cp -f style.css ${DESTDIR}${PREFIX}/share/nwggrid
@@ -32,5 +28,4 @@ install: all
 
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/nwggrid
-	rm -rf ${DESTDIR}${PREFIX}/lib/nwggrid
 	rm -rf ${DESTDIR}${PREFIX}/share/nwggrid

@@ -19,12 +19,8 @@ clean:
 
 install: all
 	mkdir -p ${DESTDIR}${PREFIX}/bin
-	cp -f bar.sh ${DESTDIR}${PREFIX}/bin/nwgbar
+	cp -f nwgbar ${DESTDIR}${PREFIX}/bin/nwgbar
 	chmod 755 ${DESTDIR}${PREFIX}/bin/nwgbar
-	
-	mkdir -p ${DESTDIR}${PREFIX}/lib/nwgbar
-	cp -f nwgbar ${DESTDIR}${PREFIX}/lib/nwgbar
-	chmod 755 ${DESTDIR}${PREFIX}/lib/nwgbar/nwgbar
 	
 	mkdir -p ${DESTDIR}${PREFIX}/share/nwgbar
 	cp -f style.css ${DESTDIR}${PREFIX}/share/nwgbar
@@ -33,5 +29,4 @@ install: all
 
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/nwgbar
-	rm -rf ${DESTDIR}${PREFIX}/lib/nwgbar
 	rm -rf ${DESTDIR}${PREFIX}/share/nwgbar
