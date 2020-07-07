@@ -11,14 +11,30 @@
 #include "dmenu_tools.cpp"
 #include "dmenu_classes.cc"
 #include <sys/time.h>
+#include <unistd.h>
 
 int main(int argc, char *argv[]) {
 
-    /* We'll need a `nwgdmenu_run` shell script to start the program, e.g:
-     * $ echo -e "" | nwgdmenu
-     * to start w/o attempting to build a pipe menu and searching $PATH instead.
-     * Either to use json format or try to achieve compatibility w/ rofi needs to be decided.
-     * */
+	pid_t pid = getpid();
+    std::string mypid = std::to_string(pid);
+    
+    std::string pid_file = "/var/run/user/" + std::to_string(getuid()) + "/nwgdmenu.pid";
+    
+    int saved_pid {};
+    if (std::ifstream(pid_file)) {
+        try {
+			saved_pid = std::stoi(read_file_to_string(pid_file));
+			if (kill(saved_pid, 0) != -1) {  // found running instance!
+				kill(saved_pid, 9);
+				save_string_to_file(mypid, pid_file);
+				std::exit(0);
+			}
+		} catch (...) {
+            std::cout << "\nError reading pid file\n\n";
+        }
+    }
+    save_string_to_file(mypid, pid_file);
+
     InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
         std::cout << "GTK dynamic menu: nwgdmenu " << version << " (c) Piotr Miller 2020\n\n";
@@ -37,29 +53,17 @@ int main(int argc, char *argv[]) {
         std::exit(0);
     }
 
-    all_commands = {};
-    for (std::string line; std::getline(std::cin, line);) {
-        Glib::ustring cmd = line;
-        all_commands.push_back(cmd);
-    }
-    dmenu_run = all_commands[0].empty();
-
-    /* Try to lock /tmp/nwgdmenu.lock file. This will return -1 if the command is already running.
-     * Thanks to chmike at https://stackoverflow.com/a/1643134 */
-
-    // Create pid file if not yet exists
-    if (!std::ifstream("/tmp/nwgdmenu.lock")) {
-        save_string_to_file("nwgdmenu lock file", "/tmp/nwgdmenu.lock");
-    }
-
-    if (tryGetLock("/tmp/nwgdmenu.lock") == -1) {
-        // kill if already running
-        std::remove("/tmp/nwgdmenu.lock");
-        std::string cmd = "pkill -f nwgdmenu";
-        const char *command = cmd.c_str();
-        std::system(command);
-        std::exit(0);
-    }
+    // We will build dmenu out of commands found in $PATH if nothing has been passed by stdin
+    dmenu_run = isatty(fileno(stdin)) == 1;
+    
+    // Otherwise let's build from stdin input
+    if (!dmenu_run) {
+		all_commands = {};
+		for (std::string line; std::getline(std::cin, line);) {
+			Glib::ustring cmd = line;
+			all_commands.push_back(cmd);
+		}
+	}
 
     if (input.cmdOptionExists("-n")){
         show_searchbox = false;
