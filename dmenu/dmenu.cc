@@ -11,40 +11,11 @@
 #include "dmenu_tools.cpp"
 #include "dmenu_classes.cc"
 #include <sys/time.h>
+#include <unistd.h>
 
 int main(int argc, char *argv[]) {
 
-    /* We'll need a `nwgdmenu_run` shell script to start the program, e.g:
-     * $ echo -e "" | nwgdmenu
-     * to start w/o attempting to build a pipe menu and searching $PATH instead.
-     * Either to use json format or try to achieve compatibility w/ rofi needs to be decided.
-     * */
-    InputParser input(argc, argv);
-    if(input.cmdOptionExists("-h")){
-        std::cout << "GTK dynamic menu: nwgdmenu " << version << " (c) Piotr Miller 2020\n\n";
-        std::cout << "nwgdmenu - displays newline-separated input stdin as a GTK menu\n";
-        std::cout << "nwgdmenu_run - creates a GTK menu out of commands found in $PATH\n\n";
-        std::cout << "Options [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]\n\n";
-        std::cout << "Options:\n";
-        std::cout << "-h            show this help message and exit\n";
-        std::cout << "-n            no search box\n";
-        std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
-        std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
-        std::cout << "-r <rows>     number of rows (default: " << rows <<")\n";
-        std::cout << "-c <name>     css file name (default: style.css)\n";
-        std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n";
-        std::cout << "-wm <wmname>  window manager name (if can not be detected)\n";
-        std::exit(0);
-    }
-
-    all_commands = {};
-    for (std::string line; std::getline(std::cin, line);) {
-        Glib::ustring cmd = line;
-        all_commands.push_back(cmd);
-    }
-    dmenu_run = all_commands[0].empty();
-
-    pid_t pid = getpid();
+	pid_t pid = getpid();
     std::string mypid = std::to_string(pid);
     
     std::string pid_file = "/var/run/user/" + std::to_string(getuid()) + "/nwgdmenu.pid";
@@ -63,6 +34,36 @@ int main(int argc, char *argv[]) {
         }
     }
     save_string_to_file(mypid, pid_file);
+
+    InputParser input(argc, argv);
+    if(input.cmdOptionExists("-h")){
+        std::cout << "GTK dynamic menu: nwgdmenu " << version << " (c) Piotr Miller 2020\n\n";
+        std::cout << "nwgdmenu - displays newline-separated input stdin as a GTK menu\n";
+        std::cout << "nwgdmenu_run - creates a GTK menu out of commands found in $PATH\n\n";
+        std::cout << "Options [-h] [-ha <l>|<r>] [-va <t>|<b>] [-r <rows>] [-c <name>] [-o <opacity>]\n\n";
+        std::cout << "Options:\n";
+        std::cout << "-h            show this help message and exit\n";
+        std::cout << "-n            no search box\n";
+        std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
+        std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
+        std::cout << "-r <rows>     number of rows (default: " << rows <<")\n";
+        std::cout << "-c <name>     css file name (default: style.css)\n";
+        std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n";
+        std::cout << "-wm <wmname>  window manager name (if can not be detected)\n";
+        std::exit(0);
+    }
+
+    // We will build dmenu out of commands found in $PATH if nothing has been passed by stdin
+    dmenu_run = isatty(fileno(stdin)) == 1;
+    
+    // Otherwise let's build from stdin input
+    if (!dmenu_run) {
+		all_commands = {};
+		for (std::string line; std::getline(std::cin, line);) {
+			Glib::ustring cmd = line;
+			all_commands.push_back(cmd);
+		}
+	}
 
     if (input.cmdOptionExists("-n")){
         show_searchbox = false;
