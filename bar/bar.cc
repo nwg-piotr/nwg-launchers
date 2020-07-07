@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
     std::string config_dir = get_config_dir();
     if (!fs::is_directory(config_dir)) {
         std::cout << "Config dir not found, creating...\n";
-        fs::create_directory(config_dir);
+        fs::create_directories(config_dir);
     }
 
     // default and custom style sheet
@@ -132,26 +132,21 @@ int main(int argc, char *argv[]) {
     // css file to be used
     std::string css_file = config_dir + "/" + custom_css_file;
     // copy default file if not found
-    const char *custom_css = css_file.c_str();
     if (!fs::exists(default_css_file)) {
-        fs::path source_file = "/usr/share/nwgbar/style.css";
-        fs::path target = default_css_file;
         try {
-            fs::copy_file("/usr/share/nwgbar/style.css", target, fs::copy_options::overwrite_existing);
+            fs::copy_file(DATA_DIR_STR "/nwgbar/style.css", default_css_file, fs::copy_options::overwrite_existing);
         } catch (...) {
             std::cout << "Failed copying default style.css\n";
         }
     }
 
     // default or custom template
-    std::string bar_file = config_dir + "/" + definition_file;
+    std::string default_bar_file = config_dir + "/bar.json";
+    std::string custom_bar_file = config_dir + "/" + definition_file;
     // copy default anyway if not found
-    const char *custom_bar = bar_file.c_str();
-    if (!fs::exists(config_dir + "/bar.json")) {
-        fs::path source_file = "/usr/share/nwgbar/bar.json";
-        fs::path target = bar_file;
+    if (!fs::exists(default_bar_file)) {
         try {
-            fs::copy_file("/usr/share/nwgbar/bar.json", target, fs::copy_options::overwrite_existing);
+            fs::copy_file(DATA_DIR_STR "/nwgbar/bar.json", default_bar_file, fs::copy_options::overwrite_existing);
         } catch (...) {
             std::cout << "Failed copying default template\n";
         }
@@ -159,10 +154,10 @@ int main(int argc, char *argv[]) {
 
     ns::json bar_json {};
     try {
-        bar_json = get_bar_json(custom_bar);
+        bar_json = get_bar_json(custom_bar_file);
     }  catch (...) {
         std::cout << "\nERROR: Template file not found, using default\n";
-        bar_json = get_bar_json("/usr/share/nwgbar/bar.json");
+        bar_json = get_bar_json(default_bar_file);
     }
     std::cout << bar_json.size() << " bar entries loaded\n";
 
@@ -194,12 +189,12 @@ int main(int argc, char *argv[]) {
     GdkDisplay* display = gdk_display_get_default();
     GdkScreen* screen = gdk_display_get_default_screen(display);
     gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-    if (std::ifstream(custom_css)) {
-        gtk_css_provider_load_from_path(provider, custom_css, NULL);
-        std::cout << "Using " << custom_css << std::endl;
+    if (std::ifstream(custom_css_file)) {
+        gtk_css_provider_load_from_path(provider, custom_css_file.c_str(), NULL);
+        std::cout << "Using " << custom_css_file << std::endl;
     } else {
-        gtk_css_provider_load_from_path(provider, "/usr/share/nwgbar/style.css", NULL);
-        std::cout << "Using /usr/share/nwgbar/style.css\n";
+        gtk_css_provider_load_from_path(provider, default_css_file.c_str(), NULL);
+        std::cout << "Using " << default_css_file << std::endl;
     }
     g_object_unref(provider);
 

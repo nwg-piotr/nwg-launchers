@@ -6,6 +6,7 @@
  * License: GPL3
  * */
 
+#include "../nwgconfig.h"
 #include <iostream>
 #include "../version.h"
 #include <fstream>

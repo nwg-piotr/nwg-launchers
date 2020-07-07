@@ -10,17 +10,16 @@
  * Returns config dir
  * */
 std::string get_config_dir() {
-    std::string s = "";
+    std::string s;
     char* val = getenv("XDG_CONFIG_HOME");
     if (val) {
         s = val;
-        s += "/nwgdmenu";
+        s += "/nwg-launchers/nwgdmenu";
     } else {
-        char* val = getenv("HOME");
+        val = getenv("HOME");
         s = val;
-        s += "/.config/nwgdmenu";
+        s += "/.config/nwg-launchers/nwgdmenu";
     }
-    fs::path dir (s);
     return s;
 }
 
