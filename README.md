@@ -21,6 +21,26 @@ instead of cloning the repository as described below.
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/nwg-launchers.svg)](https://repology.org/project/nwg-launchers/versions)
 
+### Dependencies
+
+- `gtkmm3` (`libgtkmm-3.0-dev`)
+- `nlohmann-json`
+
+### Installation
+
+```
+git clone https://github.com/nwg-piotr/nwg-launchers.git
+cd nwg-launchers
+meson builddir -Dbuildtype=release
+ninja -C builddir
+sudo ninja -C builddir install
+```
+To uninstall:
+
+```
+sudo ninja -C builddir uninstall
+```
+
 # nwggrid
 
 This command creates a GNOME-like application grid, with the search box, optionally prepended with a row of `-f` favourites
@@ -32,24 +52,6 @@ This only works with the `-p` argument:
 - to unpin a program, right click its icon in the pinned programs grid.
 
 [![Swappshot-Mon-Mar-23-205030-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205030-2020.th.png)](https://scrot.cloud/image/jb3k) [![Swappshot-Mon-Mar-23-205157-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205157-2020.th.png)](https://scrot.cloud/image/jOWg) [![Swappshot-Mon-Mar-23-205248-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205248-2020.th.png)](https://scrot.cloud/image/joh5)
-
-### Dependencies
-
-- `gtkmm3` (`libgtkmm-3.0-dev`)
-- `nlohmann-json`
-
-### Installation
-
-```
-git clone https://github.com/nwg-piotr/nwg-launchers.git
-cd nwg-launchers/grid
-sudo make clean install
-```
-To uninstall:
-
-```
-sudo make uninstall
-```
 
 ### Usage
 
@@ -79,23 +81,6 @@ You may edit the style sheet to your liking.
 This command creates a horizontal or vertical button bar, out of a template file.
 
 [![Swappshot-Mon-Mar-23-210713-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-210713-2020.th.png)](https://scrot.cloud/image/jRPQ) [![Swappshot-Mon-Mar-23-210652-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-210652-2020.th.png)](https://scrot.cloud/image/j8LU)
-
-### Dependencies
-
-- as above
-
-### Installation
-
-```
-git clone https://github.com/nwg-piotr/nwg-launchers.git
-cd nwg-launchers/bar
-sudo make clean install
-```
-To uninstall:
-
-```
-sudo make uninstall
-```
 
 ### Usage
 
@@ -160,23 +145,6 @@ This program provides 2 commands:
 - `nwgdmenu_run` - creates a GTK menu out of commands found in $PATH
 
 [![Swappshot-Mon-Mar-23-211702-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211702-2020.th.png)](https://scrot.cloud/image/jfHK) [![Swappshot-Mon-Mar-23-211911-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211911-2020.th.png)](https://scrot.cloud/image/j3MG) [![Swappshot-Mon-Mar-23-211736-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211736-2020.th.png)](https://scrot.cloud/image/jvOi)
-
-### Dependencies
-
-- as above
-
-### Installation
-
-```
-git clone https://github.com/nwg-piotr/nwg-launchers.git
-cd nwg-launchers/dmenu
-sudo make clean install
-```
-To uninstall:
-
-```
-sudo make uninstall
-```
 
 ### Usage
 
