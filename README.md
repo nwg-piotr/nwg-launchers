@@ -69,6 +69,8 @@ This only works with the `-p` argument:
 - to pin up a program icon, right click its icon in the applications grid;
 - to unpin a program, right click its icon in the pinned programs grid.
 
+*Hit "Delete" key to clear the search box.*
+
 [![Swappshot-Mon-Mar-23-205030-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205030-2020.th.png)](https://scrot.cloud/image/jb3k) [![Swappshot-Mon-Mar-23-205157-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205157-2020.th.png)](https://scrot.cloud/image/jOWg) [![Swappshot-Mon-Mar-23-205248-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205248-2020.th.png)](https://scrot.cloud/image/joh5)
 
 ### Usage
@@ -161,6 +163,8 @@ This program provides 2 commands:
 
 - `nwgdmenu` - displays newline-separated stdin input as a GTK menu
 - `nwgdmenu_run` - creates a GTK menu out of commands found in $PATH
+
+*Hit "Delete" key to clear the search box.*
 
 [![Swappshot-Mon-Mar-23-211702-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211702-2020.th.png)](https://scrot.cloud/image/jfHK) [![Swappshot-Mon-Mar-23-211911-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211911-2020.th.png)](https://scrot.cloud/image/j3MG) [![Swappshot-Mon-Mar-23-211736-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211736-2020.th.png)](https://scrot.cloud/image/jvOi)
 
