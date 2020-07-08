@@ -29,7 +29,7 @@ latest release](https://github.com/nwg-piotr/nwg-launchers/releases/latest).
 
 - `gtkmm3` (`libgtkmm-3.0-dev`)
 - `nlohmann-json` - optional, can be downloaded as a subproject
-- `meson` and `ninja`
+- `meson` and `ninja` - build dependencies
 
 ## Building
 
