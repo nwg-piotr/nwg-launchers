@@ -31,6 +31,8 @@ configure_file(
 	output : 'nwgconfig.h',
 	configuration : conf_data
 )
+# Include nwgconfig.h
+nwg_conf_inc = include_directories('.')
 
 if get_option('bar')
 	subdir('bar')

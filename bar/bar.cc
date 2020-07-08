@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
     InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
-        std::cout << "GTK button bar: nwgbar " << version << " (c) Piotr Miller 2020\n\n";
+        std::cout << "GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n";
 
         std::cout << "Options:\n";
         std::cout << "-h            show this help message and exit\n";

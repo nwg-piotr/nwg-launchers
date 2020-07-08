@@ -20,8 +20,7 @@
 
 #include <nlohmann/json.hpp>    // nlohmann-json package
 
-#include "../nwgconfig.h"
-#include "../version.h"
+#include "nwgconfig.h"
 
 namespace fs = std::filesystem;
 namespace ns = nlohmann;

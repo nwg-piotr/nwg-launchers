@@ -8,7 +8,7 @@ executable(
 	'nwgbar',
 	sources,
 	dependencies: [json, gtkmm],
-	include_directories: json_header_dir,
+	include_directories: [nwg_conf_inc, json_header_dir],
 	install: true
 )
 
