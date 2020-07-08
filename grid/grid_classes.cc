@@ -138,6 +138,11 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
         this -> searchbox.set_text(this -> search_phrase);
         this -> filter_view();
         return true;
+    } else if (key_event -> keyval == GDK_KEY_Delete) {
+		this -> search_phrase = "";
+		this -> searchbox.set_text(this -> search_phrase);
+        this -> filter_view();
+        return true;
     }
     //if the event has not been handled, call the base class
     return Gtk::Window::on_key_press_event(key_event);
