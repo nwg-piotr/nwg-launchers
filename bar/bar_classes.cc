@@ -14,6 +14,8 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
+#include "bar.h"
+
 MainWindow::MainWindow() {
     set_title("~nwgbar");
     set_role("~nwgbar");
@@ -44,24 +46,11 @@ MainWindow::MainWindow() {
 MainWindow::~MainWindow() {
 }
 
-gboolean on_window_clicked(GdkEventButton *event) {
-    Gtk::Main::quit();
-    return true;
-}
-
 AppBox::AppBox() {
     this -> set_always_show_image(true);
 }
 
 AppBox::~AppBox() {
-}
-
-void on_button_clicked(std::string cmd) {
-    cmd = cmd + " &";
-    const char *command = cmd.c_str();
-    std::system(command);
-
-    Gtk::Main::quit();
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {

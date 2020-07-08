@@ -7,12 +7,21 @@
  * License: GPL3
  * */
 
-#include "bar.h"
-#include "bar_tools.cpp"
-#include "bar_classes.cc"
 #include <sys/time.h>
 
+#include "bar.h"
+
+int image_size {72};            // button image size in pixels
+double opacity {0.9};           // overlay window opacity
+std::string wm {""};            // detected or forced window manager name
+
 int main(int argc, char *argv[]) {
+    std::string definition_file {"bar.json"};
+    std::string custom_css_file {"style.css"};
+    std::string orientation {"h"};
+    std::string h_align {""};
+    std::string v_align {""};
+
     struct timeval tp;
     gettimeofday(&tp, NULL);
     long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
@@ -25,13 +34,13 @@ int main(int argc, char *argv[]) {
     int saved_pid {};
     if (std::ifstream(pid_file)) {
         try {
-			saved_pid = std::stoi(read_file_to_string(pid_file));
-			if (kill(saved_pid, 0) != -1) {  // found running instance!
-				kill(saved_pid, 9);
-				save_string_to_file(mypid, pid_file);
-				std::exit(0);
-			}
-		} catch (...) {
+            saved_pid = std::stoi(read_file_to_string(pid_file));
+            if (kill(saved_pid, 0) != -1) {  // found running instance!
+                kill(saved_pid, 9);
+                save_string_to_file(mypid, pid_file);
+                std::exit(0);
+            }
+        } catch (...) {
             std::cout << "\nError reading pid file\n\n";
         }
     }
@@ -41,7 +50,7 @@ int main(int argc, char *argv[]) {
 
     InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
-        std::cout << "GTK button bar: nwgbar " << version << " (c) Piotr Miller 2020\n\n";
+        std::cout << "GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n";
 
         std::cout << "Options:\n";
         std::cout << "-h            show this help message and exit\n";

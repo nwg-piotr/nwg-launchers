@@ -16,29 +16,47 @@ For now the first three launchers seem to work pretty well, at least on Arch Lin
 # Packages
 
 The latest published version is [available](https://aur.archlinux.org/packages/nwg-launchers) in Arch User Repository.
-You may consider donwloading and unpacking [the latest release](https://github.com/nwg-piotr/nwg-launchers/releases/latest)
-instead of cloning the repository as described below.
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/nwg-launchers.svg)](https://repology.org/project/nwg-launchers/versions)
 
-### Dependencies
+# Building and installing
+
+To build nwg-launchers from source, you need a copy of the source code, which
+can be obtained by cloning the repository or by downloading and unpacking [the
+latest release](https://github.com/nwg-piotr/nwg-launchers/releases/latest).
+
+## Dependencies
 
 - `gtkmm3` (`libgtkmm-3.0-dev`)
-- `nlohmann-json`
+- `nlohmann-json` - optional, can be downloaded as a subproject
+- `meson` and `ninja`
 
-### Installation
+## Building
+
+This project uses the Meson build system for building and installing the
+executables and the necessary data. The options that can be passed to the
+`meson` command can be found in the `meson_options.txt` file, and can be used to
+disable building some of the available programs.
 
 ```
-git clone https://github.com/nwg-piotr/nwg-launchers.git
-cd nwg-launchers
-meson builddir -Dbuildtype=release
-ninja -C builddir
-sudo ninja -C builddir install
+$ git clone https://github.com/nwg-piotr/nwg-launchers.git
+$ cd nwg-launchers
+$ meson builddir -Dbuildtype=release
+$ ninja -C builddir
 ```
+
+## Installation
+
+To install:
+
+```
+$ sudo ninja -C builddir install
+```
+
 To uninstall:
 
 ```
-sudo ninja -C builddir uninstall
+$ sudo ninja -C builddir uninstall
 ```
 
 # nwggrid
