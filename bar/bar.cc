@@ -189,9 +189,9 @@ int main(int argc, char *argv[]) {
     GdkDisplay* display = gdk_display_get_default();
     GdkScreen* screen = gdk_display_get_default_screen(display);
     gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-    if (std::ifstream(custom_css_file)) {
-        gtk_css_provider_load_from_path(provider, custom_css_file.c_str(), NULL);
-        std::cout << "Using " << custom_css_file << std::endl;
+    if (std::ifstream(css_file)) {
+        gtk_css_provider_load_from_path(provider, css_file.c_str(), NULL);
+        std::cout << "Using " << css_file << std::endl;
     } else {
         gtk_css_provider_load_from_path(provider, default_css_file.c_str(), NULL);
         std::cout << "Using " << default_css_file << std::endl;
