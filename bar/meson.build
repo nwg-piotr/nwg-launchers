@@ -1,5 +1,7 @@
 sources = files(
-	'bar.cc'
+	'bar.cc',
+	'bar_classes.cc',
+	'bar_tools.cc'
 )
 
 executable(

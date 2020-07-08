@@ -6,31 +6,29 @@
  * License: GPL3
  * */
 
-#include "../nwgconfig.h"
-#include <iostream>
-#include "../version.h"
-#include <fstream>
-#include <filesystem>
-#include <gtkmm.h>
-#include "nlohmann/json.hpp"    // nlohmann-json package
-#include <glibmm/ustring.h>
 #include <sys/stat.h>
-
 #include <sys/types.h>
 #include <sys/file.h>
 #include <fcntl.h>
 
+#include <iostream>
+#include <fstream>
+#include <filesystem>
+
+#include <gtkmm.h>
+#include <glibmm/ustring.h>
+
+#include <nlohmann/json.hpp>    // nlohmann-json package
+
+#include "../nwgconfig.h"
+#include "../version.h"
+
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-int image_size (72);            // button image size in pixels
-double opacity (0.9);           // overlay window opacity
-std::string wm {""};            // detected or forced window manager name
-std::string definition_file {"bar.json"};
-std::string custom_css_file {"style.css"};
-std::string orientation {"h"};
-std::string h_align {""};
-std::string v_align {""};
+extern int image_size;
+extern double opacity;
+extern std::string wm;
 
 #ifndef CGTK_APP_BOX_H
 #define CGTK_APP_BOX_H
@@ -103,3 +101,54 @@ std::string v_align {""};
         std::string icon;
     };
 #endif // CGTK_CACHE_ENTRY_H
+
+/*
+ * Argument parser
+ * Credits for this cool class go to iain at https://stackoverflow.com/a/868894
+ * */
+class InputParser{
+    public:
+        InputParser (int &argc, char **argv){
+            for (int i=1; i < argc; ++i)
+                this->tokens.push_back(std::string(argv[i]));
+        }
+        /// @author iain
+        const std::string& getCmdOption(const std::string &option) const{
+            std::vector<std::string>::const_iterator itr;
+            itr =  std::find(this->tokens.begin(), this->tokens.end(), option);
+            if (itr != this->tokens.end() && ++itr != this->tokens.end()){
+                return *itr;
+            }
+            static const std::string empty_string("");
+            return empty_string;
+        }
+        /// @author iain
+        bool cmdOptionExists(const std::string &option) const{
+            return std::find(this->tokens.begin(), this->tokens.end(), option)
+                   != this->tokens.end();
+        }
+    private:
+        std::vector <std::string> tokens;
+};
+
+/*
+ * Function declarations
+ * */
+std::string get_config_dir(void);
+
+std::string read_file_to_string(std::string);
+void save_string_to_file(std::string, std::string);
+
+std::string detect_wm(void);
+
+std::string get_output(std::string);
+
+ns::json string_to_json(std::string);
+ns::json get_bar_json(std::string);
+std::vector<BarEntry> get_bar_entries(ns::json);
+
+std::vector<int> display_geometry(std::string, MainWindow &);
+Gtk::Image* app_image(std::string);
+
+void on_button_clicked(std::string);
+gboolean on_window_clicked(GdkEventButton *);
