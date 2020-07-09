@@ -76,7 +76,7 @@ void remove_and_save_pinned(std::string command) {
         }
     }
 
-    if (found && idx > 0) {
+    if (found) {
         pinned.erase(pinned.begin() + idx);
         std::ofstream out_file(pinned_file);
         for (const auto &e : pinned) out_file << e << "\n";
