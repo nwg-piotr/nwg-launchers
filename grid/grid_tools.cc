@@ -55,7 +55,6 @@ std::string get_pinned_path() {
 void add_and_save_pinned(std::string command) {
     // Add if not yet pinned
     if (std::find(pinned.begin(), pinned.end(), command) == pinned.end()) {
-        std::cout << "Pinning " << command << std::endl;
         pinned.push_back(command);
         std::ofstream out_file(pinned_file);
         for (const auto &e : pinned) out_file << e << "\n";
@@ -78,7 +77,6 @@ void remove_and_save_pinned(std::string command) {
     }
 
     if (found && idx > 0) {
-        std::cout << "Unpinning " << command << std::endl;
         pinned.erase(pinned.begin() + idx);
         std::ofstream out_file(pinned_file);
         for (const auto &e : pinned) out_file << e << "\n";
