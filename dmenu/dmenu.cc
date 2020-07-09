@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "nwg_tools.h"
+#include "nwg_classes.h"
 #include "on_event.h"
 #include "dmenu.h"
 

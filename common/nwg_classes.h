@@ -1,0 +1,28 @@
+/*
+ * Classes for nwg-launchers
+ * Copyright (c) 2020 Érico Nogueira
+ * e-mail: ericonr@disroot.org
+ * Website: http://nwg.pl
+ * Project: https://github.com/nwg-piotr/nwg-launchers
+ * License: GPL3
+ * */
+
+#pragma once
+
+#include <string>
+#include <vector>
+
+/*
+ * Argument parser
+ * Credits for this cool class go to iain at https://stackoverflow.com/a/868894
+ * */
+class InputParser{
+    public:
+        InputParser (int &, char **);
+        /// @author iain
+        const std::string& getCmdOption(const std::string &) const;
+        /// @author iain
+        bool cmdOptionExists(const std::string &) const;
+    private:
+        std::vector <std::string> tokens;
+};
