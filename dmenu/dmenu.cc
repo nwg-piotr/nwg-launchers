@@ -10,6 +10,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "nwg_tools.h"
+#include "on_event.h"
 #include "dmenu.h"
 
 std::string h_align {""};                   // horizontal alignment
@@ -69,12 +71,12 @@ int main(int argc, char *argv[]) {
     
     // Otherwise let's build from stdin input
     if (!dmenu_run) {
-		all_commands = {};
-		for (std::string line; std::getline(std::cin, line);) {
-			Glib::ustring cmd = line;
-			all_commands.push_back(cmd);
-		}
-	}
+        all_commands = {};
+        for (std::string line; std::getline(std::cin, line);) {
+            Glib::ustring cmd = line;
+            all_commands.push_back(cmd);
+        }
+    }
 
     if (input.cmdOptionExists("-n")){
         show_searchbox = false;
@@ -136,7 +138,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    std::string config_dir = get_config_dir();
+    std::string config_dir = get_config_dir("nwgdmenu");
     if (!fs::is_directory(config_dir)) {
         std::cout << "Config dir not found, creating...\n";
         fs::create_directories(config_dir);

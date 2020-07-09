@@ -110,24 +110,12 @@ class InputParser{
 /*
  * Function declarations
  * */
-std::string get_config_dir(void);
-
-std::string read_file_to_string(std::string);
-void save_string_to_file(std::string, std::string);
-
-std::string detect_wm(void);
-std::string get_locale(void);
-
 std::vector<std::string> split_string(std::string, std::string);
 std::vector<std::string> get_command_dirs(void);
 std::vector<std::string> list_commands(std::vector<std::string>);
 
-std::string get_output(std::string);
-
 ns::json string_to_json(std::string);
 void save_json(ns::json, std::string);
-ns::json get_cache(std::string);
 
 std::vector<int> display_geometry(std::string, MainWindow &);
 void on_item_clicked(std::string);
-gboolean on_window_clicked(GdkEventButton *);
