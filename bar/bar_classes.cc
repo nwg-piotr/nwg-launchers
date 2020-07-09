@@ -46,13 +46,6 @@ MainWindow::MainWindow() {
 MainWindow::~MainWindow() {
 }
 
-AppBox::AppBox() {
-    this -> set_always_show_image(true);
-}
-
-AppBox::~AppBox() {
-}
-
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
     if (key_event -> keyval == GDK_KEY_Escape) {
         Gtk::Main::quit();

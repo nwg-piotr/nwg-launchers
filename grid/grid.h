@@ -20,6 +20,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "nwg_classes.h"
 #include "nwgconfig.h"
 
 namespace fs = std::filesystem;
@@ -37,28 +38,6 @@ extern std::string pinned_file;
 extern std::vector<std::string> pinned;
 extern ns::json cache;
 extern std::string cache_file;
-
-class AppBox : public Gtk::Button {
-    public:
-        AppBox();
-        Glib::ustring name;
-        Glib::ustring exec;
-        Glib::ustring comment;
-
-    AppBox(Glib::ustring name, std::string exec, Glib::ustring comment) {
-        this -> name = name;
-        Glib::ustring n = this -> name;
-        if (n.length() > 25) {
-            n = this -> name.substr(0, 22) + "...";
-        }
-        this -> exec = exec;
-        this -> comment = comment;
-        this -> set_always_show_image(true);
-        this -> set_label(n);
-    }
-
-    virtual ~AppBox();
-};
 
 class MainWindow : public Gtk::Window {
     public:

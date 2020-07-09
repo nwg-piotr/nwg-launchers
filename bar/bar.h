@@ -20,6 +20,7 @@
 
 #include <nlohmann/json.hpp>    // nlohmann-json package
 
+#include "nwg_classes.h"
 #include "nwgconfig.h"
 
 namespace fs = std::filesystem;
@@ -28,29 +29,6 @@ namespace ns = nlohmann;
 extern int image_size;
 extern double opacity;
 extern std::string wm;
-
-class AppBox : public Gtk::Button {
-    public:
-        AppBox();
-        Glib::ustring name;
-        Glib::ustring exec;
-        Glib::ustring comment;
-
-        AppBox(Glib::ustring name, std::string exec, Glib::ustring comment) {
-            this -> name = name;
-            Glib::ustring n = this -> name;
-            if (n.length() > 25) {
-                n = this -> name.substr(0, 22) + "...";
-            }
-            this -> exec = exec;
-            this -> comment = comment;
-            this -> set_always_show_image(true);
-            this -> set_label(n);
-        }
-
-        virtual ~AppBox();
-
-};
 
 class MainWindow : public Gtk::Window {
     public:

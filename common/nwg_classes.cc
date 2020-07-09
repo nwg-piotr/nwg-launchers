@@ -30,3 +30,22 @@ bool InputParser::cmdOptionExists(const std::string &option) const {
     return std::find(this->tokens.begin(), this->tokens.end(), option)
         != this->tokens.end();
 }
+
+AppBox::AppBox() {
+    this -> set_always_show_image(true);
+}
+
+AppBox::AppBox(Glib::ustring name, std::string exec, Glib::ustring comment) {
+    this -> name = name;
+    Glib::ustring n = this -> name;
+    if (n.length() > 25) {
+        n = this -> name.substr(0, 22) + "...";
+    }
+    this -> exec = exec;
+    this -> comment = comment;
+    this -> set_always_show_image(true);
+    this -> set_label(n);
+}
+
+AppBox::~AppBox() {
+}

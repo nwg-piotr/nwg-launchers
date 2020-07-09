@@ -12,6 +12,9 @@
 #include <string>
 #include <vector>
 
+#include <gtkmm.h>
+#include <glibmm/ustring.h>
+
 /*
  * Argument parser
  * Credits for this cool class go to iain at https://stackoverflow.com/a/868894
@@ -25,4 +28,16 @@ class InputParser{
         bool cmdOptionExists(const std::string &) const;
     private:
         std::vector <std::string> tokens;
+};
+
+class AppBox : public Gtk::Button {
+    public:
+        AppBox();
+        AppBox(Glib::ustring, std::string, Glib::ustring);
+
+        Glib::ustring name;
+        Glib::ustring exec;
+        Glib::ustring comment;
+
+        virtual ~AppBox();
 };
