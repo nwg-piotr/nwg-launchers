@@ -10,6 +10,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "nwg_tools.h"
+#include "on_event.h"
 #include "grid.h"
 
 bool pins = false;              // whether to display pinned
@@ -160,7 +162,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    std::string config_dir = get_config_dir();
+    std::string config_dir = get_config_dir("nwggrid");
     if (!fs::is_directory(config_dir)) {
         std::cout << "Config dir not found, creating...\n";
         fs::create_directories(config_dir);

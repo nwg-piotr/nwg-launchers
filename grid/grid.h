@@ -137,18 +137,12 @@ class InputParser{
  * */
 std::string get_cache_path(void);
 std::string get_pinned_path(void);
-std::string get_config_dir(void);
-std::string read_file_to_string(std::string);
-void save_string_to_file(std::string, std::string);
 void add_and_save_pinned(std::string);
 void remove_and_save_pinned(std::string);
-std::string detect_wm(void);
-std::string get_locale(void);
 std::vector<std::string> split_string(std::string, std::string);
 std::vector<std::string> get_app_dirs(void);
 std::vector<std::string> list_entries(std::vector<std::string>);
 std::vector<std::string> desktop_entry(std::string, std::string);
-std::string get_output(std::string);
 ns::json string_to_json(std::string);
 void save_json(ns::json, std::string);
 ns::json get_cache(std::string);
@@ -156,7 +150,6 @@ ns::json get_cache(std::string);
 std::vector<CacheEntry> get_favourites(ns::json, int);
 std::vector<int> display_geometry(std::string, MainWindow &);
 Gtk::Image* app_image(std::string);
-gboolean on_window_clicked(GdkEventButton *);
 bool on_button_entered(GdkEventCrossing *, Glib::ustring);
 bool on_button_focused(GdkEventFocus *, Glib::ustring);
 void on_button_clicked(std::string);
