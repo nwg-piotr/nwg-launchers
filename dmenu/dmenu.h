@@ -6,66 +6,62 @@
  * License: GPL3
  * */
 
-#include "nwgconfig.h"
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-#include <gtkmm.h>
-#include "nlohmann/json.hpp"                // nlohmann-json package
-#include <glibmm/ustring.h>
 #include <sys/stat.h>
-
 #include <sys/types.h>
 #include <sys/file.h>
 #include <fcntl.h>
+
+#include <iostream>
+#include <fstream>
+#include <filesystem>
 #include <regex>
+
+#include <gtkmm.h>
+#include <glibmm/ustring.h>
+
+#include <nlohmann/json.hpp>
+
+#include "nwgconfig.h"
 
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-std::string h_align {""};                   // horizontal alignment
-std::string v_align {""};                   // vertical alignment
-double opacity (0.3);                       // overlay window opacity
-std::string wm {""};                        // detected or forced window manager name
-std::string custom_css_file {"style.css"};
-int rows (20);                              // number of menu items to display
-std::vector<Glib::ustring> all_commands {};
-bool dmenu_run = false;
-bool show_searchbox = true;                 // if to show search box
+extern std::string h_align;
+extern std::string v_align;
+extern double opacity;
+extern std::string wm;
 
-#ifndef NWG_DMENU_ANCHOR_H
-#define NWG_DMENU_ANCHOR_H
-    class Anchor : public Gtk::Button {
-        public:
-        Anchor();
-        virtual ~Anchor();
-        private:
-        bool on_focus_in_event(GdkEventFocus* focus_event) override;
-    };
-#endif // NWG_DMENU_ANCHOR_H
+extern int rows;
+extern std::vector<Glib::ustring> all_commands;
 
-#ifndef NWG_DMENU_DMENU_H
-#define NWG_DMENU_DMENU_H
-    class DMenu : public Gtk::Menu {
-        public:
+extern bool dmenu_run;
+extern bool show_searchbox;
+
+class DMenu : public Gtk::Menu {
+    public:
         DMenu();
         virtual ~DMenu();
         Gtk::SearchEntry searchbox;
         Glib::ustring search_phrase;
 
-        private:
+    private:
         bool on_key_press_event(GdkEventKey* event) override;
         void filter_view();
         void on_item_clicked(Glib::ustring cmd);
-    };
-#endif // NWG_DMENU_DMENU_H
+};
 
-DMenu* main_menu;
+class Anchor : public Gtk::Button {
+    public:
+        Anchor(DMenu *);
+        virtual ~Anchor();
 
-#ifndef NWG_DMENU_MAIN_WINDOW_H
-#define NWG_DMENU_MAIN_WINDOW_H
-    class MainWindow : public Gtk::Window {
-        public:
+    private:
+        bool on_focus_in_event(GdkEventFocus* focus_event) override;
+        DMenu *menu;
+};
+
+class MainWindow : public Gtk::Window {
+    public:
         MainWindow();
         void set_visual(Glib::RefPtr<Gdk::Visual> visual);
         virtual ~MainWindow();
@@ -73,12 +69,65 @@ DMenu* main_menu;
         Gtk::Menu* menu;
         Gtk::Button* anchor;
 
-        private:
+    private:
         bool on_button_press_event(GdkEventButton* button_event) override;
 
-        protected:
+    protected:
         virtual bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr);
         void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen);
         bool _SUPPORTS_ALPHA = false;
-    };
-#endif // NWG_DMENU_MAIN_WINDOW_H
+};
+
+/*
+ * Argument parser
+ * Credits for this cool class go to iain at https://stackoverflow.com/a/868894
+ * */
+class InputParser{
+    public:
+        InputParser (int &argc, char **argv){
+            for (int i=1; i < argc; ++i)
+                this->tokens.push_back(std::string(argv[i]));
+        }
+        /// @author iain
+        const std::string& getCmdOption(const std::string &option) const{
+            std::vector<std::string>::const_iterator itr;
+            itr =  std::find(this->tokens.begin(), this->tokens.end(), option);
+            if (itr != this->tokens.end() && ++itr != this->tokens.end()){
+                return *itr;
+            }
+            static const std::string empty_string("");
+            return empty_string;
+        }
+        /// @author iain
+        bool cmdOptionExists(const std::string &option) const{
+            return std::find(this->tokens.begin(), this->tokens.end(), option)
+                   != this->tokens.end();
+        }
+    private:
+        std::vector <std::string> tokens;
+};
+
+/*
+ * Function declarations
+ * */
+std::string get_config_dir(void);
+
+std::string read_file_to_string(std::string);
+void save_string_to_file(std::string, std::string);
+
+std::string detect_wm(void);
+std::string get_locale(void);
+
+std::vector<std::string> split_string(std::string, std::string);
+std::vector<std::string> get_command_dirs(void);
+std::vector<std::string> list_commands(std::vector<std::string>);
+
+std::string get_output(std::string);
+
+ns::json string_to_json(std::string);
+void save_json(ns::json, std::string);
+ns::json get_cache(std::string);
+
+std::vector<int> display_geometry(std::string, MainWindow &);
+void on_item_clicked(std::string);
+gboolean on_window_clicked(GdkEventButton *);

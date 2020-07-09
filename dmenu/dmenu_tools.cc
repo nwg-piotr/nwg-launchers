@@ -6,6 +6,8 @@
  * License: GPL3
  * */
 
+#include "dmenu.h"
+
 /*
  * Returns config dir
  * */
@@ -222,31 +224,18 @@ std::vector<int> display_geometry(std::string wm, MainWindow &window) {
     return geo;
 }
 
-/*
- * Argument parser
- * Credits for this cool class go to iain at https://stackoverflow.com/a/868894
- * */
-class InputParser{
-    public:
-        InputParser (int &argc, char **argv){
-            for (int i=1; i < argc; ++i)
-                this->tokens.push_back(std::string(argv[i]));
-        }
-        /// @author iain
-        const std::string& getCmdOption(const std::string &option) const{
-            std::vector<std::string>::const_iterator itr;
-            itr =  std::find(this->tokens.begin(), this->tokens.end(), option);
-            if (itr != this->tokens.end() && ++itr != this->tokens.end()){
-                return *itr;
-            }
-            static const std::string empty_string("");
-            return empty_string;
-        }
-        /// @author iain
-        bool cmdOptionExists(const std::string &option) const{
-            return std::find(this->tokens.begin(), this->tokens.end(), option)
-                   != this->tokens.end();
-        }
-    private:
-        std::vector <std::string> tokens;
-};
+gboolean on_window_clicked(GdkEventButton *event) {
+    Gtk::Main::quit();
+    return true;
+}
+
+void on_item_clicked(std::string cmd) {
+    if (dmenu_run) {
+        cmd = cmd + " &";
+        const char *command = cmd.c_str();
+        std::system(command);
+    } else {
+        std::cout << cmd;
+    }
+    Gtk::Main::quit();
+}

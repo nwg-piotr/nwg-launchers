@@ -14,9 +14,9 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
-Anchor::Anchor() {
-    //~ set_size_request(1, 1);
-}
+#include "dmenu.h"
+
+Anchor::Anchor(DMenu *menu) : menu{menu} {}
 
 Anchor::~Anchor() {
 }
@@ -41,7 +41,7 @@ bool Anchor::on_focus_in_event(GdkEventFocus* focus_event) {
             gravity_menu = Gdk::GRAVITY_NORTH;
         }
     }
-    main_menu->popup_at_widget(this, gravity_widget, gravity_menu, nullptr);
+    menu->popup_at_widget(this, gravity_widget, gravity_menu, nullptr);
 
     return true;
 }
@@ -83,25 +83,14 @@ bool DMenu::on_key_press_event(GdkEventKey* key_event) {
             this -> filter_view();
             return true;
         } else if (key_event -> keyval == GDK_KEY_Delete) {
-			this -> search_phrase = "";
-			this -> searchbox.set_text(this -> search_phrase);
-			this -> filter_view();
-			return true;
+            this -> search_phrase = "";
+            this -> searchbox.set_text(this -> search_phrase);
+            this -> filter_view();
+            return true;
         }
     }
     //if the event has not been handled, call the base class
     return Gtk::Menu::on_key_press_event(key_event);
-}
-
-void on_item_clicked(std::string cmd) {
-    if (dmenu_run) {
-        cmd = cmd + " &";
-        const char *command = cmd.c_str();
-        std::system(command);
-    } else {
-        std::cout << cmd;
-    }
-    Gtk::Main::quit();
 }
 
 void DMenu::on_item_clicked(Glib::ustring cmd) {
@@ -201,11 +190,6 @@ MainWindow::MainWindow() : menu(nullptr) {
 }
 
 MainWindow::~MainWindow() {
-}
-
-gboolean on_window_clicked(GdkEventButton *event) {
-    Gtk::Main::quit();
-    return true;
 }
 
 bool MainWindow::on_button_press_event(GdkEventButton* button_event) {

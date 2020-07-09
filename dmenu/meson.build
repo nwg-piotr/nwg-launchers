@@ -1,5 +1,7 @@
 sources = files(
-	'dmenu.cc'
+	'dmenu.cc',
+	'dmenu_classes.cc',
+	'dmenu_tools.cc'
 )
 
 executable(
