@@ -6,109 +6,159 @@
  * License: GPL3
  * */
 
-#include "nwgconfig.h"
-#include <iostream>
-#include <fstream>
-#include <iostream>
-#include <filesystem>
-#include <gtkmm.h>
-#include "nlohmann/json.hpp"	// nlohmann-json package
-#include <glibmm/ustring.h>
 #include <sys/stat.h>
-
 #include <sys/types.h>
 #include <sys/file.h>
 #include <fcntl.h>
 
+#include <iostream>
+#include <fstream>
+#include <filesystem>
+
+#include <gtkmm.h>
+#include <glibmm/ustring.h>
+
+#include <nlohmann/json.hpp>
+
+#include "nwgconfig.h"
+
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-static Gtk::Label *description;
-int num_col (6);				// number of grid columns
-int image_size (72);			// button image size in pixels
-bool favs (false);				// whether to display favourites
-bool pins (false);				// whether to display pinned
-double opacity (0.9);			// overlay window opacity
-std::string wm {""};            // detected or forced window manager name
-ns::json cache;
-std::string cache_file {};
-std::string pinned_file {};
-std::vector<std::string> pinned;	// list of commands of pinned icons
-std::string custom_css_file {"style.css"};
+extern bool pins;
+extern double opacity;
+extern std::string wm;
 
-#ifndef CGTK_APP_BOX_H
-#define CGTK_APP_BOX_H
-    class AppBox : public Gtk::Button {
-        public:
+extern int num_col;
+extern int image_size;
+extern Gtk::Label *description;
+
+extern std::string pinned_file;
+extern std::vector<std::string> pinned;
+extern ns::json cache;
+extern std::string cache_file;
+
+class AppBox : public Gtk::Button {
+    public:
         AppBox();
         Glib::ustring name;
         Glib::ustring exec;
         Glib::ustring comment;
 
-        AppBox(Glib::ustring name, std::string exec, Glib::ustring comment) {
-            this -> name = name;
-            Glib::ustring n = this -> name;
-            if (n.length() > 25) {
-                n = this -> name.substr(0, 22) + "...";
-            }
-            this -> exec = exec;
-            this -> comment = comment;
-            this -> set_always_show_image(true);
-            this -> set_label(n);
+    AppBox(Glib::ustring name, std::string exec, Glib::ustring comment) {
+        this -> name = name;
+        Glib::ustring n = this -> name;
+        if (n.length() > 25) {
+            n = this -> name.substr(0, 22) + "...";
         }
+        this -> exec = exec;
+        this -> comment = comment;
+        this -> set_always_show_image(true);
+        this -> set_label(n);
+    }
 
-        virtual ~AppBox();
-    };
-#endif // CGTK_APP_BOX_H
+    virtual ~AppBox();
+};
 
-#ifndef CGTK_MAIN_WINDOW_H
-#define CGTK_MAIN_WINDOW_H
-    class MainWindow : public Gtk::Window {
-        public:
+class MainWindow : public Gtk::Window {
+    public:
         MainWindow();
         void set_visual(Glib::RefPtr<Gdk::Visual> visual);
         virtual ~MainWindow();
 
-        Gtk::SearchEntry searchbox;				// This will stay insensitive, updated with search_phrase value only
-        Gtk::Label label_desc;					// To display .desktop entry Comment field at the bottom
-        Glib::ustring search_phrase;			// updated on key_press_event
-        Gtk::Grid apps_grid;					// All application buttons grid
-        Gtk::Grid favs_grid;					// Favourites grid above
-        Gtk::Grid pinned_grid;					// Pinned entries grid above
-        Gtk::Separator separator;				// between favs and all apps
-        Gtk::Separator separator1;				// below pinned
-        std::list<AppBox*> all_boxes {};		// attached to apps_grid unfiltered view
-        std::list<AppBox*> filtered_boxes {};	// attached to apps_grid filtered view
-        std::list<AppBox*> fav_boxes {};		// attached to favs_grid
-        std::list<AppBox*> pinned_boxes {};		// attached to pinned_grid
+        Gtk::SearchEntry searchbox;             // This will stay insensitive, updated with search_phrase value only
+        Gtk::Label label_desc;                  // To display .desktop entry Comment field at the bottom
+        Glib::ustring search_phrase;            // updated on key_press_event
+        Gtk::Grid apps_grid;                    // All application buttons grid
+        Gtk::Grid favs_grid;                    // Favourites grid above
+        Gtk::Grid pinned_grid;                  // Pinned entries grid above
+        Gtk::Separator separator;               // between favs and all apps
+        Gtk::Separator separator1;              // below pinned
+        std::list<AppBox*> all_boxes {};        // attached to apps_grid unfiltered view
+        std::list<AppBox*> filtered_boxes {};   // attached to apps_grid filtered view
+        std::list<AppBox*> fav_boxes {};        // attached to favs_grid
+        std::list<AppBox*> pinned_boxes {};     // attached to pinned_grid
 
-        private:
+    private:
         //Override default signal handler:
         bool on_key_press_event(GdkEventKey* event) override;
         void filter_view();
         void rebuild_grid(bool filtered);
 
-        protected:
+    protected:
         virtual bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr);
         void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen);
         bool _SUPPORTS_ALPHA = false;
-    };
-#endif // CGTK_MAIN_WINDOW_H
+};
 
-#ifndef CGTK_DESKTOP_ENTRY_H
-#define CGTK_DESKTOP_ENTRY_H
-    struct DesktopEntry {
-        std::string name;
-        std::string exec;
-        std::string icon;
-        std::string comment;
-    };
-#endif // CGTK_DESKTOP_ENTRY_H
+struct DesktopEntry {
+    std::string name;
+    std::string exec;
+    std::string icon;
+    std::string comment;
+};
 
-#ifndef CGTK_CACHE_ENTRY_H
-#define CGTK_CACHE_ENTRY_H
-    struct CacheEntry {
-        std::string exec;
-        int clicks;
-    };
-#endif // CGTK_CACHE_ENTRY_H
+struct CacheEntry {
+    std::string exec;
+    int clicks;
+};
+
+/*
+ * Argument parser
+ * Credits for this cool class go to iain at https://stackoverflow.com/a/868894
+ * */
+class InputParser{
+    public:
+        InputParser (int &argc, char **argv){
+            for (int i=1; i < argc; ++i)
+                this->tokens.push_back(std::string(argv[i]));
+        }
+        /// @author iain
+        const std::string& getCmdOption(const std::string &option) const{
+            std::vector<std::string>::const_iterator itr;
+            itr =  std::find(this->tokens.begin(), this->tokens.end(), option);
+            if (itr != this->tokens.end() && ++itr != this->tokens.end()){
+                return *itr;
+            }
+            static const std::string empty_string("");
+            return empty_string;
+        }
+        /// @author iain
+        bool cmdOptionExists(const std::string &option) const{
+            return std::find(this->tokens.begin(), this->tokens.end(), option)
+                   != this->tokens.end();
+        }
+    private:
+        std::vector <std::string> tokens;
+};
+
+/*
+ * Function declarations
+ * */
+std::string get_cache_path(void);
+std::string get_pinned_path(void);
+std::string get_config_dir(void);
+std::string read_file_to_string(std::string);
+void save_string_to_file(std::string, std::string);
+void add_and_save_pinned(std::string);
+void remove_and_save_pinned(std::string);
+std::string detect_wm(void);
+std::string get_locale(void);
+std::vector<std::string> split_string(std::string, std::string);
+std::vector<std::string> get_app_dirs(void);
+std::vector<std::string> list_entries(std::vector<std::string>);
+std::vector<std::string> desktop_entry(std::string, std::string);
+std::string get_output(std::string);
+ns::json string_to_json(std::string);
+void save_json(ns::json, std::string);
+ns::json get_cache(std::string);
+ std::vector<std::string> get_pinned(std::string);
+std::vector<CacheEntry> get_favourites(ns::json, int);
+std::vector<int> display_geometry(std::string, MainWindow &);
+Gtk::Image* app_image(std::string);
+gboolean on_window_clicked(GdkEventButton *);
+bool on_button_entered(GdkEventCrossing *, Glib::ustring);
+bool on_button_focused(GdkEventFocus *, Glib::ustring);
+void on_button_clicked(std::string);
+bool on_grid_button_press(GdkEventButton *, Glib::ustring);
+bool on_pinned_button_press(GdkEventButton *, Glib::ustring);

@@ -9,6 +9,9 @@
 /*
  * Returns cache file path
  * */
+
+#include "grid.h"
+
 std::string get_cache_path() {
     std::string s = "";
     char* val = getenv("XDG_CACHE_HOME");
@@ -87,36 +90,36 @@ void save_string_to_file(std::string s, std::string filename) {
  * Adds pinned entry and saves pinned cache file
  * */
 void add_and_save_pinned(std::string command) {
-	// Add if not yet pinned
-	if (std::find(pinned.begin(), pinned.end(), command) == pinned.end()) {
-		std::cout << "Pinning " << command << std::endl;
-		pinned.push_back(command);
-		std::ofstream out_file(pinned_file);
-		for (const auto &e : pinned) out_file << e << "\n";
-	}
+    // Add if not yet pinned
+    if (std::find(pinned.begin(), pinned.end(), command) == pinned.end()) {
+        std::cout << "Pinning " << command << std::endl;
+        pinned.push_back(command);
+        std::ofstream out_file(pinned_file);
+        for (const auto &e : pinned) out_file << e << "\n";
+    }
 }
 
 /*
  * Removes pinned entry and saves pinned cache file
  * */
 void remove_and_save_pinned(std::string command) {
-	// Find the item index
-	bool found = false;
-	int idx (-1);
-	for (int i = 0; i < (int)pinned.size(); i++) {
-		if (pinned[i] == command) {
-			found = true;
-			idx = i;
-			break;
-		}
-	}
-	
-	if (found && idx > 0) {
-		std::cout << "Unpinning " << command << std::endl;
-		pinned.erase(pinned.begin() + idx);
-		std::ofstream out_file(pinned_file);
-		for (const auto &e : pinned) out_file << e << "\n";
-	}
+    // Find the item index
+    bool found = false;
+    int idx (-1);
+    for (int i = 0; i < (int)pinned.size(); i++) {
+        if (pinned[i] == command) {
+            found = true;
+            idx = i;
+            break;
+        }
+    }
+
+    if (found && idx > 0) {
+        std::cout << "Unpinning " << command << std::endl;
+        pinned.erase(pinned.begin() + idx);
+        std::ofstream out_file(pinned_file);
+        for (const auto &e : pinned) out_file << e << "\n";
+    }
 }
 
 /*
@@ -299,16 +302,16 @@ std::vector<std::string> desktop_entry(std::string path, std::string lang) {
         }
     }
     if (name_ln.empty()) {
-		fields[0] = name;
-	} else {
-		fields[0] = name_ln;
-	}
-	
-	if (comment_ln.empty()) {
-		fields[3] = comment;
-	} else {
-		fields[3] = comment_ln;
-	}
+        fields[0] = name;
+    } else {
+        fields[0] = name_ln;
+    }
+
+    if (comment_ln.empty()) {
+        fields[3] = comment;
+    } else {
+        fields[3] = comment_ln;
+    }
     return fields;
 }
 
@@ -357,7 +360,7 @@ ns::json get_cache(std::string cache_file) {
 /*
  * Returns vector of strings out of the pinned cache file content
  * */
- std::vector<std::string> get_pinned(std::string pinned_file) {
+std::vector<std::string> get_pinned(std::string pinned_file) {
     std::vector<std::string> lines;
     std::ifstream in(pinned_file.c_str());
     if(!in) {
@@ -370,8 +373,8 @@ ns::json get_cache(std::string cache_file) {
     while (std::getline(in, str)) {
         // add non-empty lines to the vector
         if(str.size() > 0) {
-			lines.push_back(str);
-		}
+            lines.push_back(str);
+        }
     }
     in.close();
     return lines;
@@ -464,31 +467,51 @@ Gtk::Image* app_image(std::string icon) {
     return image;
 }
 
-/*
- * Argument parser
- * Credits for this cool class go to iain at https://stackoverflow.com/a/868894
- * */
-class InputParser{
-    public:
-        InputParser (int &argc, char **argv){
-            for (int i=1; i < argc; ++i)
-                this->tokens.push_back(std::string(argv[i]));
-        }
-        /// @author iain
-        const std::string& getCmdOption(const std::string &option) const{
-            std::vector<std::string>::const_iterator itr;
-            itr =  std::find(this->tokens.begin(), this->tokens.end(), option);
-            if (itr != this->tokens.end() && ++itr != this->tokens.end()){
-                return *itr;
-            }
-            static const std::string empty_string("");
-            return empty_string;
-        }
-        /// @author iain
-        bool cmdOptionExists(const std::string &option) const{
-            return std::find(this->tokens.begin(), this->tokens.end(), option)
-                   != this->tokens.end();
-        }
-    private:
-        std::vector <std::string> tokens;
-};
+gboolean on_window_clicked(GdkEventButton *event) {
+    Gtk::Main::quit();
+    return true;
+}
+
+bool on_button_entered(GdkEventCrossing *event, Glib::ustring comment) {
+    description -> set_text(comment);
+    return true;
+}
+
+bool on_button_focused(GdkEventFocus *event, Glib::ustring comment) {
+    description -> set_text(comment);
+    return true;
+}
+
+void on_button_clicked(std::string cmd) {
+    int clicks = 0;
+    try {
+        clicks = cache[cmd];
+        clicks++;
+    } catch (...) {
+        clicks = 1;
+    }
+    cache[cmd] = clicks;
+    save_json(cache, cache_file);
+
+    cmd = cmd + " &";
+    const char *command = cmd.c_str();
+    std::system(command);
+
+    Gtk::Main::quit();
+}
+
+bool on_grid_button_press(GdkEventButton *event, Glib::ustring exec) {
+    if (pins && event -> button == 3) {
+        add_and_save_pinned(exec);
+        Gtk::Main::quit();
+    }
+    return true;
+}
+
+bool on_pinned_button_press(GdkEventButton *event, Glib::ustring exec) {
+    if (pins && event -> button == 3) {
+        remove_and_save_pinned(exec);
+        Gtk::Main::quit();
+    }
+    return true;
+}

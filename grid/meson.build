@@ -1,5 +1,7 @@
 sources = files(
-	'grid.cc'
+	'grid.cc',
+	'grid_classes.cc',
+	'grid_tools.cc'
 )
 
 executable(
