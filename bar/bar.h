@@ -92,7 +92,6 @@ struct BarEntry {
 /*
  * Function declarations
  * */
-ns::json string_to_json(std::string);
 ns::json get_bar_json(std::string);
 std::vector<BarEntry> get_bar_entries(ns::json);
 

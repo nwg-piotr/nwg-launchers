@@ -9,17 +9,6 @@
 #include "nwg_tools.h"
 #include "bar.h"
 
-/* Converts json string into a json object;
- * Requires nlohmann-json package, https://github.com/nlohmann/json
- * */
-ns::json string_to_json(std::string jsonString) {
-    const char *s = jsonString.c_str();
-    ns::json jsonObj;
-    std::stringstream(s) >> jsonObj;
-
-    return jsonObj;
-}
-
 /*
  * Returns json object out of a template file
  * */

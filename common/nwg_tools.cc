@@ -11,7 +11,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <filesystem>
 
 #include "nwg_tools.h"
 
@@ -107,6 +106,42 @@ std::string read_file_to_string(std::string filename) {
 void save_string_to_file(std::string s, std::string filename) {
     std::ofstream file(filename);
     file << s;
+}
+
+/*
+ * Splits string into vector of strings by delimiter
+ * */
+std::vector<std::string> split_string(std::string str, std::string delimiter) {
+    std::vector<std::string> result;
+    std::size_t current, previous = 0;
+    current = str.find_first_of(delimiter);
+    while (current != std::string::npos) {
+        result.push_back(str.substr(previous, current - previous));
+        previous = current + 1;
+        current = str.find_first_of(delimiter, previous);
+    }
+    result.push_back(str.substr(previous, current - previous));
+
+    return result;
+}
+
+/*
+ * Converts json string into a json object
+ * */
+ns::json string_to_json(std::string jsonString) {
+    const char *s = jsonString.c_str();
+    ns::json jsonObj;
+    std::stringstream(s) >> jsonObj;
+
+    return jsonObj;
+}
+
+/*
+ * Saves json into file
+ * */
+void save_json(ns::json json_obj, std::string filename) {
+    std::ofstream o(filename);
+    o << std::setw(2) << json_obj << std::endl;
 }
 
 /*

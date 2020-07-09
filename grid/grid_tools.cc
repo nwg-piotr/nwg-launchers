@@ -86,22 +86,6 @@ void remove_and_save_pinned(std::string command) {
 }
 
 /*
- * Splits string into vector of strings by delimiter
- * */
-std::vector<std::string> split_string(std::string str, std::string delimiter) {
-    std::vector<std::string> result;
-    std::size_t current, previous = 0;
-    current = str.find_first_of(delimiter);
-    while (current != std::string::npos) {
-        result.push_back(str.substr(previous, current - previous));
-        previous = current + 1;
-        current = str.find_first_of(delimiter, previous);
-    }
-    result.push_back(str.substr(previous, current - previous));
-    return result;
-}
-
-/*
  * Returns locations of .desktop files
  * */
 std::vector<std::string> get_app_dirs() {
@@ -226,22 +210,6 @@ std::vector<std::string> desktop_entry(std::string path, std::string lang) {
         fields[3] = comment_ln;
     }
     return fields;
-}
-
-/* Converts json string into a json object;
- * Requires nlohmann-json package, https://github.com/nlohmann/json
- * */
-ns::json string_to_json(std::string jsonString) {
-    const char *s = jsonString.c_str();
-    ns::json jsonObj;
-    std::stringstream(s) >> jsonObj;
-
-    return jsonObj;
-}
-
-void save_json(ns::json json_obj, std::string filename) {
-    std::ofstream o(filename);
-    o << std::setw(2) << json_obj << std::endl;
 }
 
 /*

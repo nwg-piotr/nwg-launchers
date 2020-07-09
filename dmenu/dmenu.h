@@ -81,12 +81,9 @@ class MainWindow : public Gtk::Window {
 /*
  * Function declarations
  * */
-std::vector<std::string> split_string(std::string, std::string);
 std::vector<std::string> get_command_dirs(void);
 std::vector<std::string> list_commands(std::vector<std::string>);
 
-ns::json string_to_json(std::string);
-void save_json(ns::json, std::string);
 
 std::vector<int> display_geometry(std::string, MainWindow &);
 void on_item_clicked(std::string);
