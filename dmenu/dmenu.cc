@@ -7,15 +7,29 @@
  * License: GPL3
  * */
 
-#include "dmenu.h"
-#include "dmenu_tools.cpp"
-#include "dmenu_classes.cc"
 #include <sys/time.h>
 #include <unistd.h>
 
-int main(int argc, char *argv[]) {
+#include "nwg_tools.h"
+#include "nwg_classes.h"
+#include "on_event.h"
+#include "dmenu.h"
 
-	pid_t pid = getpid();
+std::string h_align {""};                   // horizontal alignment
+std::string v_align {""};                   // vertical alignment
+double opacity (0.3);                       // overlay window opacity
+std::string wm {""};                        // detected or forced window manager name
+
+int rows (20);                              // number of menu items to display
+std::vector<Glib::ustring> all_commands {};
+
+bool dmenu_run = false;
+bool show_searchbox = true;
+
+int main(int argc, char *argv[]) {
+    std::string custom_css_file {"style.css"};
+
+    pid_t pid = getpid();
     std::string mypid = std::to_string(pid);
     
     std::string pid_file = "/var/run/user/" + std::to_string(getuid()) + "/nwgdmenu.pid";
@@ -23,13 +37,13 @@ int main(int argc, char *argv[]) {
     int saved_pid {};
     if (std::ifstream(pid_file)) {
         try {
-			saved_pid = std::stoi(read_file_to_string(pid_file));
-			if (kill(saved_pid, 0) != -1) {  // found running instance!
-				kill(saved_pid, 9);
-				save_string_to_file(mypid, pid_file);
-				std::exit(0);
-			}
-		} catch (...) {
+            saved_pid = std::stoi(read_file_to_string(pid_file));
+            if (kill(saved_pid, 0) != -1) {  // found running instance!
+                kill(saved_pid, 9);
+                save_string_to_file(mypid, pid_file);
+                std::exit(0);
+            }
+        } catch (...) {
             std::cout << "\nError reading pid file\n\n";
         }
     }
@@ -58,12 +72,12 @@ int main(int argc, char *argv[]) {
     
     // Otherwise let's build from stdin input
     if (!dmenu_run) {
-		all_commands = {};
-		for (std::string line; std::getline(std::cin, line);) {
-			Glib::ustring cmd = line;
-			all_commands.push_back(cmd);
-		}
-	}
+        all_commands = {};
+        for (std::string line; std::getline(std::cin, line);) {
+            Glib::ustring cmd = line;
+            all_commands.push_back(cmd);
+        }
+    }
 
     if (input.cmdOptionExists("-n")){
         show_searchbox = false;
@@ -125,7 +139,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    std::string config_dir = get_config_dir();
+    std::string config_dir = get_config_dir("nwgdmenu");
     if (!fs::is_directory(config_dir)) {
         std::cout << "Config dir not found, creating...\n";
         fs::create_directories(config_dir);
@@ -206,8 +220,7 @@ int main(int argc, char *argv[]) {
     window.show();
 
     DMenu menu;
-    main_menu = &menu;
-    Anchor anchor;
+    Anchor anchor(&menu);
     window.anchor = &anchor;
 
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));

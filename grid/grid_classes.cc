@@ -14,6 +14,8 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
+#include "grid.h"
+
 MainWindow::MainWindow() {
     set_title("~nwggrid");
     set_role("~nwggrid");
@@ -62,62 +64,6 @@ MainWindow::MainWindow() {
 MainWindow::~MainWindow() {
 }
 
-gboolean on_window_clicked(GdkEventButton *event) {
-    Gtk::Main::quit();
-    return true;
-}
-
-AppBox::AppBox() {
-    this -> set_always_show_image(true);
-}
-
-AppBox::~AppBox() {
-}
-
-void on_button_clicked(std::string cmd) {
-    int clicks = 0;
-    try {
-        clicks = cache[cmd];
-        clicks++;
-    } catch (...) {
-        clicks = 1;
-    }
-    cache[cmd] = clicks;
-    save_json(cache, cache_file);
-
-    cmd = cmd + " &";
-    const char *command = cmd.c_str();
-    std::system(command);
-
-    Gtk::Main::quit();
-}
-
-bool on_button_entered(GdkEventCrossing* event, Glib::ustring comment) {
-    description -> set_text(comment);
-    return true;
-}
-
-bool on_button_focused(GdkEventFocus* event, Glib::ustring comment) {
-    description -> set_text(comment);
-    return true;
-}
-
-bool on_grid_button_press(GdkEventButton* event, Glib::ustring exec) {
-	if (pins && event -> button == 3) {
-		add_and_save_pinned(exec);
-		Gtk::Main::quit();
-	}
-	return true;
-}
-
-bool on_pinned_button_press(GdkEventButton* event, Glib::ustring exec) {
-	if (pins && event -> button == 3) {
-		remove_and_save_pinned(exec);
-		Gtk::Main::quit();
-	}
-	return true;
-}
-
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
     if (key_event -> keyval == GDK_KEY_Escape) {
         Gtk::Main::quit();
@@ -139,8 +85,8 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
         this -> filter_view();
         return true;
     } else if (key_event -> keyval == GDK_KEY_Delete) {
-		this -> search_phrase = "";
-		this -> searchbox.set_text(this -> search_phrase);
+        this -> search_phrase = "";
+        this -> searchbox.set_text(this -> search_phrase);
         this -> filter_view();
         return true;
     }

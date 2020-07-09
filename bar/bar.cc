@@ -9,6 +9,9 @@
 
 #include <sys/time.h>
 
+#include "nwg_tools.h"
+#include "nwg_classes.h"
+#include "on_event.h"
 #include "bar.h"
 
 int image_size {72};            // button image size in pixels
@@ -130,7 +133,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    std::string config_dir = get_config_dir();
+    std::string config_dir = get_config_dir("nwgbar");
     if (!fs::is_directory(config_dir)) {
         std::cout << "Config dir not found, creating...\n";
         fs::create_directories(config_dir);

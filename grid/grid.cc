@@ -7,13 +7,31 @@
  * License: GPL3
  * */
 
-#include "grid.h"
-#include "grid_tools.cpp"
-#include "grid_classes.cc"
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "nwg_tools.h"
+#include "nwg_classes.h"
+#include "on_event.h"
+#include "grid.h"
+
+bool pins = false;              // whether to display pinned
+double opacity = 0.9;           // overlay window opacity
+std::string wm {""};            // detected or forced window manager name
+
+int num_col = 6;                // number of grid columns
+int image_size = 72;            // button image size in pixels
+Gtk::Label *description;
+
+std::string pinned_file {};
+std::vector<std::string> pinned;    // list of commands of pinned icons
+ns::json cache;
+std::string cache_file {};
+
 int main(int argc, char *argv[]) {
+    bool favs (false);              // whether to display favourites
+    std::string custom_css_file {"style.css"};
+
     struct timeval tp;
     gettimeofday(&tp, NULL);
     long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
@@ -26,13 +44,13 @@ int main(int argc, char *argv[]) {
     int saved_pid {};
     if (std::ifstream(pid_file)) {
         try {
-			saved_pid = std::stoi(read_file_to_string(pid_file));
-			if (kill(saved_pid, 0) != -1) {  // found running instance!
-				kill(saved_pid, 9);
-				save_string_to_file(mypid, pid_file);
-				std::exit(0);
-			}
-		} catch (...) {
+            saved_pid = std::stoi(read_file_to_string(pid_file));
+            if (kill(saved_pid, 0) != -1) {  // found running instance!
+                kill(saved_pid, 9);
+                save_string_to_file(mypid, pid_file);
+                std::exit(0);
+            }
+        } catch (...) {
             std::cout << "\nError reading pid file\n\n";
         }
     }
@@ -119,32 +137,32 @@ int main(int argc, char *argv[]) {
     }
 
     if (favs) {
-		cache_file = get_cache_path();
-		try {
-			cache = get_cache(cache_file);
-		}  catch (...) {
-			std::cout << "Cache file not found, creating...\n";
-			save_json(cache, cache_file);
-		}
-		if (cache.size() > 0) {
-			std::cout << cache.size() << " cache entries loaded\n";
-		} else {
-			std::cout << "No cached favourites found\n";
-			favs = false;	// ignore -f argument from now on
-		}	
-	}
+        cache_file = get_cache_path();
+        try {
+            cache = get_cache(cache_file);
+        }  catch (...) {
+            std::cout << "Cache file not found, creating...\n";
+            save_json(cache, cache_file);
+        }
+        if (cache.size() > 0) {
+            std::cout << cache.size() << " cache entries loaded\n";
+        } else {
+            std::cout << "No cached favourites found\n";
+            favs = false;   // ignore -f argument from now on
+        }
+    }
     
     if (pins) {
-		pinned_file = get_pinned_path();
-		pinned = get_pinned(pinned_file);
-		if (pinned.size() > 0) {
-			std::cout << pinned.size() << " pinned entries loaded\n";
-		} else {
-			std::cout << "No pinned entries found\n";
-		}
-	}
+        pinned_file = get_pinned_path();
+        pinned = get_pinned(pinned_file);
+        if (pinned.size() > 0) {
+          std::cout << pinned.size() << " pinned entries loaded\n";
+        } else {
+          std::cout << "No pinned entries found\n";
+        }
+	  }
 
-    std::string config_dir = get_config_dir();
+    std::string config_dir = get_config_dir("nwggrid");
     if (!fs::is_directory(config_dir)) {
         std::cout << "Config dir not found, creating...\n";
         fs::create_directories(config_dir);
@@ -415,7 +433,7 @@ int main(int argc, char *argv[]) {
             first -> set_property("has_focus", true);
         }
     } else if (pins && pinned.size() > 0) {
-		auto* first = window.pinned_grid.get_child_at(0, 0);
+        auto* first = window.pinned_grid.get_child_at(0, 0);
         if (first) {
             first -> set_property("has_focus", true);
         }

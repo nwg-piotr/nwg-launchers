@@ -1,12 +1,15 @@
 sources = files(
-	'grid.cc'
+	'grid.cc',
+	'grid_classes.cc',
+	'grid_tools.cc'
 )
 
 executable(
 	'nwggrid',
 	sources,
 	dependencies: [json, gtkmm],
-	include_directories: [nwg_conf_inc, json_header_dir],
+	link_with: nwg,
+	include_directories: [nwg_inc, nwg_conf_inc, json_header_dir],
 	install: true
 )
 

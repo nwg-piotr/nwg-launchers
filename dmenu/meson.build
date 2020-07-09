@@ -1,12 +1,15 @@
 sources = files(
-	'dmenu.cc'
+	'dmenu.cc',
+	'dmenu_classes.cc',
+	'dmenu_tools.cc'
 )
 
 executable(
 	'nwgdmenu',
 	sources,
 	dependencies: [json, gtkmm],
-	include_directories: [nwg_conf_inc, json_header_dir],
+	link_with: nwg,
+	include_directories: [nwg_inc, nwg_conf_inc, json_header_dir],
 	install: true
 )
 
