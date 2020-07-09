@@ -156,12 +156,11 @@ int main(int argc, char *argv[]) {
         pinned_file = get_pinned_path();
         pinned = get_pinned(pinned_file);
         if (pinned.size() > 0) {
-            std::cout << pinned.size() << " pinned entries loaded\n";
+          std::cout << pinned.size() << " pinned entries loaded\n";
         } else {
-            std::cout << "No pinned entries found\n";
-            pins = false;   // ignore -p argument from now on
+          std::cout << "No pinned entries found\n";
         }
-    }
+	  }
 
     std::string config_dir = get_config_dir("nwggrid");
     if (!fs::is_directory(config_dir)) {
