@@ -161,8 +161,8 @@ The style sheet makes the buttons look similar to `nwggrid`. You can customize t
 
 This program provides 2 commands:
 
-- `nwgdmenu` - displays newline-separated stdin input as a GTK menu
-- `nwgdmenu_run` - creates a GTK menu out of commands found in $PATH
+- `<input> | nwgdmenu` - displays newline-separated stdin input as a GTK menu
+- `nwgdmenu` - creates a GTK menu out of commands found in $PATH
 
 *Hit "Delete" key to clear the search box.*
 
@@ -174,8 +174,8 @@ This program provides 2 commands:
 $ nwgdmenu -h
 GTK dynamic menu: nwgdmenu v0.1.8 (c) Piotr Miller 2020
 
-nwgdmenu - displays newline-separated stdin input as a GTK menu
-nwgdmenu_run - creates a GTK menu out of commands found in $PATH
+<input> | nwgdmenu - displays newline-separated stdin input as a GTK menu
+nwgdmenu - creates a GTK menu out of commands found in $PATH
 
 Options:
 -h            show this help message and exit
