@@ -26,7 +26,7 @@ std::string get_config_dir(std::string app) {
         s += "/nwg-launchers/";
     } else {
         val = getenv("HOME");
-        if (val) {
+        if (!val) {
             std::cerr << "Couldn't find config directory, HOME not set!";
             std::exit(1);
         }
