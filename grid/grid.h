@@ -116,7 +116,6 @@ std::vector<std::string> desktop_entry(std::string, std::string);
 ns::json get_cache(std::string);
  std::vector<std::string> get_pinned(std::string);
 std::vector<CacheEntry> get_favourites(ns::json, int);
-std::vector<int> display_geometry(std::string, MainWindow &);
 Gtk::Image* app_image(std::string);
 bool on_button_entered(GdkEventCrossing *, Glib::ustring);
 bool on_button_focused(GdkEventFocus *, Glib::ustring);

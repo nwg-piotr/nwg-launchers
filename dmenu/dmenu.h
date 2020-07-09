@@ -84,6 +84,4 @@ class MainWindow : public Gtk::Window {
 std::vector<std::string> get_command_dirs(void);
 std::vector<std::string> list_commands(std::vector<std::string>);
 
-
-std::vector<int> display_geometry(std::string, MainWindow &);
 void on_item_clicked(std::string);
