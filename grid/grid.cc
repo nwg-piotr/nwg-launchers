@@ -141,7 +141,6 @@ int main(int argc, char *argv[]) {
 			std::cout << pinned.size() << " pinned entries loaded\n";
 		} else {
 			std::cout << "No pinned entries found\n";
-			pins = false;	// ignore -p argument from now on
 		}
 	}
 
