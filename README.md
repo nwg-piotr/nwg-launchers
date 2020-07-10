@@ -190,9 +190,9 @@ Options:
 ```
 
 (1) _The program should auto-detect if something has been passed in `stdin`, and build the menu out of the `stdin` content
-or from commands found in `$PATH` accordingly. However, in some specific cases (e.g. nwgdmenu started from a key binding 
-on sway launched from gdm) the `stdin` content detection may be false-positive, which results in displaying an empty menu. 
-In such case use the `nwgdmenu -run` to force building the menu out of commands in `$PATH`._
+or from commands found in `$PATH` accordingly. However, in some specific cases (e.g. if you use gdm and start nwgdmenu 
+from a key binding) the `stdin` content detection may be false-positive, which results in displaying an empty menu. 
+In such case use the `nwgdmenu -run` instead, to force building the menu out of commands in `$PATH`._
 
 Notice: if you start your WM from a script (w/o DM), only sway and i3 will be auto-detected. You may need to pass the WM name as the argument:
 
