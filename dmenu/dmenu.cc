@@ -64,11 +64,16 @@ int main(int argc, char *argv[]) {
         std::cout << "-c <name>     css file name (default: style.css)\n";
         std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n";
         std::cout << "-wm <wmname>  window manager name (if can not be detected)\n";
+        std::cout << "-run          ignore stdin, always build from commands in $PATH\n";
         std::exit(0);
     }
 
     // We will build dmenu out of commands found in $PATH if nothing has been passed by stdin
     dmenu_run = isatty(fileno(stdin)) == 1;
+    
+    if (input.cmdOptionExists("-run")){
+        dmenu_run = true;
+    }
     
     // Otherwise let's build from stdin input
     if (!dmenu_run) {
