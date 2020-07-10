@@ -171,10 +171,10 @@ This program provides 2 commands:
 ### Usage
 
 ```
-$ nwgdmenu -h
-GTK dynamic menu: nwgdmenu v0.1.8 (c) Piotr Miller 2020
+$ $ nwgdmenu -h
+GTK dynamic menu: nwgdmenu 0.1.9 (c) Piotr Miller & Contributors 2020
 
-<input> | nwgdmenu - displays newline-separated stdin input as a GTK menu
+<input> | nwgdmenu - displays newline-separated stdin input as a GTK menu(1)
 nwgdmenu - creates a GTK menu out of commands found in $PATH
 
 Options:
@@ -186,11 +186,17 @@ Options:
 -c <name>     css file name (default: style.css)
 -o <opacity>  background opacity (0.0 - 1.0, default 0.3)
 -wm <wmname>  window manager name (if can not be detected)
+-run          ignore stdin, always build from commands in $PATH(1)
 ```
+
+(1) _The program should auto-detect if something has been passed in `stdin`, and build the menu out of the `stdin` content
+or from commands found in `$PATH` accordingly. However, in some specific cases (e.g. nwgdmenu started from a key binding 
+on sway launched from gdm) the `stdin` content detection may be false-positive, which results in displaying an empty menu. 
+In such case use the `nwgdmenu -run` to force building the menu out of commands in `$PATH`._
 
 Notice: if you start your WM from a script (w/o DM), only sway and i3 will be auto-detected. You may need to pass the WM name as the argument:
 
-`nwgdmenu_run -wm dwm`
+`nwgdmenu -wm dwm`
 
 The generic name `tiling` will be accepted as well.
 
