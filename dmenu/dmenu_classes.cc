@@ -47,7 +47,11 @@ bool Anchor::on_focus_in_event(GdkEventFocus* focus_event) {
 }
 
 DMenu::DMenu() {
-    searchbox.set_text("Type to search");
+    if (case_sensitive) {
+        searchbox.set_text("Type To Search");
+    } else {
+        searchbox.set_text("TYPE TO SEARCH");
+    }
     searchbox.set_sensitive(false);
     searchbox.set_name("searchbox");
     search_phrase = "";
@@ -147,7 +151,11 @@ void DMenu::filter_view() {
         this -> show_all();
 
     } else {
-        this -> searchbox.set_text("Type to search");
+        if (case_sensitive) {
+            this -> searchbox.set_text("Type To Search");
+        } else {
+            this -> searchbox.set_text("TYPE TO SEARCH");
+        }
         // remove all items except searchbox
         for (auto item : this -> get_children()) {
             if (item -> get_name() != "search_item") {

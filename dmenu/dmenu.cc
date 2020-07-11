@@ -25,15 +25,16 @@ std::vector<Glib::ustring> all_commands {};
 
 bool dmenu_run = false;
 bool show_searchbox = true;
+bool case_sensitive = true;
 
 int main(int argc, char *argv[]) {
     std::string custom_css_file {"style.css"};
 
     pid_t pid = getpid();
     std::string mypid = std::to_string(pid);
-    
+
     std::string pid_file = "/var/run/user/" + std::to_string(getuid()) + "/nwgdmenu.pid";
-    
+
     int saved_pid {};
     if (std::ifstream(pid_file)) {
         try {
@@ -70,11 +71,11 @@ int main(int argc, char *argv[]) {
 
     // We will build dmenu out of commands found in $PATH if nothing has been passed by stdin
     dmenu_run = isatty(fileno(stdin)) == 1;
-    
+
     if (input.cmdOptionExists("-run")){
         dmenu_run = true;
     }
-    
+
     // Otherwise let's build from stdin input
     if (!dmenu_run) {
         all_commands = {};
@@ -293,7 +294,7 @@ int main(int argc, char *argv[]) {
             break;
         }
     }
-    
+
     menu.set_reserve_toggle_size(false);
     menu.set_property("width_request", (int)(w / 8));
 

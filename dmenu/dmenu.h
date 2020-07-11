@@ -36,6 +36,7 @@ extern std::vector<Glib::ustring> all_commands;
 
 extern bool dmenu_run;
 extern bool show_searchbox;
+extern bool case_sensitive;
 
 class DMenu : public Gtk::Menu {
     public:
