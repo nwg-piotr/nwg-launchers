@@ -15,6 +15,7 @@
 #include <fstream>
 #include <filesystem>
 #include <regex>
+#include <algorithm>
 
 #include <gtkmm.h>
 #include <glibmm/ustring.h>

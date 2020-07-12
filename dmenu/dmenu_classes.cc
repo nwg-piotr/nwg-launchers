@@ -75,6 +75,9 @@ bool DMenu::on_key_press_event(GdkEventKey* key_event) {
             && key_event->type == GDK_KEY_PRESS) {
 
             char character = key_event -> keyval;
+            if (!case_sensitive) {
+                character = toupper(character);
+            }
             this -> search_phrase += character;
 
             this -> searchbox.set_text(this -> search_phrase);
@@ -89,6 +92,11 @@ bool DMenu::on_key_press_event(GdkEventKey* key_event) {
         } else if (key_event -> keyval == GDK_KEY_Delete) {
             this -> search_phrase = "";
             this -> searchbox.set_text(this -> search_phrase);
+            this -> filter_view();
+            return true;
+        } else if (key_event -> keyval == GDK_KEY_Insert) {
+            this -> search_phrase = "";
+            case_sensitive = !case_sensitive;
             this -> filter_view();
             return true;
         }
@@ -120,7 +128,17 @@ void DMenu::filter_view() {
         int cnt = 0;
         bool limit_exhausted = false;
         for (Glib::ustring command : all_commands) {
-            if (command.find(this -> search_phrase) == 0) {
+            std::string sf = this -> search_phrase;
+            std::string cm = command;
+            if (!case_sensitive) {
+                for(unsigned int l = 0; l < sf.length(); l++) {
+                   sf[l] = toupper(sf[l]);
+                }
+                for(unsigned int l = 0; l < cm.length(); l++) {
+                   cm[l] = toupper(cm[l]);
+                }
+            }
+            if (cm.find(sf) == 0) {
                 Gtk::MenuItem *item = new Gtk::MenuItem();
                 item -> set_label(command);
                 item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun
@@ -135,11 +153,21 @@ void DMenu::filter_view() {
         }
         if (!limit_exhausted) {
             for (Glib::ustring command : all_commands) {
-                if (command.find(this -> search_phrase) != std::string::npos && command.find(this -> search_phrase) != 0) {
+                std::string sf = this -> search_phrase;
+                std::string cm = command;
+                if (!case_sensitive) {
+                    for(unsigned int l = 0; l < sf.length(); l++) {
+                       sf[l] = toupper(sf[l]);
+                    }
+                    for(unsigned int l = 0; l < cm.length(); l++) {
+                       cm[l] = toupper(cm[l]);
+                    }
+                }
+                if (cm.find(sf) != std::string::npos && cm.find(sf) != 0) {
                     Gtk::MenuItem *item = new Gtk::MenuItem();
                     item -> set_label(command);
                     item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun
-                        (*this, &DMenu::on_item_clicked), command));
+                        (*this, &DMenu::on_item_clicked), cm));
                     this -> append(*item);
                     cnt++;
                     if (cnt > rows - 1) {
