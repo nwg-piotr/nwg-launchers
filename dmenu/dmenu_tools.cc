@@ -10,7 +10,7 @@
 #include "dmenu.h"
 
 /*
- * Returns locations of .desktop files
+ * Returns locations of command files
  * */
 std::vector<std::string> get_command_dirs() {
     std::vector<std::string> result = {};
@@ -25,7 +25,7 @@ std::vector<std::string> get_command_dirs() {
 }
 
 /*
- * Returns all .desktop files paths
+ * Returns all command paths
  * */
 std::vector<std::string> list_commands(std::vector<std::string> paths) {
     std::vector<std::string> command_paths;
