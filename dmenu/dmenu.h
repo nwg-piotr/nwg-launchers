@@ -31,6 +31,7 @@ extern std::string h_align;
 extern std::string v_align;
 extern double opacity;
 extern std::string wm;
+extern std::string settings_file;
 
 extern int rows;
 extern std::vector<Glib::ustring> all_commands;
@@ -85,5 +86,6 @@ class MainWindow : public Gtk::Window {
  * */
 std::vector<std::string> get_command_dirs(void);
 std::vector<std::string> list_commands(std::vector<std::string>);
+std::string get_settings_path();
 
 void on_item_clicked(std::string);

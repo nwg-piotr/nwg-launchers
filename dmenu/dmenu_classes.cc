@@ -60,6 +60,18 @@ DMenu::DMenu() {
 DMenu::~DMenu() {
 }
 
+void switch_case_sensitive(std::string filename, bool is_case_sensitive) {
+    if (is_case_sensitive) {
+        if (std::ifstream(filename)) {
+            int status = remove(filename.c_str());
+            std::cout << "status = " << status << std::endl;
+        }
+    } else {
+        std::ofstream file(filename);
+        file << "case_sensitive";
+    }
+}
+
 bool DMenu::on_key_press_event(GdkEventKey* key_event) {
     if (show_searchbox) {
         if (key_event -> keyval == GDK_KEY_Escape) {
@@ -97,6 +109,7 @@ bool DMenu::on_key_press_event(GdkEventKey* key_event) {
         } else if (key_event -> keyval == GDK_KEY_Insert) {
             this -> search_phrase = "";
             case_sensitive = !case_sensitive;
+            switch_case_sensitive(settings_file, case_sensitive);
             this -> filter_view();
             return true;
         }

@@ -10,6 +10,26 @@
 #include "dmenu.h"
 
 /*
+ * Returns settings cache file path
+ * */
+std::string get_settings_path() {
+    std::string s = "";
+    char* val = getenv("XDG_CACHE_HOME");
+    if (val) {
+        s = val;
+    } else {
+        char* val = getenv("HOME");
+        s = val;
+        s += "/.cache";
+    }
+    fs::path dir (s);
+    fs::path file ("nwg-dmenu-case");
+    fs::path full_path = dir / file;
+
+    return full_path;
+}
+
+/*
  * Returns locations of command files
  * */
 std::vector<std::string> get_command_dirs() {
