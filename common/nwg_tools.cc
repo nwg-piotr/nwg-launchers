@@ -85,6 +85,8 @@ std::string get_locale() {
         if (loc.find("_") != std::string::npos) {
             int idx = loc.find_first_of("_");
             l = loc.substr(0, idx);
+        } else if (!loc.empty()){
+            l = loc;
         } else {
             l = "en";
         }
