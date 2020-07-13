@@ -19,6 +19,7 @@ std::string h_align {""};                   // horizontal alignment
 std::string v_align {""};                   // vertical alignment
 double opacity (0.3);                       // overlay window opacity
 std::string wm {""};                        // detected or forced window manager name
+std::string settings_file {""};
 
 int rows (20);                              // number of menu items to display
 std::vector<Glib::ustring> all_commands {};
@@ -29,6 +30,15 @@ bool case_sensitive = true;
 
 int main(int argc, char *argv[]) {
     std::string custom_css_file {"style.css"};
+
+    /* For now the settings file only determines if case_sensitive was turned on.
+     * Let's just check if the file exists.
+     **/
+    settings_file = get_settings_path();
+    std::cout <<"settings_file = " << settings_file << std::endl;
+    if (std::ifstream(settings_file)) {
+        case_sensitive = false;
+    }
 
     pid_t pid = getpid();
     std::string mypid = std::to_string(pid);
