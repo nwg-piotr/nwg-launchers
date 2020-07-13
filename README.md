@@ -1,5 +1,5 @@
 # nwg-launchers
-As it's never too late to learn something new, I decided to try and code my 
+As it's never too late to learn something new, I decided to try and code my
 [sgtk-menu](https://github.com/nwg-piotr/sgtk-menu) set of launchers, written in python, from scratch in C++.
 By the way I'm trying to simplify their usage, by reducing the number of arguments. Whatever possible, is being moved
 to css style sheets.
@@ -164,7 +164,8 @@ This program provides 2 commands:
 - `<input> | nwgdmenu` - displays newline-separated stdin input as a GTK menu
 - `nwgdmenu` - creates a GTK menu out of commands found in $PATH
 
-*Hit "Delete" key to clear the search box.*
+*Hit "Delete" to clear the search box.*
+*Hit "Insert" to switch case sensitivity.*
 
 [![Swappshot-Mon-Mar-23-211702-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211702-2020.th.png)](https://scrot.cloud/image/jfHK) [![Swappshot-Mon-Mar-23-211911-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211911-2020.th.png)](https://scrot.cloud/image/j3MG) [![Swappshot-Mon-Mar-23-211736-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211736-2020.th.png)](https://scrot.cloud/image/jvOi)
 
@@ -190,8 +191,8 @@ Options:
 ```
 
 (1) _The program should auto-detect if something has been passed in `stdin`, and build the menu out of the `stdin` content
-or from commands found in `$PATH` accordingly. However, in some specific cases (e.g. if you use gdm and start nwgdmenu 
-from a key binding) the `stdin` content detection may be false-positive, which results in displaying an empty menu. 
+or from commands found in `$PATH` accordingly. However, in some specific cases (e.g. if you use gdm and start nwgdmenu
+from a key binding) the `stdin` content detection may be false-positive, which results in displaying an empty menu.
 In such case use the `nwgdmenu -run` instead, to force building the menu out of commands in `$PATH`._
 
 Notice: if you start your WM from a script (w/o DM), only sway and i3 will be auto-detected. You may need to pass the WM name as the argument:
@@ -202,7 +203,7 @@ The generic name `tiling` will be accepted as well.
 
 ### Custom styling
 
-On first run the program creates the `nwgdmenu` folder in your .config directory. You'll find the 
+On first run the program creates the `nwgdmenu` folder in your .config directory. You'll find the
 default `style.css` files inside. Use it to adjust styling and a vertical margin to the menu, if needed.
 
 ### i3 note
