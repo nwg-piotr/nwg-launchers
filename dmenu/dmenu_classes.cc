@@ -106,6 +106,11 @@ bool DMenu::on_key_press_event(GdkEventKey* key_event) {
             this -> searchbox.set_text(this -> search_phrase);
             this -> filter_view();
             return true;
+        } else if (key_event -> keyval == GDK_KEY_Return) {
+            std::cout << "Enter hit\n";
+            // Workaround to launch the single item which has been selected programmatically
+            this -> get_children()[1] -> activate();
+            return true;
         } else if (key_event -> keyval == GDK_KEY_Insert) {
             this -> search_phrase = "";
             case_sensitive = !case_sensitive;
@@ -157,6 +162,11 @@ void DMenu::filter_view() {
                 item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun
                     (*this, &DMenu::on_item_clicked), command));
                 this -> append(*item);
+                // This will highlight 1st menu item, still it won't start on Enter.
+                // See workaround in on_key_press_event.
+                if (cnt == 0) {
+                    item -> select();
+                }
                 cnt++;
                 if (cnt > rows - 1) {
                     limit_exhausted = true;
