@@ -35,7 +35,6 @@ int main(int argc, char *argv[]) {
      * Let's just check if the file exists.
      **/
     settings_file = get_settings_path();
-    std::cout <<"settings_file = " << settings_file << std::endl;
     if (std::ifstream(settings_file)) {
         case_sensitive = false;
     }
@@ -75,7 +74,10 @@ int main(int argc, char *argv[]) {
         std::cout << "-c <name>     css file name (default: style.css)\n";
         std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n";
         std::cout << "-wm <wmname>  window manager name (if can not be detected)\n";
-        std::cout << "-run          ignore stdin, always build from commands in $PATH\n";
+        std::cout << "-run          ignore stdin, always build from commands in $PATH\n\n";
+        std::cout << "Hotkeys:\n";
+        std::cout << "Delete        clear search box\n";
+        std::cout << "Insert        switch case sensitivity\n";
         std::exit(0);
     }
 
