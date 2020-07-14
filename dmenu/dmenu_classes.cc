@@ -107,7 +107,6 @@ bool DMenu::on_key_press_event(GdkEventKey* key_event) {
             this -> filter_view();
             return true;
         } else if (key_event -> keyval == GDK_KEY_Return) {
-            std::cout << "Enter hit\n";
             // Workaround to launch the single item which has been selected programmatically
             this -> get_children()[1] -> activate();
             return true;
