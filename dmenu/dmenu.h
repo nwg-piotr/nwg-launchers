@@ -15,6 +15,7 @@
 #include <fstream>
 #include <filesystem>
 #include <regex>
+#include <algorithm>
 
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
@@ -30,12 +31,14 @@ extern std::string h_align;
 extern std::string v_align;
 extern double opacity;
 extern std::string wm;
+extern std::string settings_file;
 
 extern int rows;
 extern std::vector<Glib::ustring> all_commands;
 
 extern bool dmenu_run;
 extern bool show_searchbox;
+extern bool case_sensitive;
 
 class DMenu : public Gtk::Menu {
     public:
@@ -83,5 +86,6 @@ class MainWindow : public Gtk::Window {
  * */
 std::vector<std::string> get_command_dirs(void);
 std::vector<std::string> list_commands(std::vector<std::string>);
+std::string get_settings_path();
 
 void on_item_clicked(std::string);

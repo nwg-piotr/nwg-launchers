@@ -19,21 +19,31 @@ std::string h_align {""};                   // horizontal alignment
 std::string v_align {""};                   // vertical alignment
 double opacity (0.3);                       // overlay window opacity
 std::string wm {""};                        // detected or forced window manager name
+std::string settings_file {""};
 
 int rows (20);                              // number of menu items to display
 std::vector<Glib::ustring> all_commands {};
 
 bool dmenu_run = false;
 bool show_searchbox = true;
+bool case_sensitive = true;
 
 int main(int argc, char *argv[]) {
     std::string custom_css_file {"style.css"};
 
+    /* For now the settings file only determines if case_sensitive was turned on.
+     * Let's just check if the file exists.
+     **/
+    settings_file = get_settings_path();
+    if (std::ifstream(settings_file)) {
+        case_sensitive = false;
+    }
+
     pid_t pid = getpid();
     std::string mypid = std::to_string(pid);
-    
+
     std::string pid_file = "/var/run/user/" + std::to_string(getuid()) + "/nwgdmenu.pid";
-    
+
     int saved_pid {};
     if (std::ifstream(pid_file)) {
         try {
@@ -64,17 +74,20 @@ int main(int argc, char *argv[]) {
         std::cout << "-c <name>     css file name (default: style.css)\n";
         std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n";
         std::cout << "-wm <wmname>  window manager name (if can not be detected)\n";
-        std::cout << "-run          ignore stdin, always build from commands in $PATH\n";
+        std::cout << "-run          ignore stdin, always build from commands in $PATH\n\n";
+        std::cout << "Hotkeys:\n";
+        std::cout << "Delete        clear search box\n";
+        std::cout << "Insert        switch case sensitivity\n";
         std::exit(0);
     }
 
     // We will build dmenu out of commands found in $PATH if nothing has been passed by stdin
     dmenu_run = isatty(fileno(stdin)) == 1;
-    
+
     if (input.cmdOptionExists("-run")){
         dmenu_run = true;
     }
-    
+
     // Otherwise let's build from stdin input
     if (!dmenu_run) {
         all_commands = {};
@@ -293,7 +306,7 @@ int main(int argc, char *argv[]) {
             break;
         }
     }
-    
+
     menu.set_reserve_toggle_size(false);
     menu.set_property("width_request", (int)(w / 8));
 

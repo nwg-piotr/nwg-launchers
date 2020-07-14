@@ -165,7 +165,8 @@ This program provides 2 commands:
 - `<input> | nwgdmenu` - displays newline-separated stdin input as a GTK menu
 - `nwgdmenu` - creates a GTK menu out of commands found in $PATH
 
-*Hit "Delete" key to clear the search box.*
+*Hit "Delete" to clear the search box.*
+*Hit "Insert" to switch case sensitivity.*
 
 [![Swappshot-Mon-Mar-23-211702-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211702-2020.th.png)](https://scrot.cloud/image/jfHK) [![Swappshot-Mon-Mar-23-211911-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211911-2020.th.png)](https://scrot.cloud/image/j3MG) [![Swappshot-Mon-Mar-23-211736-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-211736-2020.th.png)](https://scrot.cloud/image/jvOi)
 

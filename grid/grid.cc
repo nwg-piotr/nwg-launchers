@@ -35,12 +35,12 @@ int main(int argc, char *argv[]) {
     struct timeval tp;
     gettimeofday(&tp, NULL);
     long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-    
+
     pid_t pid = getpid();
     std::string mypid = std::to_string(pid);
-    
+
     std::string pid_file = "/var/run/user/" + std::to_string(getuid()) + "/nwggrid.pid";
-    
+
     int saved_pid {};
     if (std::ifstream(pid_file)) {
         try {
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
     if (!css_name.empty()){
         custom_css_file = css_name;
     }
-    
+
     const std::string &wm_name = input.getCmdOption("-wm");
     if (!wm_name.empty()){
         wm = wm_name;
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
             favs = false;   // ignore -f argument from now on
         }
     }
-    
+
     if (pins) {
         pinned_file = get_pinned_path();
         pinned = get_pinned(pinned_file);
@@ -195,8 +195,8 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "WM: " << wm << "\n";
 
-    /* get lang (2 chars long string) if not yet forced */
-    if (lang.length() != 2) {
+    /* get lang if not yet forced */
+    if (lang.empty()) {
         lang = get_locale();
     }
     std::cout << "Locale: " << lang << "\n";
@@ -338,7 +338,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    
+
     /* Create buttons for pinned entries */
     if (pins && pinned.size() > 0) {
 		for(auto it = desktop_entries.begin(); it != desktop_entries.end(); it++) {
@@ -369,7 +369,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    
+
     column = 0;
     row = 0;
     if (favs && favourites.size() > 0) {
@@ -404,7 +404,7 @@ int main(int argc, char *argv[]) {
     if (pins && pinned.size() > 0) {
         inner_vbox.pack_start(window.separator1, false, true, 0);
     }
-    
+
     Gtk::HBox favs_hbox;
     favs_hbox.pack_start(window.favs_grid, true, false, 0);
     inner_vbox.pack_start(favs_hbox, false, false, 5);
