@@ -4,7 +4,7 @@ project('nwg-launchers', 'cpp',
 			'warning_level=3'
 			],
 	license: 'GPL-3.0-or-later',
-	version: '0.1.9'
+	version: '0.2.0'
 )
 
 add_global_link_arguments('-lstdc++fs', language: 'cpp')
