@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
     if (!opa.empty()){
         try {
             double o = std::stod(opa);
-            if (o >= 0.0d && o <= 1.0d) {
+            if (o >= 0.0 && o <= 1.0) {
                 opacity = o;
             } else {
                 std::cout << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";

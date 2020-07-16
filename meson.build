@@ -7,7 +7,13 @@ project('nwg-launchers', 'cpp',
 	version: '0.2.1'
 )
 
-add_global_link_arguments('-lstdc++fs', language: 'cpp')
+compiler = meson.get_compiler('cpp')
+
+if compiler.has_link_argument('-lc++fs')
+	add_global_link_arguments('-lc++fs', language: 'cpp')
+elif compiler.has_link_argument('-lstdc++fs')
+	add_global_link_arguments('-lstdc++fs', language: 'cpp')
+endif
 
 # Dependencies
 gtkmm = dependency('gtkmm-3.0', required: true)
