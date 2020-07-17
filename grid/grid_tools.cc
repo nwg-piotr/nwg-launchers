@@ -88,8 +88,12 @@ void remove_and_save_pinned(std::string command) {
  * */
 std::vector<std::string> get_app_dirs() {
     std::string homedir = getenv("HOME");
-    std::vector<std::string> result = {homedir + "/.local/share/applications", "/usr/share/applications",
-        "/usr/local/share/applications"};
+    std::vector<std::string> result = {
+        homedir + "/.local/share/applications",
+        INSTALL_PREFIX_STR "/share/applications",
+        "/usr/share/applications",
+        "/usr/local/share/applications"
+    };
 
     auto xdg_data_dirs = getenv("XDG_DATA_DIRS");
     if (xdg_data_dirs != NULL) {
