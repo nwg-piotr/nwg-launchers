@@ -75,23 +75,21 @@ std::string detect_wm() {
 }
 
 /*
- * Returns first 2 chars of current locale string
+ * Returns current locale
  * */
 std::string get_locale() {
-    std::string l {""};
-    try {
+    std::string l {"en"};
+    if (getenv("LANG") != NULL) {
         char* env_val = getenv("LANG");
         std::string loc(env_val);
-        if (loc.find("_") != std::string::npos) {
-            int idx = loc.find_first_of("_");
-            l = loc.substr(0, idx);
-        } else if (!loc.empty()){
-            l = loc;
-        } else {
-            l = "en";
+        if (!loc.empty()) {
+            if (loc.find("_") != std::string::npos) {
+                int idx = loc.find_first_of("_");
+                l = loc.substr(0, idx);
+            } else {
+                l = loc;
+            }
         }
-    } catch (...) {
-        l = "en";
     }
     return l;
 }
