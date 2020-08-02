@@ -68,13 +68,6 @@ struct BarEntry {
     BarEntry(std::string&&, std::string&&, std::string&&);
 };
 
-struct Geometry {
-    int x;
-    int y;
-    int width;
-    int height;
-};
-
 /*
  * Function declarations
  * */

@@ -222,16 +222,22 @@ int main(int argc, char *argv[]) {
 
     Gtk::Main kit(argc, argv);
 
-    GtkCssProvider* provider = gtk_css_provider_new();
-    GdkDisplay* display = gdk_display_get_default();
-    GdkScreen* screen = gdk_display_get_default_screen(display);
-    gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-    if (std::ifstream(custom_css_file)) {
-        gtk_css_provider_load_from_path(provider, custom_css_file.c_str(), NULL);
-    } else {
-        gtk_css_provider_load_from_path(provider, default_css_file.c_str(), NULL);
+    auto provider = Gtk::CssProvider::create();
+    auto display = Gdk::Display::get_default();
+    auto screen = display->get_default_screen();
+    if (!provider || !display || !screen) {
+        std::cerr << "ERROR: Failed to initialize GTK\n";
+        return EXIT_FAILURE;
     }
-    g_object_unref(provider);
+    Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+
+    if (std::filesystem::is_regular_file(css_file)) {
+        provider->load_from_path(css_file);
+        std::cout << "Using " << css_file << '\n';
+    } else {
+        provider->load_from_path(default_css_file);
+        std::cout << "Using " << default_css_file << '\n';
+    }
 
     MainWindow window;
     // For openbox and similar we'll need the window x, y coordinates
@@ -244,12 +250,14 @@ int main(int argc, char *argv[]) {
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
 
     /* Detect focused display geometry: {x, y, width, height} */
-    std::vector<int> geometry = display_geometry(wm, window);
+    auto geometry = display_geometry(wm, display, window.get_window());
+    std::cout << "Focused display: " << geometry.x << ", " << geometry.y << ", " << geometry.width << ", "
+    << geometry.height << '\n';
 
-    int x = geometry[0];
-    int y = geometry[1];
-    int w = geometry[2];
-    int h = geometry[3];
+    int x = geometry.x;
+    int y = geometry.y;
+    int w = geometry.width;
+    int h = geometry.height;
 
     if (wm == "sway" || wm == "i3") {
         window.resize(w, h);

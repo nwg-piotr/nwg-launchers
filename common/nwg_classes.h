@@ -41,3 +41,13 @@ class AppBox : public Gtk::Button {
 
         virtual ~AppBox();
 };
+
+/*
+ * Stores x, y, width, height
+ * */
+struct Geometry {
+    int x;
+    int y;
+    int width;
+    int height;
+};

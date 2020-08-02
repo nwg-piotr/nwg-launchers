@@ -38,46 +38,6 @@ std::vector<BarEntry> get_bar_entries(ns::json&& bar_json) {
     return entries;
 }
 
-/*
- * Returns x, y, width, hight of focused display
- * */
-Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> display, Glib::RefPtr<Gdk::Window> window) {
-    Geometry geo = {0, 0, 0, 0};
-    if (wm == "sway") {
-        std::string jsonString = get_output("swaymsg -t get_outputs");
-        ns::json jsonObj = string_to_json(jsonString);
-        for (auto&& entry : jsonObj) {
-            if (entry.at("focused")) {
-                auto&& rect = entry.at("rect");
-                geo.x = rect.at("x");
-                geo.y = rect.at("y");
-                geo.width = rect.at("width");
-                geo.height = rect.at("height");
-                break;
-            }
-        }
-    } else {
-        // it's going to fail until the window is actually open
-        int retry = 0;
-        while (geo.width == 0 || geo.height == 0) {
-            Gdk::Rectangle rect;
-            auto monitor = display->get_monitor_at_window(window);
-            if (monitor) {
-                monitor->get_geometry(rect);
-                geo.x = rect.get_x();
-                geo.y = rect.get_y();
-                geo.width = rect.get_width();
-                geo.height = rect.get_height();
-            }
-            retry++;
-            if (retry > 100) {
-                std::cout << "\nERROR: Failed checking display geometry, tries: " << retry << "\n\n";
-                break;
-            }
-        }
-    }
-    return geo;
-}
 
 /*
  * Returns Gtk::Image out of the icon name of file path
