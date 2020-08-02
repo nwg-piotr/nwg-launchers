@@ -6,6 +6,8 @@
  * License: GPL3
  * */
 
+#include <filesystem>
+
 #include "nwg_tools.h"
 #include "grid.h"
 
@@ -52,7 +54,7 @@ std::string get_pinned_path() {
 /*
  * Adds pinned entry and saves pinned cache file
  * */
-void add_and_save_pinned(std::string command) {
+void add_and_save_pinned(const std::string& command) {
     // Add if not yet pinned
     if (std::find(pinned.begin(), pinned.end(), command) == pinned.end()) {
         pinned.push_back(command);
@@ -64,11 +66,11 @@ void add_and_save_pinned(std::string command) {
 /*
  * Removes pinned entry and saves pinned cache file
  * */
-void remove_and_save_pinned(std::string command) {
+void remove_and_save_pinned(const std::string& command) {
     // Find the item index
     bool found = false;
-    int idx (-1);
-    for (int i = 0; i < (int)pinned.size(); i++) {
+    std::size_t idx;
+    for (std::size_t i = 0; i < pinned.size(); i++) {
         if (pinned[i] == command) {
             found = true;
             idx = i;
@@ -79,7 +81,9 @@ void remove_and_save_pinned(std::string command) {
     if (found) {
         pinned.erase(pinned.begin() + idx);
         std::ofstream out_file(pinned_file);
-        for (const auto &e : pinned) out_file << e << "\n";
+        for (const auto &e : pinned) {
+            out_file << e << "\n";
+        }
     }
 }
 
@@ -104,15 +108,14 @@ std::vector<std::string> get_app_dirs() {
 /*
  * Returns all .desktop files paths
  * */
-std::vector<std::string> list_entries(std::vector<std::string> paths) {
+std::vector<std::string> list_entries(const std::vector<std::string>& paths) {
     std::vector<std::string> desktop_paths;
-    for (std::string dir : paths) {
-        struct stat st;
-        char* c = const_cast<char*>(dir.c_str());
+    std::error_code ec;
+    for (auto& dir : paths) {
         // if directory exists
-        if (stat(c, &st) == 0) {
+        if (std::filesystem::is_directory(dir, ec) && !ec) {
             for (const auto & entry : fs::directory_iterator(dir)) {
-                desktop_paths.push_back(entry.path());
+                desktop_paths.emplace_back(entry.path());
             }
         }
     }
@@ -122,8 +125,8 @@ std::vector<std::string> list_entries(std::vector<std::string> paths) {
 /*
  * Parses .desktop file to vector<string> {'name', 'exec', 'icon', 'comment'}
  * */
-std::vector<std::string> desktop_entry(std::string path, std::string lang) {
-    std::vector<std::string> fields = {"", "", "", ""};
+DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
+    DesktopEntry entry;
 
     std::ifstream file(path);
     std::string str;
@@ -150,15 +153,13 @@ std::vector<std::string> desktop_entry(std::string path, std::string lang) {
             if (str.find(loc_name) == 0) {
                 if (str.find_first_of("=") != std::string::npos) {
                     int idx = str.find_first_of("=");
-                    std::string val = str.substr(idx + 1);
-                    name_ln = val;
+                    name_ln = str.substr(idx + 1);
                 }
             }
             if (str.find("Name=") == 0) {
                 if (str.find_first_of("=") != std::string::npos) {
                     int idx = str.find_first_of("=");
-                    std::string val = str.substr(idx + 1);
-                    name = val;
+                    name = str.substr(idx + 1);
                 }
             }
             if (str.find("Exec=") == 0) {
@@ -170,50 +171,47 @@ std::vector<std::string> desktop_entry(std::string path, std::string lang) {
                         int idx = val.find_first_of("%");
                         val = val.substr(0, idx - 1);
                     }
-                    fields[1] = val;
+                    entry.exec = std::move(val);
                 }
             }
             if (str.find("Icon=") == 0) {
                 if (str.find_first_of("=") != std::string::npos) {
                     int idx = str.find_first_of("=");
-                    std::string val = str.substr(idx + 1);
-                    fields[2] = val;
+                    entry.icon = str.substr(idx + 1);
                 }
             }
             if (str.find("Comment=") == 0) {
                 if (str.find_first_of("=") != std::string::npos) {
                     int idx = str.find_first_of("=");
-                    std::string val = str.substr(idx + 1);
-                    comment = val;
+                    comment = str.substr(idx + 1);
                 }
             }
             if (str.find(loc_comment) == 0) {
                 if (str.find_first_of("=") != std::string::npos) {
                     int idx = str.find_first_of("=");
-                    std::string val = str.substr(idx + 1);
-                    comment_ln = val;
+                    comment_ln = str.substr(idx + 1);
                 }
             }
         }
     }
     if (name_ln.empty()) {
-        fields[0] = name;
+        entry.name = std::move(name);
     } else {
-        fields[0] = name_ln;
+        entry.name = std::move(name_ln);
     }
 
     if (comment_ln.empty()) {
-        fields[3] = comment;
+        entry.comment = std::move(comment);
     } else {
-        fields[3] = comment_ln;
+        entry.comment = std::move(comment_ln);
     }
-    return fields;
+    return entry;
 }
 
 /*
  * Returns json object out of the cache file
  * */
-ns::json get_cache(std::string cache_file) {
+ns::json get_cache(const std::string& cache_file) {
     std::string cache_string = read_file_to_string(cache_file);
 
     return string_to_json(cache_string);
@@ -222,7 +220,7 @@ ns::json get_cache(std::string cache_file) {
 /*
  * Returns vector of strings out of the pinned cache file content
  * */
-std::vector<std::string> get_pinned(std::string pinned_file) {
+std::vector<std::string> get_pinned(const std::string& pinned_file) {
     std::vector<std::string> lines;
     std::ifstream in(pinned_file.c_str());
     if(!in) {
@@ -263,12 +261,12 @@ std::vector<CacheEntry> get_favourites(ns::json cache, int number) {
     return favourites;
 }
 
-bool on_button_entered(GdkEventCrossing *event, Glib::ustring comment) {
+bool on_button_entered(GdkEventCrossing *event, const Glib::ustring& comment) {
     description -> set_text(comment);
     return true;
 }
 
-bool on_button_focused(GdkEventFocus *event, Glib::ustring comment) {
+bool on_button_focused(GdkEventFocus *event, const Glib::ustring& comment) {
     description -> set_text(comment);
     return true;
 }
@@ -291,7 +289,7 @@ void on_button_clicked(std::string cmd) {
     Gtk::Main::quit();
 }
 
-bool on_grid_button_press(GdkEventButton *event, Glib::ustring exec) {
+bool on_grid_button_press(GdkEventButton *event, const Glib::ustring& exec) {
     if (pins && event -> button == 3) {
         add_and_save_pinned(exec);
         Gtk::Main::quit();
@@ -299,7 +297,7 @@ bool on_grid_button_press(GdkEventButton *event, Glib::ustring exec) {
     return true;
 }
 
-bool on_pinned_button_press(GdkEventButton *event, Glib::ustring exec) {
+bool on_pinned_button_press(GdkEventButton *event, const Glib::ustring& exec) {
     if (pins && event -> button == 3) {
         remove_and_save_pinned(exec);
         Gtk::Main::quit();

@@ -98,12 +98,12 @@ void MainWindow::filter_view() {
     if (this -> search_phrase.size() > 0) {
         this -> filtered_boxes = {};
 
-        for (AppBox* box : this -> all_boxes) {
-            if (box -> name.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos
-                || box -> exec.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos
-                || box -> comment.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos) {
+        for (auto& box : this -> all_boxes) {
+            if (box.name.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos
+                || box.exec.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos
+                || box.comment.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos) {
 
-                this -> filtered_boxes.push_back(box);
+                this -> filtered_boxes.emplace_back(&box);
             }
         }
         this -> favs_grid.hide();
@@ -126,7 +126,7 @@ void MainWindow::rebuild_grid(bool filtered) {
     }
     int cnt = 0;
     if (filtered) {
-        for(AppBox* box : this -> filtered_boxes) {
+        for (auto& box : this -> filtered_boxes) {
             this -> apps_grid.attach(*box, column, row, 1, 1);
             if (column < num_col - 1) {
                 column++;
@@ -137,8 +137,8 @@ void MainWindow::rebuild_grid(bool filtered) {
             cnt++;
         }
     } else {
-        for(AppBox* box : this -> all_boxes) {
-            this -> apps_grid.attach(*box, column, row, 1, 1);
+        for (auto& box : this -> all_boxes) {
+            this -> apps_grid.attach(box, column, row, 1, 1);
             if (column < num_col - 1) {
                 column++;
             } else {

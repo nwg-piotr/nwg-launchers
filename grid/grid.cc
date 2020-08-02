@@ -210,30 +210,27 @@ int main(int argc, char *argv[]) {
 
     /* create the vector of DesktopEntry structs */
     std::vector<DesktopEntry> desktop_entries {};
-    for (std::string entry : entries) {
+    for (auto& entry_ : entries) {
         // string path -> vector<string> {name, exec, icon, comment}
-        std::vector<std::string> e = desktop_entry(entry, lang);
-        struct DesktopEntry de = {e[0], e[1], e[2], e[3]};
+        auto entry = desktop_entry(std::move(entry_), lang);
 
         // only add if 'name' and 'exec' not empty
-        if (!e[0].empty() && !e[1].empty()) {
+        if (!entry.name.empty() && !entry.exec.empty()) {
             // avoid adding duplicates
             bool found = false;
-            for (DesktopEntry entry : desktop_entries) {
-                if (entry.name == de.name && entry.exec == de.exec) {
+            for (auto& e: desktop_entries) {
+                if (entry.name == e.name && entry.exec == e.exec) {
                     found = true;
                 }
             }
             if (!found) {
-                desktop_entries.push_back(de);
+                desktop_entries.emplace_back(entry);
             }
         }
     }
 
     /* sort above by the 'name' field */
-    sort(desktop_entries.begin(), desktop_entries.end(), [](const DesktopEntry& lhs, const DesktopEntry& rhs) {
-        return lhs.name < rhs.name;
-    });
+    std::sort(desktop_entries.begin(), desktop_entries.end(), [](auto& a, auto& b) { return a.name < b.name; });
 
     /* turn off borders, enable floating on sway */
     if (wm == "sway") {
@@ -299,45 +296,65 @@ int main(int argc, char *argv[]) {
     scrolled_window.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_ALWAYS);
 
     /* Create buttons for all desktop entries */
-    for(auto it = desktop_entries.begin(); it != desktop_entries.end(); it++) {
-        if (std::find(pinned.begin(), pinned.end(), it -> exec) == pinned.end()) {
-			Gtk::Image* image = app_image(it -> icon);
-			AppBox *ab = new AppBox(it -> name, it -> exec, it -> comment);
-			ab -> set_image_position(Gtk::POS_TOP);
-			ab -> set_image(*image);
-			ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), it -> exec));
-			ab -> signal_enter_notify_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered), it -> comment));
-			ab -> signal_focus_in_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused), it -> comment));
-			ab -> signal_button_press_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_grid_button_press), it -> exec));
-			window.all_boxes.push_back(ab);
-		}
+    for (auto& entry : desktop_entries) {
+        if (std::find(pinned.begin(), pinned.end(), entry.exec) == pinned.end()) {
+             auto& ab = window.all_boxes.emplace_back(entry.name,
+                                                      entry.comment,
+                                                      entry.exec);
+             Gtk::Image* image = app_image(entry.icon);
+             ab.set_image_position(Gtk::POS_TOP);
+             ab.set_image(*image);
+             ab.signal_clicked()
+               .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked),
+                                                entry.exec));
+             ab.signal_button_press_event()
+               .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_grid_button_press),
+                                                entry.exec));
+             ab.signal_enter_notify_event()
+               .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered),
+                                                entry.comment));
+             ab.signal_focus_in_event()
+               .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused),
+                                                entry.comment));
+        }
     }
     window.label_desc.set_text(std::to_string(window.all_boxes.size()));
 
     /* Create buttons for favourites */
-    if (favs && favourites.size() > 0) {
-        for (CacheEntry entry : favourites) {
-            for(auto it = desktop_entries.begin(); it != desktop_entries.end(); it++) {
-                if (it -> exec == entry.exec) {
-                    Gtk::Image* image = app_image(it -> icon);
-                    AppBox *ab = new AppBox(it -> name, it -> exec, it -> comment);
-                    ab -> set_image_position(Gtk::POS_TOP);
-                    ab -> set_image(*image);
-                    ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), it -> exec));
-                    ab -> signal_enter_notify_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered), it -> comment));
-                    ab -> signal_focus_in_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused), it -> comment));
-                    ab -> signal_button_press_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_grid_button_press), it -> exec));
+    if (favs) {
+        for (auto& entry : favourites) {
+            for (auto& de : desktop_entries) {
+                if (de.exec == entry.exec) {
 
                     // avoid adding twice the same exec w/ another name
                     bool already_added {false};
-                    for (AppBox *app_box : window.fav_boxes) {
-                        if (app_box -> exec == it -> exec) {
+                    for (auto& app_box : window.fav_boxes) {
+                        if (app_box.exec == de.exec) {
                             already_added = true;
+                            break;
                         }
                     }
-                    if (!already_added) {
-                        window.fav_boxes.push_back(ab);
+                    if (already_added) {
+                        continue;
                     }
+
+                    Gtk::Image* image = app_image(de.icon);
+                    auto& ab = window.fav_boxes.emplace_back(de.name, de.exec, de.comment);
+                    
+                    ab.set_image_position(Gtk::POS_TOP);
+                    ab.set_image(*image);
+                    ab.signal_clicked()
+                      .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked),
+                                                       de.exec));
+                    ab.signal_enter_notify_event()
+                      .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered),
+                                                       de.comment));
+                    ab.signal_focus_in_event()
+                      .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused),
+                                                       de.comment));
+                    ab.signal_button_press_event()
+                      .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_grid_button_press),
+                                                       de.exec));
                 }
             }
         }
@@ -345,26 +362,33 @@ int main(int argc, char *argv[]) {
 
     /* Create buttons for pinned entries */
     if (pins && pinned.size() > 0) {
-		for(auto it = desktop_entries.begin(); it != desktop_entries.end(); it++) {
-			if (std::find(pinned.begin(), pinned.end(), it -> exec) != pinned.end()) {
-				Gtk::Image* image = app_image(it -> icon);
-				AppBox *ab = new AppBox(it -> name, it -> exec, it -> comment);
-				ab -> set_image_position(Gtk::POS_TOP);
-				ab -> set_image(*image);
-				ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), it -> exec));
-				ab -> signal_enter_notify_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered), it -> comment));
-				ab -> signal_focus_in_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused), it -> comment));
-				ab -> signal_button_press_event().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_pinned_button_press), it -> exec));
-				window.pinned_boxes.push_back(ab);
-			}
-		}
-	}
+        for(auto& entry : desktop_entries) {
+            if (std::find(pinned.begin(), pinned.end(), entry.exec) != pinned.end()) {
+                auto& ab = window.pinned_boxes.emplace_back(entry.name, entry.exec, entry.comment);
+                Gtk::Image* image = app_image(entry.icon);
+                ab.set_image_position(Gtk::POS_TOP);
+                ab.set_image(*image);
+                ab.signal_clicked()
+                  .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked),
+                                                   entry.exec));
+                ab.signal_enter_notify_event()
+                  .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered),
+                                                   entry.comment));
+                ab.signal_focus_in_event()
+                  .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused),
+                                                   entry.comment));
+                ab.signal_button_press_event()
+                  .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_pinned_button_press),
+                                                   entry.exec));
+            }
+        }
+    }
 
     int column = 0;
     int row = 0;
     if (pins && pinned.size() > 0) {
-        for (AppBox *box : window.pinned_boxes) {
-            window.pinned_grid.attach(*box, column, row, 1, 1);
+        for (auto& box : window.pinned_boxes) {
+            window.pinned_grid.attach(box, column, row, 1, 1);
             if (column < num_col - 1) {
                 column++;
             } else {
@@ -377,8 +401,8 @@ int main(int argc, char *argv[]) {
     column = 0;
     row = 0;
     if (favs && favourites.size() > 0) {
-        for (AppBox *box : window.fav_boxes) {
-            window.favs_grid.attach(*box, column, row, 1, 1);
+        for (auto& box : window.fav_boxes) {
+            window.favs_grid.attach(box, column, row, 1, 1);
             if (column < num_col - 1) {
                 column++;
             } else {
@@ -390,8 +414,8 @@ int main(int argc, char *argv[]) {
 
     column = 0;
     row = 0;
-    for (AppBox *box : window.all_boxes) {
-        window.apps_grid.attach(*box, column, row, 1, 1);
+    for (auto& box : window.all_boxes) {
+        window.apps_grid.attach(box, column, row, 1, 1);
         if (column < num_col - 1) {
             column++;
         } else {
@@ -451,7 +475,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&tp, NULL);
     long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-    std::cout << "Time: " << end_ms - start_ms << std::endl;
+    std::cout << "Time: " << end_ms - start_ms << "ms\n";
 
     Gtk::Main::run(window);
 

@@ -52,10 +52,10 @@ class MainWindow : public Gtk::Window {
         Gtk::Grid pinned_grid;                  // Pinned entries grid above
         Gtk::Separator separator;               // between favs and all apps
         Gtk::Separator separator1;              // below pinned
-        std::list<AppBox*> all_boxes {};        // attached to apps_grid unfiltered view
+        std::list<AppBox> all_boxes {};         // attached to apps_grid unfiltered view
         std::list<AppBox*> filtered_boxes {};   // attached to apps_grid filtered view
-        std::list<AppBox*> fav_boxes {};        // attached to favs_grid
-        std::list<AppBox*> pinned_boxes {};     // attached to pinned_grid
+        std::list<AppBox> fav_boxes {};         // attached to favs_grid
+        std::list<AppBox> pinned_boxes {};      // attached to pinned_grid
 
     private:
         //Override default signal handler:
@@ -86,16 +86,16 @@ struct CacheEntry {
  * */
 std::string get_cache_path(void);
 std::string get_pinned_path(void);
-void add_and_save_pinned(std::string);
-void remove_and_save_pinned(std::string);
+void add_and_save_pinned(const std::string&);
+void remove_and_save_pinned(const std::string&);
 std::vector<std::string> get_app_dirs(void);
-std::vector<std::string> list_entries(std::vector<std::string>);
-std::vector<std::string> desktop_entry(std::string, std::string);
-ns::json get_cache(std::string);
- std::vector<std::string> get_pinned(std::string);
+std::vector<std::string> list_entries(const std::vector<std::string>&);
+DesktopEntry desktop_entry(std::string&&, const std::string&);
+ns::json get_cache(const std::string&);
+std::vector<std::string> get_pinned(const std::string&);
 std::vector<CacheEntry> get_favourites(ns::json, int);
-bool on_button_entered(GdkEventCrossing *, Glib::ustring);
-bool on_button_focused(GdkEventFocus *, Glib::ustring);
+bool on_button_entered(GdkEventCrossing *, const Glib::ustring&);
+bool on_button_focused(GdkEventFocus *, const Glib::ustring&);
 void on_button_clicked(std::string);
-bool on_grid_button_press(GdkEventButton *, Glib::ustring);
-bool on_pinned_button_press(GdkEventButton *, Glib::ustring);
+bool on_grid_button_press(GdkEventButton *, const Glib::ustring&);
+bool on_pinned_button_press(GdkEventButton *, const Glib::ustring&);
