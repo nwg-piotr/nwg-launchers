@@ -41,35 +41,37 @@ std::vector<BarEntry> get_bar_entries(ns::json&& bar_json) {
 /*
  * Returns x, y, width, hight of focused display
  * */
-Geometry display_geometry(const std::string& wm, MainWindow &window) {
+Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> display, Glib::RefPtr<Gdk::Window> window) {
     Geometry geo = {0, 0, 0, 0};
     if (wm == "sway") {
         std::string jsonString = get_output("swaymsg -t get_outputs");
         ns::json jsonObj = string_to_json(jsonString);
-        for (ns::json::iterator it = jsonObj.begin(); it != jsonObj.end(); ++it) {
-            int index = std::distance(jsonObj.begin(), it);
-            if (jsonObj[index].at("focused") == true) {
-                geo.x = jsonObj[index].at("rect").at("x");
-                geo.y = jsonObj[index].at("rect").at("y");
-                geo.width = jsonObj[index].at("rect").at("width");
-                geo.height = jsonObj[index].at("rect").at("height");
+        for (auto&& entry : jsonObj) {
+            if (entry.at("focused")) {
+                auto&& rect = entry.at("rect");
+                geo.x = rect.at("x");
+                geo.y = rect.at("y");
+                geo.width = rect.at("width");
+                geo.height = rect.at("height");
+                break;
             }
         }
     } else {
         // it's going to fail until the window is actually open
         int retry = 0;
         while (geo.width == 0 || geo.height == 0) {
-            Glib::RefPtr<Gdk::Screen> screen = window.get_screen();
-            int display_number = screen -> get_monitor_at_window(screen -> get_active_window());
             Gdk::Rectangle rect;
-            screen -> get_monitor_geometry(display_number, rect);
-            geo.x = rect.get_x();
-            geo.y = rect.get_y();
-            geo.width = rect.get_width();
-            geo.height = rect.get_height();
+            auto monitor = display->get_monitor_at_window(window);
+            if (monitor) {
+                monitor->get_geometry(rect);
+                geo.x = rect.get_x();
+                geo.y = rect.get_y();
+                geo.width = rect.get_width();
+                geo.height = rect.get_height();
+            }
             retry++;
             if (retry > 100) {
-                std::cout << "\nERROR: Failed checking display geometry\n\n";
+                std::cout << "\nERROR: Failed checking display geometry, tries: " << retry << "\n\n";
                 break;
             }
         }

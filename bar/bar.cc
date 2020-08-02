@@ -197,18 +197,21 @@ int main(int argc, char *argv[]) {
 
     Gtk::Main kit(argc, argv);
 
-    GtkCssProvider* provider = gtk_css_provider_new();
-    GdkDisplay* display = gdk_display_get_default();
-    GdkScreen* screen = gdk_display_get_default_screen(display);
-    gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-    if (std::ifstream(css_file)) {
-        gtk_css_provider_load_from_path(provider, css_file.c_str(), NULL);
+    auto provider = Gtk::CssProvider::create();
+    auto display = Gdk::Display::get_default();
+    auto screen = display->get_default_screen();
+    if (!provider || !display || !screen) {
+        std::cerr << "ERROR: Failed to initialize GTK\n";
+    }
+    Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+
+    if (std::filesystem::is_regular_file(css_file)) {
+        provider->load_from_path(css_file);
         std::cout << "Using " << css_file << std::endl;
     } else {
-        gtk_css_provider_load_from_path(provider, default_css_file.c_str(), NULL);
+        provider->load_from_path(default_css_file);
         std::cout << "Using " << default_css_file << std::endl;
     }
-    g_object_unref(provider);
 
     MainWindow window;
     window.show();
@@ -216,7 +219,7 @@ int main(int argc, char *argv[]) {
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
 
     /* Detect focused display geometry: {x, y, width, height} */
-    Geometry geometry = display_geometry(wm, window);
+    auto geometry = display_geometry(wm, display, window.get_window());
     std::cout << "Focused display: " << geometry.x << ", " << geometry.y << ", " << geometry.width << ", "
     << geometry.height << '\n';
 
@@ -234,22 +237,22 @@ int main(int argc, char *argv[]) {
     outer_box.set_spacing(15);
 
     /* Create buttons */
-    if (bar_entries.size() > 0) {
-        for (BarEntry entry : bar_entries) {
-            Gtk::Image* image = app_image(entry.icon);
-            AppBox *ab = new AppBox(entry.name, entry.exec, entry.icon);
-            ab -> set_image_position(Gtk::POS_TOP);
-            ab -> set_image(*image);
-            ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), entry.exec));
+    auto bar_entries_count = bar_entries.size();
 
-            window.boxes.push_back(ab);
-        }
+    for (BarEntry entry : bar_entries) {
+        Gtk::Image* image = app_image(entry.icon);
+        AppBox *ab = new AppBox(entry.name, entry.exec, entry.icon);
+        ab -> set_image_position(Gtk::POS_TOP);
+        ab -> set_image(*image);
+        ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), entry.exec));
+
+        window.boxes.push_back(ab);
     }
 
     int column = 0;
     int row = 0;
 
-    if (bar_entries.size() > 0) {
+    if (bar_entries_count > 0) {
         for (AppBox *box : window.boxes) {
             window.favs_grid.attach(*box, column, row, 1, 1);
             if (orientation == "v") {
