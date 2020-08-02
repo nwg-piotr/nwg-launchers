@@ -202,15 +202,16 @@ int main(int argc, char *argv[]) {
     auto screen = display->get_default_screen();
     if (!provider || !display || !screen) {
         std::cerr << "ERROR: Failed to initialize GTK\n";
+        return EXIT_FAILURE;
     }
     Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
 
     if (std::filesystem::is_regular_file(css_file)) {
         provider->load_from_path(css_file);
-        std::cout << "Using " << css_file << std::endl;
+        std::cout << "Using " << css_file << '\n';
     } else {
         provider->load_from_path(default_css_file);
-        std::cout << "Using " << default_css_file << std::endl;
+        std::cout << "Using " << default_css_file << '\n';
     }
 
     MainWindow window;
@@ -237,29 +238,26 @@ int main(int argc, char *argv[]) {
     outer_box.set_spacing(15);
 
     /* Create buttons */
-    auto bar_entries_count = bar_entries.size();
-
-    for (BarEntry entry : bar_entries) {
+    for (auto& entry : bar_entries) {
         Gtk::Image* image = app_image(entry.icon);
-        AppBox *ab = new AppBox(entry.name, entry.exec, entry.icon);
-        ab -> set_image_position(Gtk::POS_TOP);
-        ab -> set_image(*image);
-        ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), entry.exec));
-
-        window.boxes.push_back(ab);
+        auto& ab = window.boxes.emplace_back(std::move(entry.name),
+                                             entry.exec, // we'll need entry.exec for signal
+                                             std::move(entry.icon));
+        ab.set_image_position(Gtk::POS_TOP);
+        ab.set_image(*image);
+        ab.signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked),
+                                                            std::move(entry.exec)));
     }
 
     int column = 0;
     int row = 0;
 
-    if (bar_entries_count > 0) {
-        for (AppBox *box : window.boxes) {
-            window.favs_grid.attach(*box, column, row, 1, 1);
-            if (orientation == "v") {
-                row++;
-            } else {
-                column++;
-            }
+    for (auto& box : window.boxes) {
+        window.favs_grid.attach(box, column, row, 1, 1);
+        if (orientation == "v") {
+            row++;
+        } else {
+            column++;
         }
     }
 
@@ -291,7 +289,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&tp, NULL);
     long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-    std::cout << "Time: " << end_ms - start_ms << std::endl;
+    std::cout << "Time: " << end_ms - start_ms << "ms\n";
 
     Gtk::Main::run(window);
 
