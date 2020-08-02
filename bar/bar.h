@@ -65,15 +65,23 @@ struct BarEntry {
     std::string name;
     std::string exec;
     std::string icon;
+    BarEntry(std::string&&, std::string&&, std::string&&);
+};
+
+struct Geometry {
+    int x;
+    int y;
+    int width;
+    int height;
 };
 
 /*
  * Function declarations
  * */
-ns::json get_bar_json(std::string);
-std::vector<BarEntry> get_bar_entries(ns::json);
+ns::json get_bar_json(const std::string&);
+std::vector<BarEntry> get_bar_entries(ns::json&&);
 
-std::vector<int> display_geometry(std::string, MainWindow &);
-Gtk::Image* app_image(std::string);
+Geometry display_geometry(const std::string&, MainWindow &);
+Gtk::Image* app_image(const std::string&);
 
 void on_button_clicked(std::string);

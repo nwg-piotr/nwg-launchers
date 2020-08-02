@@ -97,7 +97,7 @@ std::string get_locale() {
 /*
  * Returns file content as a string
  * */
-std::string read_file_to_string(std::string filename) {
+std::string read_file_to_string(const std::string& filename) {
     std::ifstream input(filename);
     std::stringstream sstr;
 
@@ -109,7 +109,7 @@ std::string read_file_to_string(std::string filename) {
 /*
  * Saves a string to a file
  * */
-void save_string_to_file(std::string s, std::string filename) {
+void save_string_to_file(const std::string& s, const std::string& filename) {
     std::ofstream file(filename);
     file << s;
 }
@@ -134,10 +134,9 @@ std::vector<std::string> split_string(std::string str, std::string delimiter) {
 /*
  * Converts json string into a json object
  * */
-ns::json string_to_json(std::string jsonString) {
-    const char *s = jsonString.c_str();
+ns::json string_to_json(const std::string& jsonString) {
     ns::json jsonObj;
-    std::stringstream(s) >> jsonObj;
+    std::stringstream(jsonString) >> jsonObj;
 
     return jsonObj;
 }
@@ -145,7 +144,7 @@ ns::json string_to_json(std::string jsonString) {
 /*
  * Saves json into file
  * */
-void save_json(ns::json json_obj, std::string filename) {
+void save_json(const ns::json& json_obj, const std::string& filename) {
     std::ofstream o(filename);
     o << std::setw(2) << json_obj << std::endl;
 }
@@ -153,7 +152,7 @@ void save_json(ns::json json_obj, std::string filename) {
 /*
  * Returns output of a command as string
  * */
-std::string get_output(std::string cmd) {
+std::string get_output(const std::string& cmd) {
     const char *command = cmd.c_str();
     std::array<char, 128> buffer;
     std::string result;

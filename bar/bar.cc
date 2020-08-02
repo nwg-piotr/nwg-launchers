@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
 
     ns::json bar_json {};
     try {
-        bar_json = get_bar_json(custom_bar_file);
+        bar_json = get_bar_json(std::move(custom_bar_file));
     }  catch (...) {
         std::cout << "\nERROR: Template file not found, using default\n";
         bar_json = get_bar_json(default_bar_file);
@@ -175,7 +175,7 @@ int main(int argc, char *argv[]) {
 
     std::vector<BarEntry> bar_entries {};
     if (bar_json.size() > 0) {
-        bar_entries = get_bar_entries(bar_json);
+        bar_entries = get_bar_entries(std::move(bar_json));
     }
 
     /* get current WM name if not forced */
@@ -216,14 +216,14 @@ int main(int argc, char *argv[]) {
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
 
     /* Detect focused display geometry: {x, y, width, height} */
-    std::vector<int> geometry = display_geometry(wm, window);
-    std::cout << "Focused display: " << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", "
-    << geometry[3] << '\n';
+    Geometry geometry = display_geometry(wm, window);
+    std::cout << "Focused display: " << geometry.x << ", " << geometry.y << ", " << geometry.width << ", "
+    << geometry.height << '\n';
 
-    int x = geometry[0];
-    int y = geometry[1];
-    int w = geometry[2];
-    int h = geometry[3];
+    int x = geometry.x;
+    int y = geometry.y;
+    int w = geometry.width;
+    int h = geometry.height;
 
     if (wm == "sway" || wm == "i3" || wm == "openbox") {
         window.resize(w, h);

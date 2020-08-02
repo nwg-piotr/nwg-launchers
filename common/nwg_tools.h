@@ -26,14 +26,14 @@ std::string detect_wm(void);
 
 std::string get_locale(void);
 
-std::string read_file_to_string(std::string);
-void save_string_to_file(std::string, std::string);
+std::string read_file_to_string(const std::string&);
+void save_string_to_file(const std::string&, const std::string&);
 std::vector<std::string> split_string(std::string, std::string);
 
-ns::json string_to_json(std::string);
-void save_json(ns::json, std::string);
+ns::json string_to_json(const std::string&);
+void save_json(const ns::json&, const std::string&);
 
-std::string get_output(std::string);
+std::string get_output(const std::string&);
 
 /*
  * Returns x, y, width, hight of focused display
