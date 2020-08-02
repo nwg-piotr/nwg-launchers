@@ -15,6 +15,8 @@
 #include "on_event.h"
 #include "dmenu.h"
 
+int image_size {72};                        // make linker happy
+
 std::string h_align {""};                   // horizontal alignment
 std::string v_align {""};                   // vertical alignment
 double opacity (0.3);                       // overlay window opacity
@@ -92,8 +94,7 @@ int main(int argc, char *argv[]) {
     if (!dmenu_run) {
         all_commands = {};
         for (std::string line; std::getline(std::cin, line);) {
-            Glib::ustring cmd = line;
-            all_commands.push_back(cmd);
+            all_commands.emplace_back(std::move(line));
         }
     }
 
@@ -191,11 +192,11 @@ int main(int argc, char *argv[]) {
 
         /* Create a vector of commands (w/o path) */
         all_commands = {};
-        for (std::string command : commands) {
-            std::vector<std::string> parts = split_string(command, "/");
-            std::string cmd = parts[parts.size() - 1];
+        for (auto&& command : commands) {
+            auto parts = split_string(std::move(command), "/");
+            auto& cmd = parts.back();
             if (!cmd.find(".") == 0 && cmd.size() != 1) {
-                all_commands.push_back(cmd);
+                all_commands.emplace_back(std::move(cmd));
             }
         }
 
@@ -294,7 +295,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (show_searchbox) {
-        Gtk::MenuItem *search_item = new Gtk::MenuItem();
+        auto search_item = new Gtk::MenuItem();
         search_item -> add(menu.searchbox);
         search_item -> set_name("search_item");
         search_item -> set_sensitive(false);
@@ -304,10 +305,12 @@ int main(int argc, char *argv[]) {
     menu.signal_deactivate().connect(sigc::ptr_fun(Gtk::Main::quit));
 
     int cnt = 0;
-    for (Glib::ustring command : all_commands) {
-        Gtk::MenuItem *item = new Gtk::MenuItem();
+    for (auto& command : all_commands) {
+        auto item = new Gtk::MenuItem();
         item -> set_label(command);
-        item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_item_clicked), command));
+        item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_item_clicked),
+                                                               std::move(command)));
+
         menu.append(*item);
         cnt++;
         if (cnt > rows - 1) {

@@ -31,7 +31,6 @@ extern double opacity;
 extern std::string wm;
 
 extern int num_col;
-extern int image_size;
 extern Gtk::Label *description;
 
 extern std::string pinned_file;
@@ -95,7 +94,6 @@ std::vector<std::string> desktop_entry(std::string, std::string);
 ns::json get_cache(std::string);
  std::vector<std::string> get_pinned(std::string);
 std::vector<CacheEntry> get_favourites(ns::json, int);
-Gtk::Image* app_image(std::string);
 bool on_button_entered(GdkEventCrossing *, Glib::ustring);
 bool on_button_focused(GdkEventFocus *, Glib::ustring);
 void on_button_clicked(std::string);

@@ -39,33 +39,6 @@ std::vector<BarEntry> get_bar_entries(ns::json&& bar_json) {
 }
 
 
-/*
- * Returns Gtk::Image out of the icon name of file path
- * */
-Gtk::Image* app_image(const std::string& icon) {
-    Glib::RefPtr<Gtk::IconTheme> icon_theme;
-    Glib::RefPtr<Gdk::Pixbuf> pixbuf;
-
-    icon_theme = Gtk::IconTheme::get_default();
-
-    if (icon.find_first_of("/") != 0) {
-        try {
-            pixbuf = icon_theme->load_icon(icon, image_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
-        } catch (...) {
-            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
-        }
-    } else {
-        try {
-            pixbuf = Gdk::Pixbuf::create_from_file(icon, image_size, image_size, true);
-        } catch (...) {
-            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
-        }
-    }
-    auto image = Gtk::manage(new Gtk::Image(pixbuf));
-
-    return image;
-}
-
 void on_button_clicked(std::string cmd) {
     cmd = cmd + " &";
     const char *command = cmd.c_str();

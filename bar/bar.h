@@ -26,7 +26,6 @@
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-extern int image_size;
 extern double opacity;
 extern std::string wm;
 
@@ -73,8 +72,5 @@ struct BarEntry {
  * */
 ns::json get_bar_json(const std::string&);
 std::vector<BarEntry> get_bar_entries(ns::json&&);
-
-Geometry display_geometry(const std::string&, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);
-Gtk::Image* app_image(const std::string&);
 
 void on_button_clicked(std::string);

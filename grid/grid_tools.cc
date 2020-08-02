@@ -263,33 +263,6 @@ std::vector<CacheEntry> get_favourites(ns::json cache, int number) {
     return favourites;
 }
 
-/*
- * Returns Gtk::Image out of the icon name of file path
- * */
-Gtk::Image* app_image(std::string icon) {
-    Glib::RefPtr<Gtk::IconTheme> icon_theme;
-    Glib::RefPtr<Gdk::Pixbuf> pixbuf;
-
-    icon_theme = Gtk::IconTheme::get_default();
-
-    if (icon.find_first_of("/") != 0) {
-        try {
-            pixbuf = icon_theme->load_icon(icon, image_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
-        } catch (...) {
-            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwggrid/icon-missing.svg", image_size, image_size, true);
-        }
-    } else {
-        try {
-            pixbuf = Gdk::Pixbuf::create_from_file(icon, image_size, image_size, true);
-        } catch (...) {
-            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwggrid/icon-missing.svg", image_size, image_size, true);
-        }
-    }
-    auto image = Gtk::manage(new Gtk::Image(pixbuf));
-
-    return image;
-}
-
 bool on_button_entered(GdkEventCrossing *event, Glib::ustring comment) {
     description -> set_text(comment);
     return true;

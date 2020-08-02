@@ -10,6 +10,6 @@ nwg = static_library(
 	'nwg',
 	sources,
 	dependencies: [json, gtkmm],
-	include_directories: [json_header_dir],
+	include_directories: [json_header_dir, nwg_conf_inc],
 	install: false
 )
