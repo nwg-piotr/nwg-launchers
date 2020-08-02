@@ -7,9 +7,12 @@
  * */
 
 #include <filesystem>
+#include <string_view>
 
 #include "nwg_tools.h"
 #include "grid.h"
+
+CacheEntry::CacheEntry(std::string exec, int clicks): exec(std::move(exec)), clicks(clicks) { }
 
 /*
  * Returns cache file path
@@ -123,7 +126,7 @@ std::vector<std::string> list_entries(const std::vector<std::string>& paths) {
 }
 
 /*
- * Parses .desktop file to vector<string> {'name', 'exec', 'icon', 'comment'}
+ * Parses .desktop file to DesktopEntry struct
  * */
 DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
     DesktopEntry entry;
@@ -140,56 +143,50 @@ DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
     std::string loc_comment = "Comment[" + lang + "]=";
 
     while (std::getline(file, str)) {
+        auto view = std::string_view(str.data(), str.size());
         bool read_me = true;
-        if (str.find("[") == 0) {
-            read_me = (str.find("[Desktop Entry") != std::string::npos);
+        if (view.find("[") == 0) {
+            read_me = (view.find("[Desktop Entry") != std::string_view::npos);
             if (!read_me) {
-            break;
-        } else {
-            continue;
+                break;
+            } else {
+                continue;
             }
         }
         if (read_me) {
-            if (str.find(loc_name) == 0) {
-                if (str.find_first_of("=") != std::string::npos) {
-                    int idx = str.find_first_of("=");
-                    name_ln = str.substr(idx + 1);
+            if (view.find(loc_name) == 0) {
+                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
+                    name_ln = view.substr(idx + 1);
                 }
             }
-            if (str.find("Name=") == 0) {
-                if (str.find_first_of("=") != std::string::npos) {
-                    int idx = str.find_first_of("=");
-                    name = str.substr(idx + 1);
+            if (view.find("Name=") == 0) {
+                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
+                    name = view.substr(idx + 1);
                 }
             }
-            if (str.find("Exec=") == 0) {
-                if (str.find_first_of("=") != std::string::npos) {
-                    int idx = str.find_first_of("=");
-                    std::string val = str.substr(idx + 1);
+            if (view.find("Exec=") == 0) {
+                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
+                    auto val = view.substr(idx + 1);
                     // strip ' %' and following
-                    if (val.find_first_of("%") != std::string::npos) {
-                        int idx = val.find_first_of("%");
+                    if (auto idx = val.find_first_of("%"); idx != std::string_view::npos) {
                         val = val.substr(0, idx - 1);
                     }
                     entry.exec = std::move(val);
                 }
             }
-            if (str.find("Icon=") == 0) {
-                if (str.find_first_of("=") != std::string::npos) {
-                    int idx = str.find_first_of("=");
-                    entry.icon = str.substr(idx + 1);
+            if (view.find("Icon=") == 0) {
+                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
+                    entry.icon = view.substr(idx + 1);
                 }
             }
-            if (str.find("Comment=") == 0) {
-                if (str.find_first_of("=") != std::string::npos) {
-                    int idx = str.find_first_of("=");
-                    comment = str.substr(idx + 1);
+            if (view.find("Comment=") == 0) {
+                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
+                    comment = view.substr(idx + 1);
                 }
             }
-            if (str.find(loc_comment) == 0) {
-                if (str.find_first_of("=") != std::string::npos) {
-                    int idx = str.find_first_of("=");
-                    comment_ln = str.substr(idx + 1);
+            if (view.find(loc_comment) == 0) {
+                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
+                    comment_ln = view.substr(idx + 1);
                 }
             }
         }
@@ -243,22 +240,21 @@ std::vector<std::string> get_pinned(const std::string& pinned_file) {
 /*
  * Returns n cache items sorted by clicks; n should be the number of grid columns
  * */
-std::vector<CacheEntry> get_favourites(ns::json cache, int number) {
+std::vector<CacheEntry> get_favourites(ns::json&& cache, int number) {
     // read from json object
     std::vector<CacheEntry> sorted_cache {}; // not yet sorted
-    for (ns::json::iterator it = cache.begin(); it != cache.end(); ++it) {
-        struct CacheEntry entry = {it.key(), it.value()};
-        sorted_cache.push_back(entry);
+    for (auto it : cache.items()) {
+        sorted_cache.emplace_back(it.key(), it.value());
     }
     // actually sort by the number of clicks
     sort(sorted_cache.begin(), sorted_cache.end(), [](const CacheEntry& lhs, const CacheEntry& rhs) {
         return lhs.clicks > rhs.clicks;
     });
     // Trim to the number of columns, as we need just 1 row of favourites
-    std::vector<CacheEntry>::const_iterator first = sorted_cache.begin();
-    std::vector<CacheEntry>::const_iterator last = sorted_cache.begin() + number;
-    std::vector<CacheEntry> favourites(first, last);
-    return favourites;
+    auto from = sorted_cache.begin() + number;
+    auto to = sorted_cache.end();
+    sorted_cache.erase(from, to);
+    return sorted_cache;
 }
 
 bool on_button_entered(GdkEventCrossing *event, const Glib::ustring& comment) {

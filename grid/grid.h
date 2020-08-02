@@ -79,6 +79,7 @@ struct DesktopEntry {
 struct CacheEntry {
     std::string exec;
     int clicks;
+    CacheEntry(std::string, int);
 };
 
 /*
@@ -93,7 +94,7 @@ std::vector<std::string> list_entries(const std::vector<std::string>&);
 DesktopEntry desktop_entry(std::string&&, const std::string&);
 ns::json get_cache(const std::string&);
 std::vector<std::string> get_pinned(const std::string&);
-std::vector<CacheEntry> get_favourites(ns::json, int);
+std::vector<CacheEntry> get_favourites(ns::json&&, int);
 bool on_button_entered(GdkEventCrossing *, const Glib::ustring&);
 bool on_button_focused(GdkEventFocus *, const Glib::ustring&);
 void on_button_clicked(std::string);

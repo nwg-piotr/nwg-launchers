@@ -34,6 +34,8 @@ class AppBox : public Gtk::Button {
     public:
         AppBox();
         AppBox(Glib::ustring, std::string, Glib::ustring);
+        AppBox(AppBox&&) = default;
+        AppBox(const AppBox&) = delete;
 
         Glib::ustring name;
         Glib::ustring exec;

@@ -184,9 +184,8 @@ int main(int argc, char *argv[]) {
     // This will be read-only, to find n most clicked items (n = number of grid columns)
     std::vector<CacheEntry> favourites {};
     if (cache.size() > 0) {
-        int n = 0;
-        (int)cache.size() >= num_col ? n = num_col : n = (int)cache.size();
-        favourites = get_favourites(cache, n);
+        auto n = cache.size() >= static_cast<std::size_t>(num_col) ? num_col : cache.size();
+        favourites = get_favourites(std::move(cache), n);
     }
 
     /* get current WM name if not forced */

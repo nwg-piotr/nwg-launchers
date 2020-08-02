@@ -96,7 +96,7 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
 
 void MainWindow::filter_view() {
     if (this -> search_phrase.size() > 0) {
-        this -> filtered_boxes = {};
+        this -> filtered_boxes.clear();
 
         for (auto& box : this -> all_boxes) {
             if (box.name.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos
