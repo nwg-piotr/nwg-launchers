@@ -177,6 +177,8 @@ bool MainWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
 }
 
 void MainWindow::on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) {
+    (void) previous_screen; // suppress warning
+
     auto screen = get_screen();
     auto visual = screen->get_rgba_visual();
 

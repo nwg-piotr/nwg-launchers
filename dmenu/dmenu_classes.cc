@@ -22,6 +22,8 @@ Anchor::~Anchor() {
 }
 
 bool Anchor::on_focus_in_event(GdkEventFocus* focus_event) {
+    (void) focus_event; // suppress warning
+
     Gdk::Gravity gravity_widget {Gdk::GRAVITY_CENTER};
     Gdk::Gravity gravity_menu {Gdk::GRAVITY_CENTER};
     if (wm == "sway" || wm == "i3") {
@@ -279,6 +281,8 @@ bool MainWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
 }
 
 void MainWindow::on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) {
+    (void) previous_screen; // suppress warning
+
     auto screen = get_screen();
     auto visual = screen->get_rgba_visual();
 

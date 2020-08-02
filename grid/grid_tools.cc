@@ -258,11 +258,15 @@ std::vector<CacheEntry> get_favourites(ns::json&& cache, int number) {
 }
 
 bool on_button_entered(GdkEventCrossing *event, const Glib::ustring& comment) {
+    (void) event; // suppress warning
+
     description -> set_text(comment);
     return true;
 }
 
 bool on_button_focused(GdkEventFocus *event, const Glib::ustring& comment) {
+    (void) event; // suppress warning
+
     description -> set_text(comment);
     return true;
 }

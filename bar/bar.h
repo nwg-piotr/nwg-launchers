@@ -48,8 +48,8 @@ class MainWindow : public Gtk::Window {
         void rebuild_grid(bool filtered);
 
     protected:
-        virtual bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr);
-        void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen);
+        bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr) override;
+        void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) override;
         bool _SUPPORTS_ALPHA = false;
 };
 

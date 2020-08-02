@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
         for (auto&& command : commands) {
             auto parts = split_string(std::move(command), "/");
             auto& cmd = parts.back();
-            if (!cmd.find(".") == 0 && cmd.size() != 1) {
+            if (cmd.find(".") != 0 && cmd.size() != 1) {
                 all_commands.emplace_back(std::move(cmd));
             }
         }
