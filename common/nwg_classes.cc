@@ -8,27 +8,68 @@
  * */
 
 #include <algorithm>
+#include <array>
+#include <iostream>
 
 #include "nwg_classes.h"
 
-InputParser::InputParser (int &argc, char **argv){
-    for (int i=1; i < argc; ++i)
-        this->tokens.push_back(std::string(argv[i]));
+InputParser::InputParser (int argc, char **argv) {
+    tokens.reserve(argc - 1);
+    for (int i = 1; i < argc; ++i) {
+        tokens.emplace_back(argv[i]);
+    }
 }
 
-const std::string& InputParser::getCmdOption(const std::string &option) const {
-    std::vector<std::string>::const_iterator itr;
-    itr =  std::find(this->tokens.begin(), this->tokens.end(), option);
+std::string_view InputParser::getCmdOption(std::string_view option) const {
+    auto itr = std::find(this->tokens.begin(), this->tokens.end(), option);
     if (itr != this->tokens.end() && ++itr != this->tokens.end()){
         return *itr;
     }
-    static const std::string empty_string("");
     return empty_string;
 }
 
-bool InputParser::cmdOptionExists(const std::string &option) const {
+bool InputParser::cmdOptionExists(std::string_view option) const {
     return std::find(this->tokens.begin(), this->tokens.end(), option)
         != this->tokens.end();
+}
+
+CommonWindow::CommonWindow(const Glib::ustring& title, const Glib::ustring& role) {
+    set_title(title);
+    set_role(role);
+    set_skip_pager_hint(true);
+    add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
+    set_app_paintable(true);
+    check_screen();
+}
+
+CommonWindow::~CommonWindow() { }
+
+bool CommonWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
+    cr->save();
+    if (_SUPPORTS_ALPHA) {
+        cr->set_source_rgba(0.0, 0.0, 0.0, opacity);
+    } else {
+        cr->set_source_rgb(0.0, 0.0, 0.0);
+    }
+    cr->set_operator(Cairo::OPERATOR_SOURCE);
+    cr->paint();
+    cr->restore();
+    return Gtk::Window::on_draw(cr);
+}
+
+void CommonWindow::on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) {
+    (void) previous_screen; // suppress warning
+    this->check_screen();
+}
+
+void CommonWindow::check_screen() {
+    auto screen = get_screen();
+    auto visual = screen -> get_rgba_visual();
+
+    if (!visual) {
+        std::cerr << "Your screen does not support alpha channels!\n";
+    }
+    _SUPPORTS_ALPHA = (bool)visual;
 }
 
 AppBox::AppBox() {

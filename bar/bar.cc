@@ -9,14 +9,28 @@
 
 #include <sys/time.h>
 
-#include "nwg_tools.h"
+#include <charconv>
+
 #include "nwg_classes.h"
+#include "nwg_tools.h"
 #include "on_event.h"
 #include "bar.h"
 
 int image_size {72};            // button image size in pixels
 double opacity {0.9};           // overlay window opacity
 std::string wm {""};            // detected or forced window manager name
+const char* const HELP_MESSAGE = 
+"GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
+Options:\n\
+-h            show this help message and exit\n\
+-v            arrange buttons vertically\n\
+-ha <l>|<r>   horizontal alignment left/right (default: center)\n\
+-va <t>|<b>   vertical alignment top/bottom (default: middle)\n\
+-t <name>     template file name (default: bar.json)\n\
+-c <name>     css file name (default: style.css)\n\
+-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n\
+-s <size>     button image size (default: 72)\n\
+-wm <wmname>  window manager name (if can not be detected)\n";
 
 int main(int argc, char *argv[]) {
     std::string definition_file {"bar.json"};
@@ -44,7 +58,7 @@ int main(int argc, char *argv[]) {
                 std::exit(0);
             }
         } catch (...) {
-            std::cout << "\nError reading pid file\n\n";
+            std::cerr << "\nError reading pid file\n\n";
         }
     }
     save_string_to_file(mypid, pid_file);
@@ -53,26 +67,15 @@ int main(int argc, char *argv[]) {
 
     InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
-        std::cout << "GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n";
-
-        std::cout << "Options:\n";
-        std::cout << "-h            show this help message and exit\n";
-        std::cout << "-v            arrange buttons vertically\n";
-        std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
-        std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
-        std::cout << "-t <name>     template file name (default: bar.json)\n";
-        std::cout << "-c <name>     css file name (default: style.css)\n";
-        std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n";
-        std::cout << "-s <size>     button image size (default: 72)\n";
-        std::cout << "-wm <wmname>  window manager name (if can not be detected)\n";
+        std::cout << HELP_MESSAGE;
         std::exit(0);
     }
 
-    if(input.cmdOptionExists("-v")){
+    if (input.cmdOptionExists("-v")){
         orientation = "v";
     }
 
-    const std::string &halign = input.getCmdOption("-ha");
+    auto halign = input.getCmdOption("-ha");
     if (!halign.empty()){
         if (halign == "l" || halign == "left") {
             h_align = "l";
@@ -81,7 +84,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    const std::string &valign = input.getCmdOption("-va");
+    auto valign = input.getCmdOption("-va");
     if (!valign.empty()){
         if (valign == "t" || valign == "top") {
             v_align = "t";
@@ -90,46 +93,49 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    const std::string &tname = input.getCmdOption("-t");
+    auto tname = input.getCmdOption("-t");
     if (!tname.empty()){
         definition_file = tname;
     }
 
-    const std::string &css_name = input.getCmdOption("-c");
+    auto css_name = input.getCmdOption("-c");
     if (!css_name.empty()){
         custom_css_file = css_name;
     }
     
-    const std::string &wm_name = input.getCmdOption("-wm");
+    auto wm_name = input.getCmdOption("-wm");
     if (!wm_name.empty()){
         wm = wm_name;
     }
 
-    const std::string &opa = input.getCmdOption("-o");
+    auto opa = input.getCmdOption("-o");
     if (!opa.empty()){
         try {
-            double o = std::stod(opa);
+            auto o = std::stod(std::string{opa});
             if (o >= 0.0 && o <= 1.0) {
                 opacity = o;
             } else {
-                std::cout << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
+                std::cerr << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
             }
         } catch (...) {
-            std::cout << "\nERROR: Invalid opacity value\n\n";
+            std::cerr << "\nERROR: Invalid opacity value\n\n";
         }
     }
 
-    const std::string &i_size = input.getCmdOption("-s");
-    if (!i_size.empty()){
-        try {
-            int i_s = std::stoi(i_size);
+    auto i_size = input.getCmdOption("-s");
+    if (!i_size.empty()) {
+        int i_s;
+        auto from = i_size.data();
+        auto to = from + i_size.size();
+        auto [p, ec] = std::from_chars(from, to, i_s);
+        if (ec == std::errc()) {
             if (i_s >= 16 && i_s <= 256) {
-            image_size = i_s;
+                image_size = i_s;
             } else {
-                std::cout << "\nERROR: Size must be in range 16 - 256\n\n";
+                std::cerr << "\nERROR: Size must be in range 16 - 256\n\n";
             }
-        } catch (...) {
-            std::cout << "\nERROR: Invalid image size\n\n";
+        } else {
+            std::cerr << "\nERROR: Image size should be valid integer in range 16 - 256\n\n";
         }
     }
 
@@ -148,7 +154,7 @@ int main(int argc, char *argv[]) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwgbar/style.css", default_css_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cout << "Failed copying default style.css\n";
+            std::cerr << "Failed copying default style.css\n";
         }
     }
 
@@ -160,22 +166,22 @@ int main(int argc, char *argv[]) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwgbar/bar.json", default_bar_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cout << "Failed copying default template\n";
+            std::cerr << "Failed copying default template\n";
         }
     }
 
     ns::json bar_json {};
     try {
-        bar_json = get_bar_json(custom_bar_file);
+        bar_json = get_bar_json(std::move(custom_bar_file));
     }  catch (...) {
-        std::cout << "\nERROR: Template file not found, using default\n";
+        std::cerr << "\nERROR: Template file not found, using default\n";
         bar_json = get_bar_json(default_bar_file);
     }
     std::cout << bar_json.size() << " bar entries loaded\n";
 
     std::vector<BarEntry> bar_entries {};
     if (bar_json.size() > 0) {
-        bar_entries = get_bar_entries(bar_json);
+        bar_entries = get_bar_entries(std::move(bar_json));
     }
 
     /* get current WM name if not forced */
@@ -187,28 +193,30 @@ int main(int argc, char *argv[]) {
 
     /* turn off borders, enable floating on sway */
     if (wm == "sway") {
-        std::string cmd = "swaymsg for_window [title=\"~nwgbar*\"] floating enable";
-        const char *command = cmd.c_str();
-        std::system(command);
+        auto* cmd = "swaymsg for_window [title=\"~nwgbar*\"] floating enable";
+        std::system(cmd);
         cmd = "swaymsg for_window [title=\"~nwgbar*\"] border none";
-        command = cmd.c_str();
-        std::system(command);
+        std::system(cmd);
     }
 
     Gtk::Main kit(argc, argv);
 
-    GtkCssProvider* provider = gtk_css_provider_new();
-    GdkDisplay* display = gdk_display_get_default();
-    GdkScreen* screen = gdk_display_get_default_screen(display);
-    gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-    if (std::ifstream(css_file)) {
-        gtk_css_provider_load_from_path(provider, css_file.c_str(), NULL);
-        std::cout << "Using " << css_file << std::endl;
-    } else {
-        gtk_css_provider_load_from_path(provider, default_css_file.c_str(), NULL);
-        std::cout << "Using " << default_css_file << std::endl;
+    auto provider = Gtk::CssProvider::create();
+    auto display = Gdk::Display::get_default();
+    auto screen = display->get_default_screen();
+    if (!provider || !display || !screen) {
+        std::cerr << "ERROR: Failed to initialize GTK\n";
+        return EXIT_FAILURE;
     }
-    g_object_unref(provider);
+    Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+
+    if (std::filesystem::is_regular_file(css_file)) {
+        provider->load_from_path(css_file);
+        std::cout << "Using " << css_file << '\n';
+    } else {
+        provider->load_from_path(default_css_file);
+        std::cout << "Using " << default_css_file << '\n';
+    }
 
     MainWindow window;
     window.show();
@@ -216,14 +224,14 @@ int main(int argc, char *argv[]) {
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
 
     /* Detect focused display geometry: {x, y, width, height} */
-    std::vector<int> geometry = display_geometry(wm, window);
-    std::cout << "Focused display: " << geometry[0] << ", " << geometry[1] << ", " << geometry[2] << ", "
-    << geometry[3] << '\n';
+    auto geometry = display_geometry(wm, display, window.get_window());
+    std::cout << "Focused display: " << geometry.x << ", " << geometry.y << ", " << geometry.width << ", "
+    << geometry.height << '\n';
 
-    int x = geometry[0];
-    int y = geometry[1];
-    int w = geometry[2];
-    int h = geometry[3];
+    int x = geometry.x;
+    int y = geometry.y;
+    int w = geometry.width;
+    int h = geometry.height;
 
     if (wm == "sway" || wm == "i3" || wm == "openbox") {
         window.resize(w, h);
@@ -234,29 +242,26 @@ int main(int argc, char *argv[]) {
     outer_box.set_spacing(15);
 
     /* Create buttons */
-    if (bar_entries.size() > 0) {
-        for (BarEntry entry : bar_entries) {
-            Gtk::Image* image = app_image(entry.icon);
-            AppBox *ab = new AppBox(entry.name, entry.exec, entry.icon);
-            ab -> set_image_position(Gtk::POS_TOP);
-            ab -> set_image(*image);
-            ab -> signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked), entry.exec));
-
-            window.boxes.push_back(ab);
-        }
+    for (auto& entry : bar_entries) {
+        Gtk::Image* image = app_image(entry.icon);
+        auto& ab = window.boxes.emplace_back(std::move(entry.name),
+                                             entry.exec, // we'll need entry.exec for signal
+                                             std::move(entry.icon));
+        ab.set_image_position(Gtk::POS_TOP);
+        ab.set_image(*image);
+        ab.signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked),
+                                                            std::move(entry.exec)));
     }
 
     int column = 0;
     int row = 0;
 
-    if (bar_entries.size() > 0) {
-        for (AppBox *box : window.boxes) {
-            window.favs_grid.attach(*box, column, row, 1, 1);
-            if (orientation == "v") {
-                row++;
-            } else {
-                column++;
-            }
+    for (auto& box : window.boxes) {
+        window.favs_grid.attach(box, column, row, 1, 1);
+        if (orientation == "v") {
+            row++;
+        } else {
+            column++;
         }
     }
 
@@ -288,7 +293,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&tp, NULL);
     long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-    std::cout << "Time: " << end_ms - start_ms << std::endl;
+    std::cout << "Time: " << end_ms - start_ms << "ms\n";
 
     Gtk::Main::run(window);
 

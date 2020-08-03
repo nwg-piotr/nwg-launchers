@@ -21,23 +21,59 @@
  * */
 class InputParser{
     public:
-        InputParser (int &, char **);
+        InputParser (int, char **);
         /// @author iain
-        const std::string& getCmdOption(const std::string &) const;
+        std::string_view getCmdOption(std::string_view) const;
         /// @author iain
-        bool cmdOptionExists(const std::string &) const;
+        bool cmdOptionExists(std::string_view) const;
+
+        std::string_view empty_string{};
     private:
-        std::vector <std::string> tokens;
+        std::vector <std::string_view> tokens;
+};
+
+extern double opacity;
+class CommonWindow : public Gtk::Window {
+    public:
+        CommonWindow(const Glib::ustring&, const Glib::ustring&);
+        virtual ~CommonWindow();
+
+        void check_screen();
+
+    protected:
+        bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr) override;
+        void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) override;
+    private:
+        bool _SUPPORTS_ALPHA;
 };
 
 class AppBox : public Gtk::Button {
     public:
         AppBox();
         AppBox(Glib::ustring, std::string, Glib::ustring);
+        AppBox(AppBox&&) = default;
+        AppBox(const AppBox&) = delete;
 
         Glib::ustring name;
         Glib::ustring exec;
         Glib::ustring comment;
 
         virtual ~AppBox();
+};
+
+/*
+ * Stores x, y, width, height
+ * */
+struct Geometry {
+    int x;
+    int y;
+    int width;
+    int height;
+};
+
+struct DesktopEntry {
+    std::string name;
+    std::string exec;
+    std::string icon;
+    std::string comment;
 };

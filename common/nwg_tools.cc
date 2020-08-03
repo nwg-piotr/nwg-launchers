@@ -12,7 +12,8 @@
 #include <iostream>
 #include <fstream>
 
-#include "nwg_tools.h"
+#include "nwgconfig.h"
+#include <nwg_tools.h>
 
 /*
  * Returns config dir
@@ -75,6 +76,78 @@ std::string detect_wm() {
 }
 
 /*
+ * Returns x, y, width, hight of focused display
+ * */
+Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> display, Glib::RefPtr<Gdk::Window> window) {
+    Geometry geo = {0, 0, 0, 0};
+    if (wm == "sway") {
+        try {
+            auto jsonString = get_output("swaymsg -t get_outputs");
+            auto jsonObj = string_to_json(jsonString);
+            for (auto&& entry : jsonObj) {
+                if (entry.at("focused")) {
+                    auto&& rect = entry.at("rect");
+                    geo.x = rect.at("x");
+                    geo.y = rect.at("y");
+                    geo.width = rect.at("width");
+                    geo.height = rect.at("height");
+                    break;
+                }
+            }
+            return geo;
+        }
+        catch (...) { }
+    }
+
+    // it's going to fail until the window is actually open
+    int retry = 0;
+    while (geo.width == 0 || geo.height == 0) {
+        Gdk::Rectangle rect;
+        auto monitor = display->get_monitor_at_window(window);
+        if (monitor) {
+            monitor->get_geometry(rect);
+            geo.x = rect.get_x();
+            geo.y = rect.get_y();
+            geo.width = rect.get_width();
+            geo.height = rect.get_height();
+        }
+        retry++;
+        if (retry > 100) {
+            std::cerr << "\nERROR: Failed checking display geometry, tries: " << retry << "\n\n";
+            break;
+        }
+    }
+    return geo;
+}
+
+/*
+ * Returns Gtk::Image out of the icon name of file path
+ * */
+Gtk::Image* app_image(const std::string& icon) {
+    Glib::RefPtr<Gtk::IconTheme> icon_theme;
+    Glib::RefPtr<Gdk::Pixbuf> pixbuf;
+
+    icon_theme = Gtk::IconTheme::get_default();
+
+    if (icon.find_first_of("/") != 0) {
+        try {
+            pixbuf = icon_theme->load_icon(icon, image_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
+        } catch (...) {
+            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
+        }
+    } else {
+        try {
+            pixbuf = Gdk::Pixbuf::create_from_file(icon, image_size, image_size, true);
+        } catch (...) {
+            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
+        }
+    }
+    auto image = Gtk::manage(new Gtk::Image(pixbuf));
+
+    return image;
+}
+
+/*
  * Returns current locale
  * */
 std::string get_locale() {
@@ -97,7 +170,7 @@ std::string get_locale() {
 /*
  * Returns file content as a string
  * */
-std::string read_file_to_string(std::string filename) {
+std::string read_file_to_string(const std::string& filename) {
     std::ifstream input(filename);
     std::stringstream sstr;
 
@@ -109,7 +182,7 @@ std::string read_file_to_string(std::string filename) {
 /*
  * Saves a string to a file
  * */
-void save_string_to_file(std::string s, std::string filename) {
+void save_string_to_file(const std::string& s, const std::string& filename) {
     std::ofstream file(filename);
     file << s;
 }
@@ -117,16 +190,16 @@ void save_string_to_file(std::string s, std::string filename) {
 /*
  * Splits string into vector of strings by delimiter
  * */
-std::vector<std::string> split_string(std::string str, std::string delimiter) {
-    std::vector<std::string> result;
+std::vector<std::string_view> split_string(std::string_view str, std::string_view delimiter) {
+    std::vector<std::string_view> result;
     std::size_t current, previous = 0;
     current = str.find_first_of(delimiter);
-    while (current != std::string::npos) {
-        result.push_back(str.substr(previous, current - previous));
+    while (current != std::string_view::npos) {
+        result.emplace_back(str.substr(previous, current - previous));
         previous = current + 1;
         current = str.find_first_of(delimiter, previous);
     }
-    result.push_back(str.substr(previous, current - previous));
+    result.emplace_back(str.substr(previous, current - previous));
 
     return result;
 }
@@ -134,10 +207,9 @@ std::vector<std::string> split_string(std::string str, std::string delimiter) {
 /*
  * Converts json string into a json object
  * */
-ns::json string_to_json(std::string jsonString) {
-    const char *s = jsonString.c_str();
+ns::json string_to_json(const std::string& jsonString) {
     ns::json jsonObj;
-    std::stringstream(s) >> jsonObj;
+    std::stringstream(jsonString) >> jsonObj;
 
     return jsonObj;
 }
@@ -145,7 +217,7 @@ ns::json string_to_json(std::string jsonString) {
 /*
  * Saves json into file
  * */
-void save_json(ns::json json_obj, std::string filename) {
+void save_json(const ns::json& json_obj, const std::string& filename) {
     std::ofstream o(filename);
     o << std::setw(2) << json_obj << std::endl;
 }
@@ -153,7 +225,7 @@ void save_json(ns::json json_obj, std::string filename) {
 /*
  * Returns output of a command as string
  * */
-std::string get_output(std::string cmd) {
+std::string get_output(const std::string& cmd) {
     const char *command = cmd.c_str();
     std::array<char, 128> buffer;
     std::string result;

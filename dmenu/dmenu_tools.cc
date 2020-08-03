@@ -18,7 +18,7 @@ std::string get_settings_path() {
     if (val) {
         s = val;
     } else {
-        char* val = getenv("HOME");
+        val = getenv("HOME");
         s = val;
         s += "/.cache";
     }
@@ -30,32 +30,20 @@ std::string get_settings_path() {
 }
 
 /*
- * Returns locations of command files
- * */
-std::vector<std::string> get_command_dirs() {
-    std::vector<std::string> result = {};
-    auto command_dirs = getenv("PATH");
-    if (command_dirs != NULL) {
-        std::vector<std::string> dirs = split_string(command_dirs, ":");
-        for (std::string dir : dirs) {
-            result.push_back(dir);
-        }
-    }
-    return result;
-}
-
-/*
  * Returns all command paths
  * */
-std::vector<std::string> list_commands(std::vector<std::string> paths) {
+std::vector<std::string> list_commands() {
     std::vector<std::string> command_paths;
-    for (std::string dir : paths) {
-        struct stat st;
-        char* c = const_cast<char*>(dir.c_str());
-        // if directory exists
-        if (stat(c, &st) == 0) {
-            for (const auto & entry : fs::directory_iterator(dir)) {
-                command_paths.push_back(entry.path());
+
+    if (std::string command_dirs = getenv("PATH"); !command_dirs.empty()) {
+        auto paths = split_string(command_dirs, ":");
+        std::error_code ec;
+        for (auto& dir : paths) {
+            // if directory exists
+            if (fs::is_directory(dir, ec) && !ec) {
+                for (const auto & entry : fs::directory_iterator(dir)) {
+                    command_paths.emplace_back(entry.path());
+                }
             }
         }
     }

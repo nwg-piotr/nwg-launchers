@@ -10,6 +10,8 @@
 #include "on_event.h"
 
 gboolean on_window_clicked(GdkEventButton *event) {
+    (void) event; // suppress warning
+
     Gtk::Main::quit();
     return true;
 }
