@@ -9,6 +9,8 @@
 
 #include <sys/time.h>
 
+#include <charconv>
+
 #include "nwg_classes.h"
 #include "nwg_tools.h"
 #include "on_event.h"
@@ -44,7 +46,7 @@ int main(int argc, char *argv[]) {
                 std::exit(0);
             }
         } catch (...) {
-            std::cout << "\nError reading pid file\n\n";
+            std::cerr << "\nError reading pid file\n\n";
         }
     }
     save_string_to_file(mypid, pid_file);
@@ -68,11 +70,11 @@ int main(int argc, char *argv[]) {
         std::exit(0);
     }
 
-    if(input.cmdOptionExists("-v")){
+    if (input.cmdOptionExists("-v")){
         orientation = "v";
     }
 
-    const std::string &halign = input.getCmdOption("-ha");
+    auto halign = input.getCmdOption("-ha");
     if (!halign.empty()){
         if (halign == "l" || halign == "left") {
             h_align = "l";
@@ -81,7 +83,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    const std::string &valign = input.getCmdOption("-va");
+    auto valign = input.getCmdOption("-va");
     if (!valign.empty()){
         if (valign == "t" || valign == "top") {
             v_align = "t";
@@ -90,46 +92,49 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    const std::string &tname = input.getCmdOption("-t");
+    auto tname = input.getCmdOption("-t");
     if (!tname.empty()){
         definition_file = tname;
     }
 
-    const std::string &css_name = input.getCmdOption("-c");
+    auto css_name = input.getCmdOption("-c");
     if (!css_name.empty()){
         custom_css_file = css_name;
     }
     
-    const std::string &wm_name = input.getCmdOption("-wm");
+    auto wm_name = input.getCmdOption("-wm");
     if (!wm_name.empty()){
         wm = wm_name;
     }
 
-    const std::string &opa = input.getCmdOption("-o");
+    auto opa = input.getCmdOption("-o");
     if (!opa.empty()){
         try {
-            double o = std::stod(opa);
+            auto o = std::stod(std::string{opa});
             if (o >= 0.0 && o <= 1.0) {
                 opacity = o;
             } else {
-                std::cout << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
+                std::cerr << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
             }
         } catch (...) {
-            std::cout << "\nERROR: Invalid opacity value\n\n";
+            std::cerr << "\nERROR: Invalid opacity value\n\n";
         }
     }
 
-    const std::string &i_size = input.getCmdOption("-s");
-    if (!i_size.empty()){
-        try {
-            int i_s = std::stoi(i_size);
+    auto i_size = input.getCmdOption("-s");
+    if (!i_size.empty()) {
+        int i_s;
+        auto from = i_size.data();
+        auto to = from + i_size.size();
+        auto [p, ec] = std::from_chars(from, to, i_s);
+        if (ec == std::errc()) {
             if (i_s >= 16 && i_s <= 256) {
-            image_size = i_s;
+                image_size = i_s;
             } else {
-                std::cout << "\nERROR: Size must be in range 16 - 256\n\n";
+                std::cerr << "\nERROR: Size must be in range 16 - 256\n\n";
             }
-        } catch (...) {
-            std::cout << "\nERROR: Invalid image size\n\n";
+        } else {
+            std::cerr << "\nERROR: Image size should be valid integer in range 16 - 256\n\n";
         }
     }
 
@@ -160,7 +165,7 @@ int main(int argc, char *argv[]) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwgbar/bar.json", default_bar_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cout << "Failed copying default template\n";
+            std::cerr << "Failed copying default template\n";
         }
     }
 

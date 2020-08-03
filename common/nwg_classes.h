@@ -21,15 +21,15 @@
  * */
 class InputParser{
     public:
-        InputParser (int &, char **);
+        InputParser (int, char **);
         /// @author iain
-        const std::string& getCmdOption(const std::string &) const;
+        std::string_view getCmdOption(std::string_view) const;
         /// @author iain
-        bool cmdOptionExists(const std::string &) const;
+        bool cmdOptionExists(std::string_view) const;
 
-        std::string empty_string{};
+        std::string_view empty_string{};
     private:
-        std::vector <std::string> tokens;
+        std::vector <std::string_view> tokens;
 };
 
 extern double opacity;

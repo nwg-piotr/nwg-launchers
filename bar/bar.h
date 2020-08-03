@@ -35,9 +35,9 @@ class MainWindow : public CommonWindow {
 
         Gtk::Grid favs_grid;                    // Favourites grid above
         Gtk::Separator separator;               // between favs and all apps
-        std::list<AppBox> all_boxes {};        // attached to apps_grid unfiltered view
-        std::list<AppBox> filtered_boxes {};   // attached to apps_grid filtered view
-        std::list<AppBox> boxes {};            // attached to favs_grid
+        std::vector<AppBox> all_boxes {};        // attached to apps_grid unfiltered view
+        std::vector<AppBox> filtered_boxes {};   // attached to apps_grid filtered view
+        std::vector<AppBox> boxes {};            // attached to favs_grid
 
     private:
         //Override default signal handler:

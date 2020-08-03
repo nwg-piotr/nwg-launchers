@@ -10,6 +10,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <charconv>
+
 #include "nwg_tools.h"
 #include "nwg_classes.h"
 #include "on_event.h"
@@ -80,59 +82,61 @@ int main(int argc, char *argv[]) {
     if (input.cmdOptionExists("-p")){
         pins = true;
     }
-    const std::string &forced_lang = input.getCmdOption("-l");
+    auto forced_lang = input.getCmdOption("-l");
     if (!forced_lang.empty()){
         lang = forced_lang;
     }
-    const std::string &cols = input.getCmdOption("-n");
+    auto cols = input.getCmdOption("-n");
     if (!cols.empty()) {
-        try {
-            int n_c = std::stoi(cols);
+        int n_c;
+        auto [p, ec] = std::from_chars(cols.data(), cols.data() + cols.size(), n_c);
+        if (ec == std::errc()) {
             if (n_c > 0 && n_c < 100) {
                 num_col = n_c;
             } else {
-                std::cout << "\nERROR: Columns must be in range 1 - 99\n\n";
+                std::cerr << "\nERROR: Columns must be in range 1 - 99\n\n";
             }
-        } catch (...) {
-            std::cout << "\nERROR: Invalid number of columns\n\n";
+        } else {
+            std::cerr << "\nERROR: Invalid number of columns\n\n";
         }
     }
 
-    const std::string &css_name = input.getCmdOption("-c");
+    auto css_name = input.getCmdOption("-c");
     if (!css_name.empty()){
         custom_css_file = css_name;
     }
 
-    const std::string &wm_name = input.getCmdOption("-wm");
+    auto wm_name = input.getCmdOption("-wm");
     if (!wm_name.empty()){
         wm = wm_name;
     }
 
-    const std::string &opa = input.getCmdOption("-o");
-    if (!opa.empty()){
+    auto opa = input.getCmdOption("-o");
+    if (!opa.empty()) {
         try {
-            double o = std::stod(opa);
+            auto o = std::stod(std::string{opa});
             if (o >= 0.0 && o <= 1.0) {
                 opacity = o;
             } else {
-                std::cout << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
+                std::cerr << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
             }
-        } catch (...) {
-            std::cout << "\nERROR: Invalid opacity value\n\n";
+        } catch(...) {
+            std::cerr << "\nERROR: Invalid opacity value\n\n";
         }
     }
 
-    const std::string &i_size = input.getCmdOption("-s");
+    auto i_size = input.getCmdOption("-s");
     if (!i_size.empty()){
-        try {
-            int i_s = std::stoi(i_size);
+        int i_s;
+        auto [p, ec] = std::from_chars(i_size.data(), i_size.data() + i_size.size(), i_s);
+        if (ec == std::errc()) {
             if (i_s >= 16 && i_s <= 256) {
                 image_size = i_s;
             } else {
-                std::cout << "\nERROR: Size must be in range 16 - 256\n\n";
+                std::cerr << "\nERROR: Size must be in range 16 - 256\n\n";
             }
-        } catch (...) {
-            std::cout << "\nERROR: Invalid image size\n\n";
+        } else {
+            std::cerr << "\nERROR: Invalid image size\n\n";
         }
     }
 
@@ -160,7 +164,7 @@ int main(int argc, char *argv[]) {
         } else {
           std::cout << "No pinned entries found\n";
         }
-	  }
+    }
 
     std::string config_dir = get_config_dir("nwggrid");
     if (!fs::is_directory(config_dir)) {
@@ -177,7 +181,7 @@ int main(int argc, char *argv[]) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwggrid/style.css", default_css_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cout << "Failed copying default style.css\n";
+            std::cerr << "Failed copying default style.css\n";
         }
     }
 
@@ -295,24 +299,26 @@ int main(int argc, char *argv[]) {
     /* Create buttons for all desktop entries */
     for (auto& entry : desktop_entries) {
         if (std::find(pinned.begin(), pinned.end(), entry.exec) == pinned.end()) {
+             auto glib_exec = Glib::ustring(entry.exec);
+             auto glib_comment = Glib::ustring(entry.comment);
              auto& ab = window.all_boxes.emplace_back(entry.name,
-                                                      entry.comment,
-                                                      entry.exec);
+                                                      std::move(entry.comment),
+                                                      std::move(entry.exec));
              Gtk::Image* image = app_image(entry.icon);
              ab.set_image_position(Gtk::POS_TOP);
              ab.set_image(*image);
              ab.signal_clicked()
-               .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked),
-                                                entry.exec));
+               .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_clicked),
+                                                glib_exec));
              ab.signal_button_press_event()
-               .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_grid_button_press),
-                                                entry.exec));
+               .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_grid_button_press),
+                                                std::move(glib_exec)));
              ab.signal_enter_notify_event()
-               .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered),
-                                                entry.comment));
+               .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_entered),
+                                                glib_comment));
              ab.signal_focus_in_event()
-               .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused),
-                                                entry.comment));
+               .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_focused),
+                                                std::move(glib_comment)));
         }
     }
     window.label_desc.set_text(std::to_string(window.all_boxes.size()));
@@ -336,22 +342,26 @@ int main(int argc, char *argv[]) {
                     }
 
                     Gtk::Image* image = app_image(de.icon);
-                    auto& ab = window.fav_boxes.emplace_back(de.name, de.exec, de.comment);
+                    auto glib_exec = Glib::ustring(de.exec);
+                    auto glib_comment = Glib::ustring(de.comment);
+                    auto& ab = window.fav_boxes.emplace_back(std::move(de.name),
+                                                             std::move(de.exec),
+                                                             std::move(de.comment));
                     
                     ab.set_image_position(Gtk::POS_TOP);
                     ab.set_image(*image);
                     ab.signal_clicked()
-                      .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked),
-                                                       de.exec));
+                      .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_clicked),
+                                                       glib_exec));
                     ab.signal_enter_notify_event()
-                      .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered),
-                                                       de.comment));
+                      .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_entered),
+                                                       glib_comment));
                     ab.signal_focus_in_event()
-                      .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused),
-                                                       de.comment));
+                      .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_focused),
+                                                       std::move(glib_comment)));
                     ab.signal_button_press_event()
-                      .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_grid_button_press),
-                                                       de.exec));
+                      .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_grid_button_press),
+                                                       std::move(glib_exec)));
                 }
             }
         }
@@ -361,22 +371,26 @@ int main(int argc, char *argv[]) {
     if (pins && pinned.size() > 0) {
         for(auto& entry : desktop_entries) {
             if (std::find(pinned.begin(), pinned.end(), entry.exec) != pinned.end()) {
-                auto& ab = window.pinned_boxes.emplace_back(entry.name, entry.exec, entry.comment);
+                auto glib_exec = Glib::ustring(entry.exec);
+                auto glib_comment = Glib::ustring(entry.comment);
+                auto& ab = window.pinned_boxes.emplace_back(std::move(entry.name),
+                                                            std::move(entry.exec),
+                                                            std::move(entry.comment));
                 Gtk::Image* image = app_image(entry.icon);
                 ab.set_image_position(Gtk::POS_TOP);
                 ab.set_image(*image);
                 ab.signal_clicked()
-                  .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked),
-                                                   entry.exec));
+                  .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_clicked),
+                                                   glib_exec));
                 ab.signal_enter_notify_event()
-                  .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_entered),
-                                                   entry.comment));
+                  .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_entered),
+                                                   glib_comment));
                 ab.signal_focus_in_event()
-                  .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_focused),
-                                                   entry.comment));
+                  .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_focused),
+                                                   std::move(glib_comment)));
                 ab.signal_button_press_event()
-                  .connect(sigc::bind<std::string>(sigc::ptr_fun(&on_pinned_button_press),
-                                                   entry.exec));
+                  .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_pinned_button_press),
+                                                   std::move(glib_exec)));
             }
         }
     }

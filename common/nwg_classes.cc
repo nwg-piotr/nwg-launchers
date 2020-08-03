@@ -8,25 +8,27 @@
  * */
 
 #include <algorithm>
+#include <array>
 #include <iostream>
 
 #include "nwg_classes.h"
 
-InputParser::InputParser (int &argc, char **argv){
-    for (int i=1; i < argc; ++i)
-        this->tokens.push_back(std::string(argv[i]));
+InputParser::InputParser (int argc, char **argv) {
+    tokens.reserve(argc - 1);
+    for (int i = 1; i < argc; ++i) {
+        tokens.emplace_back(argv[i]);
+    }
 }
 
-const std::string& InputParser::getCmdOption(const std::string &option) const {
-    std::vector<std::string>::const_iterator itr;
-    itr =  std::find(this->tokens.begin(), this->tokens.end(), option);
+std::string_view InputParser::getCmdOption(std::string_view option) const {
+    auto itr = std::find(this->tokens.begin(), this->tokens.end(), option);
     if (itr != this->tokens.end() && ++itr != this->tokens.end()){
         return *itr;
     }
     return empty_string;
 }
 
-bool InputParser::cmdOptionExists(const std::string &option) const {
+bool InputParser::cmdOptionExists(std::string_view option) const {
     return std::find(this->tokens.begin(), this->tokens.end(), option)
         != this->tokens.end();
 }
@@ -36,8 +38,6 @@ CommonWindow::CommonWindow(const Glib::ustring& title, const Glib::ustring& role
     set_role(role);
     set_skip_pager_hint(true);
     add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
-    signal_draw().connect(sigc::mem_fun(*this, &CommonWindow::on_draw));
-    signal_screen_changed().connect(sigc::mem_fun(*this, &CommonWindow::on_screen_changed));
     set_app_paintable(true);
     check_screen();
 }
@@ -70,10 +70,7 @@ void CommonWindow::check_screen() {
         std::cerr << "Your screen does not support alpha channels!\n";
     }
     _SUPPORTS_ALPHA = (bool)visual;
-    // window visual should be changed automatically
-    // set_visual
 }
-
 
 AppBox::AppBox() {
     this -> set_always_show_image(true);

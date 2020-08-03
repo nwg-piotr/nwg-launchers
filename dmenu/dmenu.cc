@@ -10,6 +10,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <charconv>
+
 #include "nwg_tools.h"
 #include "nwg_classes.h"
 #include "on_event.h"
@@ -102,7 +104,7 @@ int main(int argc, char *argv[]) {
         show_searchbox = false;
     }
 
-    const std::string &halign = input.getCmdOption("-ha");
+    auto halign = input.getCmdOption("-ha");
     if (!halign.empty()){
         if (halign == "l" || halign == "left") {
             h_align = "l";
@@ -111,7 +113,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    const std::string &valign = input.getCmdOption("-va");
+    auto valign = input.getCmdOption("-va");
     if (!valign.empty()){
         if (valign == "t" || valign == "top") {
             v_align = "t";
@@ -120,20 +122,20 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    const std::string &css_name = input.getCmdOption("-c");
+    auto css_name = input.getCmdOption("-c");
     if (!css_name.empty()){
         custom_css_file = css_name;
     }
 
-    const std::string &wm_name = input.getCmdOption("-wm");
+    auto wm_name = input.getCmdOption("-wm");
     if (!wm_name.empty()){
         wm = wm_name;
     }
 
-    const std::string &opa = input.getCmdOption("-o");
+    auto opa = input.getCmdOption("-o");
     if (!opa.empty()){
         try {
-            double o = std::stod(opa);
+            auto o = std::stod(std::string{opa});
             if (o >= 0.0 && o <= 1.0) {
                 opacity = o;
             } else {
@@ -144,16 +146,19 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    const std::string &rw = input.getCmdOption("-r");
+    auto rw = input.getCmdOption("-r");
     if (!rw.empty()){
-        try {
-            int r = std::stoi(rw);
+        int r;
+        auto from = rw.data();
+        auto to = from + rw.size();
+        auto [p, ec] = std::from_chars(from, to, r);
+        if (ec == std::errc()) {
             if (r > 0 && r <= 100) {
                 rows = r;
             } else {
                 std::cerr << "\nERROR: Number of rows must be in range 1 - 100\n\n";
             }
-        } catch (...) {
+        } else {
             std::cerr << "\nERROR: Invalid rows number\n\n";
         }
     }
@@ -173,7 +178,7 @@ int main(int argc, char *argv[]) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwgdmenu/style.css", default_css_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cout << "Failed copying default style.css\n";
+            std::cerr << "Failed copying default style.css\n";
         }
     }
 

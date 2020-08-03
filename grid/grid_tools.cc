@@ -43,7 +43,7 @@ std::string get_pinned_path() {
     if (val) {
         s = val;
     } else {
-        char* val = getenv("HOME");
+        val = getenv("HOME");
         s = val;
         s += "/.cache";
     }
@@ -229,8 +229,8 @@ std::vector<std::string> get_pinned(const std::string& pinned_file) {
 
     while (std::getline(in, str)) {
         // add non-empty lines to the vector
-        if(str.size() > 0) {
-            lines.push_back(str);
+        if (!str.empty()) {
+            lines.emplace_back(std::move(str));
         }
     }
     in.close();

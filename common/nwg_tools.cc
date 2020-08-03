@@ -113,7 +113,7 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
         }
         retry++;
         if (retry > 100) {
-            std::cout << "\nERROR: Failed checking display geometry, tries: " << retry << "\n\n";
+            std::cerr << "\nERROR: Failed checking display geometry, tries: " << retry << "\n\n";
             break;
         }
     }
