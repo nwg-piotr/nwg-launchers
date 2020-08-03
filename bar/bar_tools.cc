@@ -38,7 +38,6 @@ std::vector<BarEntry> get_bar_entries(ns::json&& bar_json) {
     return entries;
 }
 
-
 void on_button_clicked(std::string cmd) {
     cmd = cmd + " &";
     const char *command = cmd.c_str();
