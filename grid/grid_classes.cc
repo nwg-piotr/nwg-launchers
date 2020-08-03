@@ -16,11 +16,7 @@
 
 #include "grid.h"
 
-MainWindow::MainWindow() {
-    set_title("~nwggrid");
-    set_role("~nwggrid");
-    //~ set_skip_taskbar_hint(true);
-    set_skip_pager_hint(true);
+MainWindow::MainWindow(): CommonWindow("~nwggrid", "~nwggrid") {
     searchbox.set_text("Type to search");
     searchbox.set_sensitive(false);
     searchbox.set_name("searchbox");
@@ -42,14 +38,6 @@ MainWindow::MainWindow() {
     separator1.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
     separator1.set_name("separator");
     add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
-
-    set_app_paintable(true);
-
-    signal_draw().connect(sigc::mem_fun(*this, &MainWindow::on_draw));
-    signal_screen_changed().connect(sigc::mem_fun(*this, &MainWindow::on_screen_changed));
-
-    on_screen_changed(get_screen());
-
     // We can not go fullscreen() here:
     // On sway the window would become opaque - we don't want it
     // On i3 all windows below will be hidden - we don't want it as well
@@ -59,9 +47,6 @@ MainWindow::MainWindow() {
         set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
         set_decorated(false);
     }
-}
-
-MainWindow::~MainWindow() {
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
@@ -160,36 +145,4 @@ void MainWindow::rebuild_grid(bool filtered) {
             first -> set_property("has_focus", true);
         }
     }
-}
-
-bool MainWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
-    cr->save();
-    if (_SUPPORTS_ALPHA) {
-        cr->set_source_rgba(0.0, 0.0, 0.0, opacity);    // transparent
-    } else {
-        cr->set_source_rgb(0.0, 0.0, 0.0);              // opaque
-    }
-    cr->set_operator(Cairo::OPERATOR_SOURCE);
-    cr->paint();
-    cr->restore();
-
-    return Gtk::Window::on_draw(cr);
-}
-
-void MainWindow::on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) {
-    (void) previous_screen; // suppress warning
-
-    auto screen = get_screen();
-    auto visual = screen->get_rgba_visual();
-
-    if (!visual) {
-        std::cout << "Your screen does not support alpha channels!" << std::endl;
-    } else {
-        _SUPPORTS_ALPHA = TRUE;
-    }
-    set_visual(visual);
-}
-
-void MainWindow::set_visual(Glib::RefPtr<Gdk::Visual> visual) {
-    gtk_widget_set_visual(GTK_WIDGET(gobj()), visual->gobj());
 }

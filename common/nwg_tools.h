@@ -9,10 +9,11 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
 #include <iostream>
 #include <iomanip>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include <gtkmm.h>
 
@@ -30,7 +31,7 @@ std::string get_locale(void);
 
 std::string read_file_to_string(const std::string&);
 void save_string_to_file(const std::string&, const std::string&);
-std::vector<std::string> split_string(std::string, std::string);
+std::vector<std::string_view> split_string(std::string_view, std::string_view);
 
 ns::json string_to_json(const std::string&);
 void save_json(const ns::json&, const std::string&);

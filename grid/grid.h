@@ -20,8 +20,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include "nwg_classes.h"
 #include "nwgconfig.h"
+#include "nwg_classes.h"
 
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
@@ -38,11 +38,9 @@ extern std::vector<std::string> pinned;
 extern ns::json cache;
 extern std::string cache_file;
 
-class MainWindow : public Gtk::Window {
+class MainWindow : public CommonWindow {
     public:
         MainWindow();
-        void set_visual(Glib::RefPtr<Gdk::Visual> visual);
-        virtual ~MainWindow();
 
         Gtk::SearchEntry searchbox;             // This will stay insensitive, updated with search_phrase value only
         Gtk::Label label_desc;                  // To display .desktop entry Comment field at the bottom
@@ -62,18 +60,6 @@ class MainWindow : public Gtk::Window {
         bool on_key_press_event(GdkEventKey* event) override;
         void filter_view();
         void rebuild_grid(bool filtered);
-
-    protected:
-        bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr) override;
-        void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) override;
-        bool _SUPPORTS_ALPHA = false;
-};
-
-struct DesktopEntry {
-    std::string name;
-    std::string exec;
-    std::string icon;
-    std::string comment;
 };
 
 struct CacheEntry {

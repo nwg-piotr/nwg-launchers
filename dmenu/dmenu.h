@@ -23,6 +23,7 @@
 #include <nlohmann/json.hpp>
 
 #include "nwgconfig.h"
+#include "nwg_classes.h"
 
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
@@ -43,7 +44,6 @@ extern bool case_sensitive;
 class DMenu : public Gtk::Menu {
     public:
         DMenu();
-        virtual ~DMenu();
         Gtk::SearchEntry searchbox;
         Glib::ustring search_phrase;
 
@@ -56,36 +56,27 @@ class DMenu : public Gtk::Menu {
 class Anchor : public Gtk::Button {
     public:
         Anchor(DMenu *);
-        virtual ~Anchor();
 
     private:
         bool on_focus_in_event(GdkEventFocus* focus_event) override;
         DMenu *menu;
 };
 
-class MainWindow : public Gtk::Window {
+class MainWindow : public CommonWindow {
     public:
         MainWindow();
-        void set_visual(Glib::RefPtr<Gdk::Visual> visual);
-        virtual ~MainWindow();
 
         Gtk::Menu* menu;
         Gtk::Button* anchor;
 
     private:
-        bool on_button_press_event(GdkEventButton* button_event) override;
-
-    protected:
-        bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr) override;
-        void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) override;
-        bool _SUPPORTS_ALPHA = false;
+        bool on_button_press_event(GdkEventButton* button_event);
 };
 
 /*
  * Function declarations
  * */
-std::vector<std::string> get_command_dirs(void);
-std::vector<std::string> list_commands(std::vector<std::string>);
+std::vector<std::string> list_commands();
 std::string get_settings_path();
 
 void on_item_clicked(std::string);

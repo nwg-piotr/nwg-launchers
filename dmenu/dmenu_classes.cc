@@ -18,9 +18,6 @@
 
 Anchor::Anchor(DMenu *menu) : menu{menu} {}
 
-Anchor::~Anchor() {
-}
-
 bool Anchor::on_focus_in_event(GdkEventFocus* focus_event) {
     (void) focus_event; // suppress warning
 
@@ -57,9 +54,6 @@ DMenu::DMenu() {
     searchbox.set_sensitive(false);
     searchbox.set_name("searchbox");
     search_phrase = "";
-}
-
-DMenu::~DMenu() {
 }
 
 void switch_case_sensitive(std::string filename, bool is_case_sensitive) {
@@ -229,27 +223,13 @@ void DMenu::filter_view() {
     }
 }
 
-MainWindow::MainWindow() : menu(nullptr) {
-    set_title("~nwgdmenu");
-    set_role("~nwgdmenu");
-    set_skip_pager_hint(true);
-    add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
-    set_app_paintable(true);
-
-    signal_draw().connect(sigc::mem_fun(*this, &MainWindow::on_draw));
-    signal_screen_changed().connect(sigc::mem_fun(*this, &MainWindow::on_screen_changed));
-
-    on_screen_changed(get_screen());
-
+MainWindow::MainWindow() : CommonWindow("~nwgdmenu", "~nwgdmenu"), menu(nullptr) {
     if (wm == "dwm" || wm == "bspwm" || wm == "qtile" || wm == "bspwm" || wm == "tiling") {
         fullscreen();
     } else if (wm == "sway" || wm == "i3") {
         set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
     }
     set_decorated(false);
-}
-
-MainWindow::~MainWindow() {
 }
 
 bool MainWindow::on_button_press_event(GdkEventButton* button_event) {
@@ -264,36 +244,4 @@ bool MainWindow::on_button_press_event(GdkEventButton* button_event) {
     } else {
         return false;
     }
-}
-
-bool MainWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
-    cr->save();
-    if (_SUPPORTS_ALPHA) {
-        cr->set_source_rgba(0.0, 0.0, 0.0, opacity);    // transparent
-    } else {
-        cr->set_source_rgb(0.0, 0.0, 0.0);          // opaque
-    }
-    cr->set_operator(Cairo::OPERATOR_SOURCE);
-    cr->paint();
-    cr->restore();
-
-    return Gtk::Window::on_draw(cr);
-}
-
-void MainWindow::on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) {
-    (void) previous_screen; // suppress warning
-
-    auto screen = get_screen();
-    auto visual = screen->get_rgba_visual();
-
-    if (!visual) {
-        std::cout << "Your screen does not support alpha channels!" << std::endl;
-    } else {
-        _SUPPORTS_ALPHA = TRUE;
-    }
-    set_visual(visual);
-}
-
-void MainWindow::set_visual(Glib::RefPtr<Gdk::Visual> visual) {
-    gtk_widget_set_visual(GTK_WIDGET(gobj()), visual->gobj());
 }

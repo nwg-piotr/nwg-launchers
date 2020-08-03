@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
                 std::exit(0);
             }
         } catch (...) {
-            std::cout << "\nError reading pid file\n\n";
+            std::cerr << "\nError reading pid file\n\n";
         }
     }
     save_string_to_file(mypid, pid_file);
@@ -137,10 +137,10 @@ int main(int argc, char *argv[]) {
             if (o >= 0.0 && o <= 1.0) {
                 opacity = o;
             } else {
-                std::cout << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
+                std::cerr << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
             }
         } catch (...) {
-            std::cout << "\nERROR: Invalid opacity value\n\n";
+            std::cerr << "\nERROR: Invalid opacity value\n\n";
         }
     }
 
@@ -151,10 +151,10 @@ int main(int argc, char *argv[]) {
             if (r > 0 && r <= 100) {
                 rows = r;
             } else {
-                std::cout << "\nERROR: Number of rows must be in range 1 - 100\n\n";
+                std::cerr << "\nERROR: Number of rows must be in range 1 - 100\n\n";
             }
         } catch (...) {
-            std::cout << "\nERROR: Invalid rows number\n\n";
+            std::cerr << "\nERROR: Invalid rows number\n\n";
         }
     }
 
@@ -183,42 +183,34 @@ int main(int argc, char *argv[]) {
     }
 
     if (dmenu_run) {
-        /* get all applications dirs */
-        std::vector<std::string> command_dirs = get_command_dirs();
-
-        /* get a list of paths to all commands */
-        std::vector<std::string> commands = list_commands(command_dirs);
+        /* get a list of paths to all commands from all application dirs */
+        std::vector<std::string> commands = list_commands();
         std::cout << commands.size() << " commands found\n";
 
         /* Create a vector of commands (w/o path) */
         all_commands = {};
         for (auto&& command : commands) {
-            auto parts = split_string(std::move(command), "/");
+            auto parts = split_string(command, "/");
             auto& cmd = parts.back();
             if (cmd.find(".") != 0 && cmd.size() != 1) {
-                all_commands.emplace_back(std::move(cmd));
+                all_commands.emplace_back(cmd.data(), cmd.size());
             }
         }
 
         /* Sort case insensitive */
-        std::sort(all_commands.begin(), all_commands.end(), [](const std::string& a, const std::string& b) -> bool {
-            for (size_t c = 0; c < a.size() and c < b.size(); c++) {
-                if (std::tolower(a[c]) != std::tolower(b[c])) {
-                    return (std::tolower(a[c]) < std::tolower(b[c]));
-                }
-            }
-            return a.size() < b.size();
+        std::sort(all_commands.begin(), all_commands.end(), [](auto& a, auto& b) { 
+            return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(), [](auto a, auto b) {
+                return std::tolower(a) < std::tolower(b);
+            });
         });
     }
 
     /* turn off borders, enable floating on sway */
     if (wm == "sway") {
-        std::string cmd = "swaymsg -q for_window [title=\"~nwgdmenu*\"] floating enable";
-        const char *command = cmd.c_str();
-        std::system(command);
+        auto* cmd = "swaymsg -q for_window [title=\"~nwgdmenu*\"] floating enable";
+        std::system(cmd);
         cmd = "swaymsg -q for_window [title=\"~nwgdmenu*\"] border none";
-        command = cmd.c_str();
-        std::system(command);
+        std::system(cmd);
     }
 
     Gtk::Main kit(argc, argv);
@@ -319,7 +311,7 @@ int main(int argc, char *argv[]) {
     }
 
     menu.set_reserve_toggle_size(false);
-    menu.set_property("width_request", (int)(w / 8));
+    menu.set_property("width_request", w / 8);
 
     Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
     outer_box.set_spacing(15);

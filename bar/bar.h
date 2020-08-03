@@ -20,8 +20,8 @@
 
 #include <nlohmann/json.hpp>    // nlohmann-json package
 
-#include "nwg_classes.h"
 #include "nwgconfig.h"
+#include "nwg_classes.h"
 
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
@@ -29,11 +29,9 @@ namespace ns = nlohmann;
 extern double opacity;
 extern std::string wm;
 
-class MainWindow : public Gtk::Window {
+class MainWindow : public CommonWindow {
     public:
         MainWindow();
-        void set_visual(Glib::RefPtr<Gdk::Visual> visual);
-        virtual ~MainWindow();
 
         Gtk::Grid favs_grid;                    // Favourites grid above
         Gtk::Separator separator;               // between favs and all apps
@@ -44,20 +42,6 @@ class MainWindow : public Gtk::Window {
     private:
         //Override default signal handler:
         bool on_key_press_event(GdkEventKey* event) override;
-        void filter_view();
-        void rebuild_grid(bool filtered);
-
-    protected:
-        bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr) override;
-        void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) override;
-        bool _SUPPORTS_ALPHA = false;
-};
-
-struct DesktopEntry {
-    std::string name;
-    std::string exec;
-    std::string icon;
-    std::string comment;
 };
 
 struct BarEntry {

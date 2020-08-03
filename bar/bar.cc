@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwgbar/style.css", default_css_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cout << "Failed copying default style.css\n";
+            std::cerr << "Failed copying default style.css\n";
         }
     }
 
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
     try {
         bar_json = get_bar_json(std::move(custom_bar_file));
     }  catch (...) {
-        std::cout << "\nERROR: Template file not found, using default\n";
+        std::cerr << "\nERROR: Template file not found, using default\n";
         bar_json = get_bar_json(default_bar_file);
     }
     std::cout << bar_json.size() << " bar entries loaded\n";
@@ -187,12 +187,10 @@ int main(int argc, char *argv[]) {
 
     /* turn off borders, enable floating on sway */
     if (wm == "sway") {
-        std::string cmd = "swaymsg for_window [title=\"~nwgbar*\"] floating enable";
-        const char *command = cmd.c_str();
-        std::system(command);
+        auto* cmd = "swaymsg for_window [title=\"~nwgbar*\"] floating enable";
+        std::system(cmd);
         cmd = "swaymsg for_window [title=\"~nwgbar*\"] border none";
-        command = cmd.c_str();
-        std::system(command);
+        std::system(cmd);
     }
 
     Gtk::Main kit(argc, argv);

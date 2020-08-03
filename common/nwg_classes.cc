@@ -8,6 +8,7 @@
  * */
 
 #include <algorithm>
+#include <iostream>
 
 #include "nwg_classes.h"
 
@@ -22,7 +23,6 @@ const std::string& InputParser::getCmdOption(const std::string &option) const {
     if (itr != this->tokens.end() && ++itr != this->tokens.end()){
         return *itr;
     }
-    static const std::string empty_string("");
     return empty_string;
 }
 
@@ -30,6 +30,50 @@ bool InputParser::cmdOptionExists(const std::string &option) const {
     return std::find(this->tokens.begin(), this->tokens.end(), option)
         != this->tokens.end();
 }
+
+CommonWindow::CommonWindow(const Glib::ustring& title, const Glib::ustring& role) {
+    set_title(title);
+    set_role(role);
+    set_skip_pager_hint(true);
+    add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
+    signal_draw().connect(sigc::mem_fun(*this, &CommonWindow::on_draw));
+    signal_screen_changed().connect(sigc::mem_fun(*this, &CommonWindow::on_screen_changed));
+    set_app_paintable(true);
+    check_screen();
+}
+
+CommonWindow::~CommonWindow() { }
+
+bool CommonWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
+    cr->save();
+    if (_SUPPORTS_ALPHA) {
+        cr->set_source_rgba(0.0, 0.0, 0.0, opacity);
+    } else {
+        cr->set_source_rgb(0.0, 0.0, 0.0);
+    }
+    cr->set_operator(Cairo::OPERATOR_SOURCE);
+    cr->paint();
+    cr->restore();
+    return Gtk::Window::on_draw(cr);
+}
+
+void CommonWindow::on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) {
+    (void) previous_screen; // suppress warning
+    this->check_screen();
+}
+
+void CommonWindow::check_screen() {
+    auto screen = get_screen();
+    auto visual = screen -> get_rgba_visual();
+
+    if (!visual) {
+        std::cerr << "Your screen does not support alpha channels!\n";
+    }
+    _SUPPORTS_ALPHA = (bool)visual;
+    // window visual should be changed automatically
+    // set_visual
+}
+
 
 AppBox::AppBox() {
     this -> set_always_show_image(true);

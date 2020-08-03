@@ -190,16 +190,16 @@ void save_string_to_file(const std::string& s, const std::string& filename) {
 /*
  * Splits string into vector of strings by delimiter
  * */
-std::vector<std::string> split_string(std::string str, std::string delimiter) {
-    std::vector<std::string> result;
+std::vector<std::string_view> split_string(std::string_view str, std::string_view delimiter) {
+    std::vector<std::string_view> result;
     std::size_t current, previous = 0;
     current = str.find_first_of(delimiter);
-    while (current != std::string::npos) {
-        result.push_back(str.substr(previous, current - previous));
+    while (current != std::string_view::npos) {
+        result.emplace_back(str.substr(previous, current - previous));
         previous = current + 1;
         current = str.find_first_of(delimiter, previous);
     }
-    result.push_back(str.substr(previous, current - previous));
+    result.emplace_back(str.substr(previous, current - previous));
 
     return result;
 }

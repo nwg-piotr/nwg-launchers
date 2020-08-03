@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
                 std::exit(0);
             }
         } catch (...) {
-            std::cout << "\nError reading pid file\n\n";
+            std::cerr << "\nError reading pid file\n\n";
         }
     }
     save_string_to_file(mypid, pid_file);
@@ -233,12 +233,10 @@ int main(int argc, char *argv[]) {
 
     /* turn off borders, enable floating on sway */
     if (wm == "sway") {
-        std::string cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
-        const char *command = cmd.c_str();
-        std::system(command);
+        auto* cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
+        std::system(cmd);
         cmd = "swaymsg for_window [title=\"~nwggrid*\"] border none";
-        command = cmd.c_str();
-        std::system(command);
+        std::system(cmd);
     }
 
     Gtk::Main kit(argc, argv);

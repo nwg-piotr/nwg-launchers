@@ -100,9 +100,9 @@ std::vector<std::string> get_app_dirs() {
 
     auto xdg_data_dirs = getenv("XDG_DATA_DIRS");
     if (xdg_data_dirs != NULL) {
-        std::vector<std::string> dirs = split_string(xdg_data_dirs, ":");
-        for (std::string dir : dirs) {
-            result.push_back(dir);
+        auto dirs = split_string(xdg_data_dirs, ":");
+        for (auto& dir : dirs) {
+            result.emplace_back(dir);
         }
     }
     return result;
