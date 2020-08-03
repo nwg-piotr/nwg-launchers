@@ -19,6 +19,18 @@
 int image_size {72};            // button image size in pixels
 double opacity {0.9};           // overlay window opacity
 std::string wm {""};            // detected or forced window manager name
+const char* const HELP_MESSAGE = 
+"GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
+Options:\n\
+-h            show this help message and exit\n\
+-v            arrange buttons vertically\n\
+-ha <l>|<r>   horizontal alignment left/right (default: center)\n\
+-va <t>|<b>   vertical alignment top/bottom (default: middle)\n\
+-t <name>     template file name (default: bar.json)\n\
+-c <name>     css file name (default: style.css)\n\
+-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n\
+-s <size>     button image size (default: 72)\n\
+-wm <wmname>  window manager name (if can not be detected)\n";
 
 int main(int argc, char *argv[]) {
     std::string definition_file {"bar.json"};
@@ -55,18 +67,7 @@ int main(int argc, char *argv[]) {
 
     InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
-        std::cout << "GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n";
-
-        std::cout << "Options:\n";
-        std::cout << "-h            show this help message and exit\n";
-        std::cout << "-v            arrange buttons vertically\n";
-        std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
-        std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
-        std::cout << "-t <name>     template file name (default: bar.json)\n";
-        std::cout << "-c <name>     css file name (default: style.css)\n";
-        std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n";
-        std::cout << "-s <size>     button image size (default: 72)\n";
-        std::cout << "-wm <wmname>  window manager name (if can not be detected)\n";
+        std::cout << HELP_MESSAGE;
         std::exit(0);
     }
 

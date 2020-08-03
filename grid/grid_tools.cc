@@ -134,12 +134,12 @@ DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
     std::ifstream file(path);
     std::string str;
 
-    std::string name {""};          // Name=
-    std::string name_ln {""};       // localized: Name[ln]=
+    std::string name {};            // Name=
+    std::string name_ln {};         // localized: Name[ln]=
     std::string loc_name = "Name[" + lang + "]=";
 
-    std::string comment {""};       // Comment=
-    std::string comment_ln {""};    // localized: Comment[ln]=
+    std::string comment {};         // Comment=
+    std::string comment_ln {};      // localized: Comment[ln]=
     std::string loc_comment = "Comment[" + lang + "]=";
 
     while (std::getline(file, str)) {

@@ -17,6 +17,11 @@
 #include "on_event.h"
 #include "dmenu.h"
 
+#define ROWS_DEFAULT 20
+
+#define STR_EXPAND(x) #x
+#define STR(x) STR_EXPAND(x)
+
 int image_size {72};                        // make linker happy
 
 std::string h_align {""};                   // horizontal alignment
@@ -25,12 +30,30 @@ double opacity (0.3);                       // overlay window opacity
 std::string wm {""};                        // detected or forced window manager name
 std::string settings_file {""};
 
-int rows (20);                              // number of menu items to display
+int rows = ROWS_DEFAULT;                    // number of menu items to display
 std::vector<Glib::ustring> all_commands {};
 
 bool dmenu_run = false;
 bool show_searchbox = true;
 bool case_sensitive = true;
+
+const char* const HELP_MESSAGE =
+"GTK dynamic menu: nwgdmenu " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
+<input> | nwgdmenu - displays newline-separated stdin input as a GTK menu\n\
+nwgdmenu - creates a GTK menu out of commands found in $PATH\n\n\
+Options:\n\
+-h            show this help message and exit\n\
+-n            no search box\n\
+-ha <l>|<r>   horizontal alignment left/right (default: center)\n\
+-va <t>|<b>   vertical alignment top/bottom (default: middle)\n\
+-r <rows>     number of rows (default: " STR(ROWS_DEFAULT) ")\n\
+-c <name>     css file name (default: style.css)\n\
+-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n\
+-wm <wmname>  window manager name (if can not be detected)\n\
+-run          ignore stdin, always build from commands in $PATH\n\n\
+Hotkeys:\n\
+Delete        clear search box\n\
+Insert        switch case sensitivity\n";
 
 int main(int argc, char *argv[]) {
     std::string custom_css_file {"style.css"};
@@ -64,24 +87,8 @@ int main(int argc, char *argv[]) {
     save_string_to_file(mypid, pid_file);
 
     InputParser input(argc, argv);
-    if(input.cmdOptionExists("-h")){
-        std::cout << "GTK dynamic menu: nwgdmenu " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n";
-        std::cout << "<input> | nwgdmenu - displays newline-separated stdin input as a GTK menu\n";
-        std::cout << "nwgdmenu - creates a GTK menu out of commands found in $PATH\n\n";
-
-        std::cout << "Options:\n";
-        std::cout << "-h            show this help message and exit\n";
-        std::cout << "-n            no search box\n";
-        std::cout << "-ha <l>|<r>   horizontal alignment left/right (default: center)\n";
-        std::cout << "-va <t>|<b>   vertical alignment top/bottom (default: middle)\n";
-        std::cout << "-r <rows>     number of rows (default: " << rows <<")\n";
-        std::cout << "-c <name>     css file name (default: style.css)\n";
-        std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n";
-        std::cout << "-wm <wmname>  window manager name (if can not be detected)\n";
-        std::cout << "-run          ignore stdin, always build from commands in $PATH\n\n";
-        std::cout << "Hotkeys:\n";
-        std::cout << "Delete        clear search box\n";
-        std::cout << "Insert        switch case sensitivity\n";
+    if (input.cmdOptionExists("-h")){
+        std::cout << HELP_MESSAGE;
         std::exit(0);
     }
 
@@ -105,21 +112,17 @@ int main(int argc, char *argv[]) {
     }
 
     auto halign = input.getCmdOption("-ha");
-    if (!halign.empty()){
-        if (halign == "l" || halign == "left") {
-            h_align = "l";
-        } else if (halign == "r" || halign == "right") {
-            h_align = "r";
-        }
+    if (halign == "l" || halign == "left") {
+        h_align = "l";
+    } else if (halign == "r" || halign == "right") {
+        h_align = "r";
     }
 
     auto valign = input.getCmdOption("-va");
-    if (!valign.empty()){
-        if (valign == "t" || valign == "top") {
-            v_align = "t";
-        } else if (valign == "b" || valign == "bottom") {
-            v_align = "b";
-        }
+    if (valign == "t" || valign == "top") {
+        v_align = "t";
+    } else if (valign == "b" || valign == "bottom") {
+        v_align = "b";
     }
 
     auto css_name = input.getCmdOption("-c");

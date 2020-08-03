@@ -30,6 +30,20 @@ std::vector<std::string> pinned;    // list of commands of pinned icons
 ns::json cache;
 std::string cache_file {};
 
+const char* const HELP_MESSAGE =
+"GTK application grid: nwggrid " VERSION_STR " (c) Piotr Miller 2020 & Contributors \n\n\
+\
+Options:\n\
+-h            show this help message and exit\n\
+-f            display favourites (most used entries)\n\
+-p            display pinned entries \n\
+-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n\
+-n <col>      number of grid columns (default: 6)\n\
+-s <size>     button image size (default: 72)\n\
+-c <name>     css file name (default: style.css)\n\
+-l <ln>       force use of <ln> language\n\
+-wm <wmname>  window manager name (if can not be detected)\n";
+
 int main(int argc, char *argv[]) {
     bool favs (false);              // whether to display favourites
     std::string custom_css_file {"style.css"};
@@ -61,19 +75,8 @@ int main(int argc, char *argv[]) {
     std::string lang ("");
 
     InputParser input(argc, argv);
-    if(input.cmdOptionExists("-h")){
-        std::cout << "GTK application grid: nwggrid " VERSION_STR " (c) Piotr Miller 2020 & Contributors \n\n";
-
-        std::cout << "Options:\n";
-        std::cout << "-h            show this help message and exit\n";
-        std::cout << "-f            display favourites (most used entries)\n";
-        std::cout << "-p            display pinned entries \n";
-        std::cout << "-o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n";
-        std::cout << "-n <col>      number of grid columns (default: 6)\n";
-        std::cout << "-s <size>     button image size (default: 72)\n";
-        std::cout << "-c <name>     css file name (default: style.css)\n";
-        std::cout << "-l <ln>       force use of <ln> language\n";
-        std::cout << "-wm <wmname>  window manager name (if can not be detected)\n";
+    if (input.cmdOptionExists("-h")){
+        std::cout << HELP_MESSAGE;
         std::exit(0);
     }
     if (input.cmdOptionExists("-f")){
@@ -214,7 +217,7 @@ int main(int argc, char *argv[]) {
     /* create the vector of DesktopEntry structs */
     std::vector<DesktopEntry> desktop_entries {};
     for (auto& entry_ : entries) {
-        // string path -> vector<string> {name, exec, icon, comment}
+        // string path -> DesktopEntry
         auto entry = desktop_entry(std::move(entry_), lang);
 
         // only add if 'name' and 'exec' not empty
@@ -227,7 +230,7 @@ int main(int argc, char *argv[]) {
                 }
             }
             if (!found) {
-                desktop_entries.emplace_back(entry);
+                desktop_entries.emplace_back(std::move(entry));
             }
         }
     }
