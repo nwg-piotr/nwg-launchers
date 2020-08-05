@@ -30,8 +30,10 @@ extern double opacity;
 extern std::string wm;
 
 class BarBox : public AppBox {
+public:
     BarBox(Glib::ustring, Glib::ustring, Glib::ustring);
-    void on_clicked() override;
+    bool on_button_press_event(GdkEventButton*) override;
+    void on_activate() override;
 };
 
 class MainWindow : public CommonWindow {
@@ -40,9 +42,9 @@ class MainWindow : public CommonWindow {
 
         Gtk::Grid favs_grid;                    // Favourites grid above
         Gtk::Separator separator;               // between favs and all apps
-        std::vector<AppBox> all_boxes {};        // attached to apps_grid unfiltered view
-        std::vector<AppBox> filtered_boxes {};   // attached to apps_grid filtered view
-        std::vector<AppBox> boxes {};            // attached to favs_grid
+        std::vector<BarBox> all_boxes {};        // attached to apps_grid unfiltered view
+        std::vector<BarBox> filtered_boxes {};   // attached to apps_grid filtered view
+        std::vector<BarBox> boxes {};            // attached to favs_grid
 
     private:
         //Override default signal handler:

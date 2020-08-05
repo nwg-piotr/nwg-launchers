@@ -51,7 +51,14 @@ BarEntry::BarEntry(std::string name, std::string exec, std::string icon)
 BarBox::BarBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment)
  : AppBox(std::move(name), std::move(exec), std::move(comment)) {}
 
-void BarBox::on_clicked() {
+bool BarBox::on_button_press_event(GdkEventButton* event) {
+    (void)event; // suppress warning
+    
+    this->activate();
+    return false;
+}
+
+void BarBox::on_activate() {
     exec.append(" &");
     const char *command = exec.c_str();
     std::system(command);
