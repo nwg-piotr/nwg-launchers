@@ -25,7 +25,7 @@ std::string_view InputParser::getCmdOption(std::string_view option) const {
     if (itr != this->tokens.end() && ++itr != this->tokens.end()){
         return *itr;
     }
-    return empty_string;
+    return {};
 }
 
 bool InputParser::cmdOptionExists(std::string_view option) const {

@@ -32,6 +32,7 @@ std::string get_locale(void);
 std::string read_file_to_string(const std::string&);
 void save_string_to_file(const std::string&, const std::string&);
 std::vector<std::string_view> split_string(std::string_view, std::string_view);
+std::string_view take_last_by(std::string_view, std::string_view);
 
 ns::json string_to_json(const std::string&);
 void save_json(const ns::json&, const std::string&);

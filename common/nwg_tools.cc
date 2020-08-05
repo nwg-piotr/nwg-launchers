@@ -205,6 +205,17 @@ std::vector<std::string_view> split_string(std::string_view str, std::string_vie
 }
 
 /*
+ * Splits string by delimiter and takes the last piece
+ * */
+std::string_view take_last_by(std::string_view str, std::string_view delimiter) {
+    auto pos = str.find_last_of(delimiter);
+    if (pos != std::string_view::npos) {
+        str.substr(pos);
+    }
+    return str;   
+}
+
+/*
  * Converts json string into a json object
  * */
 ns::json string_to_json(const std::string& jsonString) {

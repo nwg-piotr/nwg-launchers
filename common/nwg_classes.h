@@ -27,7 +27,6 @@ class InputParser{
         /// @author iain
         bool cmdOptionExists(std::string_view) const;
 
-        std::string_view empty_string{};
     private:
         std::vector <std::string_view> tokens;
 };

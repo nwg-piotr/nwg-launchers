@@ -198,8 +198,7 @@ int main(int argc, char *argv[]) {
         /* Create a vector of commands (w/o path) */
         all_commands = {};
         for (auto&& command : commands) {
-            auto parts = split_string(command, "/");
-            auto& cmd = parts.back();
+            auto cmd = take_last_by(command, "/");
             if (cmd.find(".") != 0 && cmd.size() != 1) {
                 all_commands.emplace_back(cmd.data(), cmd.size());
             }
