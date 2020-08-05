@@ -111,6 +111,7 @@ void MainWindow::rebuild_grid(bool filtered) {
         widget -> unset_state_flags(Gtk::STATE_FLAG_PRELIGHT);
     }
     int cnt = 0;
+    this -> apps_grid.freeze_child_notify();
     if (filtered) {
         for (auto& box : this -> filtered_boxes) {
             this -> apps_grid.attach(*box, column, row, 1, 1);
@@ -134,16 +135,17 @@ void MainWindow::rebuild_grid(bool filtered) {
             cnt++;
         }
     }
+    this -> apps_grid.thaw_child_notify();
     // Set keyboard focus to the first visible button
     if (this -> favs_grid.is_visible()) {
         auto* first = favs_grid.get_child_at(0, 0);
         if (first) {
-            first -> set_property("has_focus", true);
+            first -> grab_focus();
         }
     } else {
         auto* first = apps_grid.get_child_at(0, 0);
         if (first) {
-            first -> set_property("has_focus", true);
+            first -> grab_focus();
         }
     }
 }
