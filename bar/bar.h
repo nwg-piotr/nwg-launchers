@@ -29,6 +29,11 @@ namespace ns = nlohmann;
 extern double opacity;
 extern std::string wm;
 
+class BarBox : public AppBox {
+    BarBox(Glib::ustring, Glib::ustring, Glib::ustring);
+    void on_clicked() override;
+};
+
 class MainWindow : public CommonWindow {
     public:
         MainWindow();
@@ -48,7 +53,7 @@ struct BarEntry {
     std::string name;
     std::string exec;
     std::string icon;
-    BarEntry(std::string&&, std::string&&, std::string&&);
+    BarEntry(std::string, std::string, std::string);
 };
 
 /*
@@ -56,5 +61,3 @@ struct BarEntry {
  * */
 ns::json get_bar_json(const std::string&);
 std::vector<BarEntry> get_bar_entries(ns::json&&);
-
-void on_button_clicked(std::string);

@@ -38,6 +38,17 @@ extern std::vector<std::string> pinned;
 extern ns::json cache;
 extern std::string cache_file;
 
+class GridBox : public AppBox {
+public:
+    /* name, exec, comment, pinned */
+    GridBox(Glib::ustring, Glib::ustring, Glib::ustring, bool);
+    bool on_button_press_event(GdkEventButton*) override;
+    bool on_focus_in_event(GdkEventFocus*) override;
+    void on_enter() override;
+
+    bool pinned;
+};
+
 class MainWindow : public CommonWindow {
     public:
         MainWindow();
@@ -50,10 +61,10 @@ class MainWindow : public CommonWindow {
         Gtk::Grid pinned_grid;                  // Pinned entries grid above
         Gtk::Separator separator;               // between favs and all apps
         Gtk::Separator separator1;              // below pinned
-        std::list<AppBox> all_boxes {};         // attached to apps_grid unfiltered view
-        std::list<AppBox*> filtered_boxes {};   // attached to apps_grid filtered view
-        std::list<AppBox> fav_boxes {};         // attached to favs_grid
-        std::list<AppBox> pinned_boxes {};      // attached to pinned_grid
+        std::list<GridBox> all_boxes {};         // attached to apps_grid unfiltered view
+        std::list<GridBox*> filtered_boxes {};   // attached to apps_grid filtered view
+        std::list<GridBox> fav_boxes {};         // attached to favs_grid
+        std::list<GridBox> pinned_boxes {};      // attached to pinned_grid
 
     private:
         //Override default signal handler:

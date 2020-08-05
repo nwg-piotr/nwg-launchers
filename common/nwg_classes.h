@@ -49,7 +49,7 @@ class CommonWindow : public Gtk::Window {
 class AppBox : public Gtk::Button {
     public:
         AppBox();
-        AppBox(Glib::ustring, std::string, Glib::ustring);
+        AppBox(Glib::ustring, Glib::ustring, Glib::ustring);
         AppBox(AppBox&&) = default;
         AppBox(const AppBox&) = delete;
 

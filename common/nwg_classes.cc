@@ -76,16 +76,15 @@ AppBox::AppBox() {
     this -> set_always_show_image(true);
 }
 
-AppBox::AppBox(Glib::ustring name, std::string exec, Glib::ustring comment) {
+AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment) {
     this -> name = name;
-    Glib::ustring n = this -> name;
-    if (n.length() > 25) {
-        n = this -> name.substr(0, 22) + "...";
+    if (name.length() > 25) {
+        name = name.substr(0, 22) + "...";
     }
-    this -> exec = exec;
-    this -> comment = comment;
+    this -> exec = std::move(exec);
+    this -> comment = std::move(comment);
     this -> set_always_show_image(true);
-    this -> set_label(n);
+    this -> set_label(name);
 }
 
 AppBox::~AppBox() {

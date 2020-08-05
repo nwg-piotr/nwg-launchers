@@ -14,6 +14,7 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
+#include "nwg_tools.h"
 #include "grid.h"
 
 MainWindow::MainWindow(): CommonWindow("~nwggrid", "~nwggrid") {
@@ -146,3 +147,44 @@ void MainWindow::rebuild_grid(bool filtered) {
         }
     }
 }
+
+GridBox::GridBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment, bool pinned)
+ : AppBox(std::move(name), std::move(exec), std::move(comment)), pinned(pinned) {}
+
+bool GridBox::on_button_press_event(GdkEventButton* event) {
+    int clicks = 0;
+    try {
+        clicks = cache[exec];
+        clicks++;
+    } catch(...) {
+        clicks = 1;
+    }
+    cache[exec] = clicks;
+    save_json(cache, cache_file);    
+
+    exec.append(" &");
+    std::system(exec.data());
+
+    if (pins && event->button == 3) {
+        if (pinned) {
+            remove_and_save_pinned(exec);
+        } else {
+            add_and_save_pinned(exec);
+        }
+    }
+
+    Gtk::Main::quit();
+    return true;
+}
+
+bool GridBox::on_focus_in_event(GdkEventFocus* event) {
+    (void) event; // suppress warning
+
+    description -> set_text(comment);
+    return true;
+}
+
+void GridBox::on_enter() {
+    description -> set_text(comment);
+}
+

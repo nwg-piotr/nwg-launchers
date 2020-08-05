@@ -10,12 +10,6 @@
 #include "bar.h"
 
 /*
- * Constructor is required for std::vector::emplace_back to work
- * It is not needed when compiling with C++20 and greater
- * */
-BarEntry::BarEntry(std::string&& name, std::string&& exec, std::string&& icon) : name(std::move(name)), exec(std::move(exec)), icon(std::move(icon)) {}
-
-/*
  * Returns json object out of a template file
  * */
 ns::json get_bar_json(const std::string& custom_bar) {

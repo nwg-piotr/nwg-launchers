@@ -245,17 +245,16 @@ int main(int argc, char *argv[]) {
     for (auto& entry : bar_entries) {
         Gtk::Image* image = app_image(entry.icon);
         auto& ab = window.boxes.emplace_back(std::move(entry.name),
-                                             entry.exec, // we'll need entry.exec for signal
+                                             std::move(entry.exec),
                                              std::move(entry.icon));
         ab.set_image_position(Gtk::POS_TOP);
         ab.set_image(*image);
-        ab.signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked),
-                                                            std::move(entry.exec)));
     }
 
     int column = 0;
     int row = 0;
 
+    window.favs_grid.freeze_child_notify();
     for (auto& box : window.boxes) {
         window.favs_grid.attach(box, column, row, 1, 1);
         if (orientation == "v") {
@@ -264,6 +263,7 @@ int main(int argc, char *argv[]) {
             column++;
         }
     }
+    window.favs_grid.thaw_child_notify();
 
     Gtk::VBox inner_vbox;
 
