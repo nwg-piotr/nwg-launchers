@@ -40,5 +40,5 @@ void save_json(const ns::json&, const std::string&);
 std::string get_output(const std::string&);
 
 extern int image_size;
-Gtk::Image* app_image(const std::string& icon);
+Gtk::Image* app_image(const Gtk::IconTheme& theme, const std::string& icon);
 Geometry display_geometry(const std::string&, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);

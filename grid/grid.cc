@@ -248,6 +248,11 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
+    if (!icon_theme) {
+        std::cerr << "ERROR: Failed to load icon theme\n";
+    }
+    auto& icon_theme_ref = *icon_theme.get();
 
     if (std::filesystem::is_regular_file(css_file)) {
         provider->load_from_path(css_file);
@@ -308,7 +313,7 @@ int main(int argc, char *argv[]) {
                                                       std::move(entry.exec),
                                                       std::move(entry.comment),
                                                       false);
-             Gtk::Image* image = app_image(entry.icon);
+             Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
              ab.set_image_position(Gtk::POS_TOP);
              ab.set_image(*image);
         }
@@ -338,7 +343,7 @@ int main(int argc, char *argv[]) {
                                                              std::move(de.comment),
                                                              false);
                     
-                    Gtk::Image* image = app_image(de.icon);
+                    Gtk::Image* image = app_image(icon_theme_ref, de.icon);
                     ab.set_image_position(Gtk::POS_TOP);
                     ab.set_image(*image);
                 }
@@ -354,7 +359,7 @@ int main(int argc, char *argv[]) {
                                                             std::move(entry.exec),
                                                             std::move(entry.comment),
                                                             true);
-                Gtk::Image* image = app_image(entry.icon);
+                Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
                 ab.set_image_position(Gtk::POS_TOP);
                 ab.set_image(*image);
             }

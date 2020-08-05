@@ -186,5 +186,6 @@ bool GridBox::on_focus_in_event(GdkEventFocus* event) {
 
 void GridBox::on_enter() {
     description -> set_text(comment);
+    return AppBox::on_enter();
 }
 

@@ -123,24 +123,17 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
 /*
  * Returns Gtk::Image out of the icon name of file path
  * */
-Gtk::Image* app_image(const std::string& icon) {
-    Glib::RefPtr<Gtk::IconTheme> icon_theme;
+Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon) {
     Glib::RefPtr<Gdk::Pixbuf> pixbuf;
-
-    icon_theme = Gtk::IconTheme::get_default();
-
-    if (icon.find_first_of("/") != 0) {
-        try {
-            pixbuf = icon_theme->load_icon(icon, image_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
-        } catch (...) {
-            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
-        }
-    } else {
-        try {
+    
+    try {
+        if (icon.find_first_of("/") == std::string::npos) {
+            pixbuf = icon_theme.load_icon(icon, image_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
+        } else {
             pixbuf = Gdk::Pixbuf::create_from_file(icon, image_size, image_size, true);
-        } catch (...) {
-            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
         }
+    } catch (...) {
+        pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
     }
     auto image = Gtk::manage(new Gtk::Image(pixbuf));
 
