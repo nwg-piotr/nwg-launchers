@@ -50,17 +50,19 @@ MainWindow::MainWindow(): CommonWindow("~nwggrid", "~nwggrid") {
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
+    const Glib::ustring& s = key_event -> string;
     if (key_event -> keyval == GDK_KEY_Escape) {
         Gtk::Main::quit();
         return Gtk::Window::on_key_press_event(key_event);
-    } else if (((key_event -> keyval >= GDK_KEY_A && key_event -> keyval <= GDK_KEY_Z)
-        || (key_event -> keyval >= GDK_KEY_a && key_event -> keyval <= GDK_KEY_z)
-        || (key_event -> keyval >= GDK_KEY_0 && key_event -> keyval <= GDK_KEY_9)
-        || (key_event -> keyval == GDK_KEY_space))
-        && key_event->type == GDK_KEY_PRESS) {
+    } else if (key_event -> type == GDK_KEY_PRESS
+        && s.length() == 1
+        && (key_event -> state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK)) != GDK_CONTROL_MASK
+        && key_event -> keyval != GDK_KEY_BackSpace
+        && key_event -> keyval != GDK_KEY_Return
+        && key_event -> keyval != GDK_KEY_Delete
+        && key_event -> keyval != GDK_KEY_Tab) {
 
-        char character = key_event -> keyval;
-        this -> search_phrase += character;
+        this -> search_phrase += s;
         this -> searchbox.set_text(this -> search_phrase);
         this -> filter_view();
         return true;
