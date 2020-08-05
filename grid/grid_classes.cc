@@ -18,7 +18,7 @@
 #include "grid.h"
 
 MainWindow::MainWindow(): CommonWindow("~nwggrid", "~nwggrid") {
-    searchbox.set_text("Type to search");
+    searchbox.set_placeholder_text("Type to search");
     searchbox.set_sensitive(false);
     searchbox.set_name("searchbox");
     search_phrase = "";
@@ -51,30 +51,27 @@ MainWindow::MainWindow(): CommonWindow("~nwggrid", "~nwggrid") {
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
-    if (key_event -> keyval == GDK_KEY_Escape) {
-        Gtk::Main::quit();
-        return Gtk::Window::on_key_press_event(key_event);
-    } else if (((key_event -> keyval >= GDK_KEY_A && key_event -> keyval <= GDK_KEY_Z)
-        || (key_event -> keyval >= GDK_KEY_a && key_event -> keyval <= GDK_KEY_z)
-        || (key_event -> keyval >= GDK_KEY_0 && key_event -> keyval <= GDK_KEY_9)
-        || (key_event -> keyval == GDK_KEY_space))
-        && key_event->type == GDK_KEY_PRESS) {
-
-        char character = key_event -> keyval;
-        this -> search_phrase += character;
-        this -> searchbox.set_text(this -> search_phrase);
-        this -> filter_view();
-        return true;
-    } else if (key_event -> keyval == GDK_KEY_BackSpace && this -> search_phrase.size() > 0) {
-        this -> search_phrase = this -> search_phrase.substr(0, this -> search_phrase.size() - 1);
-        this -> searchbox.set_text(this -> search_phrase);
-        this -> filter_view();
-        return true;
-    } else if (key_event -> keyval == GDK_KEY_Delete) {
-        this -> search_phrase = "";
-        this -> searchbox.set_text(this -> search_phrase);
-        this -> filter_view();
-        return true;
+    auto key_val = key_event -> keyval;
+    switch (key_val) {
+        case GDK_KEY_Escape:
+            Gtk::Main::quit();
+            return Gtk::Window::on_key_press_event(key_event);
+        case GDK_KEY_Delete:
+            this -> search_phrase = "";
+            this -> searchbox.set_text(this -> search_phrase);
+            this -> filter_view();
+            return true;
+        case GDK_KEY_Return:
+        case GDK_KEY_Left:
+        case GDK_KEY_Right:
+        case GDK_KEY_Up:
+        case GDK_KEY_Down:
+            break;
+        default:
+            this -> searchbox.handle_event(key_event);
+            this -> search_phrase = searchbox.get_text();
+            this -> filter_view();
+            return true;
     }
     //if the event has not been handled, call the base class
     return Gtk::Window::on_key_press_event(key_event);
@@ -84,11 +81,12 @@ void MainWindow::filter_view() {
     if (this -> search_phrase.size() > 0) {
         this -> filtered_boxes.clear();
 
+        auto phrase = this -> search_phrase.casefold();
         for (auto& box : this -> all_boxes) {
-            if (box.name.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos
-                || box.exec.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos
-                || box.comment.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos) {
-
+            if (box.name.casefold().find(phrase) != Glib::ustring::npos ||
+                box.exec.casefold().find(phrase) != Glib::ustring::npos ||
+                box.comment.casefold().find(phrase) != Glib::ustring::npos)
+            {
                 this -> filtered_boxes.emplace_back(&box);
             }
         }
@@ -106,12 +104,12 @@ void MainWindow::rebuild_grid(bool filtered) {
     int column = 0;
     int row = 0;
 
+    this -> apps_grid.freeze_child_notify();
     for (Gtk::Widget *widget : this -> apps_grid.get_children()) {
         this -> apps_grid.remove(*widget);
         widget -> unset_state_flags(Gtk::STATE_FLAG_PRELIGHT);
     }
     int cnt = 0;
-    this -> apps_grid.freeze_child_notify();
     if (filtered) {
         for (auto& box : this -> filtered_boxes) {
             this -> apps_grid.attach(*box, column, row, 1, 1);
@@ -164,9 +162,6 @@ bool GridBox::on_button_press_event(GdkEventButton* event) {
     cache[exec] = clicks;
     save_json(cache, cache_file);    
 
-    exec.append(" &");
-    std::system(exec.data());
-
     if (pins && event->button == 3) {
         if (pinned) {
             remove_and_save_pinned(exec);
@@ -174,9 +169,8 @@ bool GridBox::on_button_press_event(GdkEventButton* event) {
             add_and_save_pinned(exec);
         }
     }
-
-    Gtk::Main::quit();
-    return true;
+    this -> activate();
+    return false;
 }
 
 bool GridBox::on_focus_in_event(GdkEventFocus* event) {
@@ -191,3 +185,8 @@ void GridBox::on_enter() {
     return AppBox::on_enter();
 }
 
+void GridBox::on_activate() {
+    exec.append(" &");
+    std::system(exec.data());
+    Gtk::Main::quit();
+}

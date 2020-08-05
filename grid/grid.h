@@ -45,6 +45,7 @@ public:
     bool on_button_press_event(GdkEventButton*) override;
     bool on_focus_in_event(GdkEventFocus*) override;
     void on_enter() override;
+    void on_activate() override;
 
     bool pinned;
 };
@@ -92,8 +93,3 @@ DesktopEntry desktop_entry(std::string&&, const std::string&);
 ns::json get_cache(const std::string&);
 std::vector<std::string> get_pinned(const std::string&);
 std::vector<CacheEntry> get_favourites(ns::json&&, int);
-bool on_button_entered(GdkEventCrossing *, const Glib::ustring&);
-bool on_button_focused(GdkEventFocus *, const Glib::ustring&);
-void on_button_clicked(std::string);
-bool on_grid_button_press(GdkEventButton *, const Glib::ustring&);
-bool on_pinned_button_press(GdkEventButton *, const Glib::ustring&);
