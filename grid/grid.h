@@ -50,22 +50,27 @@ public:
     bool pinned;
 };
 
+class GridSearch : public Gtk::SearchEntry {
+public:
+    GridSearch();
+    void prepare_to_insertion();
+};
+
 class MainWindow : public CommonWindow {
     public:
         MainWindow();
 
-        Gtk::SearchEntry searchbox;             // This will stay insensitive, updated with search_phrase value only
+        GridSearch searchbox;                   // Search apps
         Gtk::Label label_desc;                  // To display .desktop entry Comment field at the bottom
-        Glib::ustring search_phrase;            // updated on key_press_event
         Gtk::Grid apps_grid;                    // All application buttons grid
         Gtk::Grid favs_grid;                    // Favourites grid above
         Gtk::Grid pinned_grid;                  // Pinned entries grid above
         Gtk::Separator separator;               // between favs and all apps
         Gtk::Separator separator1;              // below pinned
-        std::list<GridBox> all_boxes {};         // attached to apps_grid unfiltered view
-        std::list<GridBox*> filtered_boxes {};   // attached to apps_grid filtered view
-        std::list<GridBox> fav_boxes {};         // attached to favs_grid
-        std::list<GridBox> pinned_boxes {};      // attached to pinned_grid
+        std::list<GridBox> all_boxes {};        // attached to apps_grid unfiltered view
+        std::list<GridBox*> filtered_boxes {};  // attached to apps_grid filtered view
+        std::list<GridBox> fav_boxes {};        // attached to favs_grid
+        std::list<GridBox> pinned_boxes {};     // attached to pinned_grid
 
     private:
         //Override default signal handler:

@@ -18,10 +18,9 @@
 #include "grid.h"
 
 MainWindow::MainWindow(): CommonWindow("~nwggrid", "~nwggrid") {
-    searchbox.set_placeholder_text("Type to search");
-    searchbox.set_sensitive(false);
-    searchbox.set_name("searchbox");
-    search_phrase = "";
+    searchbox
+        .signal_search_changed()
+        .connect(sigc::mem_fun(*this, &MainWindow::filter_view));
     apps_grid.set_column_spacing(5);
     apps_grid.set_row_spacing(5);
     apps_grid.set_column_homogeneous(true);
@@ -54,13 +53,11 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
     auto key_val = key_event -> keyval;
     switch (key_val) {
         case GDK_KEY_Escape:
-            Gtk::Main::quit();
-            return Gtk::Window::on_key_press_event(key_event);
+            this->quit();
+            break;
         case GDK_KEY_Delete:
-            this -> search_phrase = "";
-            this -> searchbox.set_text(this -> search_phrase);
-            this -> filter_view();
-            return true;
+            this -> searchbox.set_text("");
+            break;
         case GDK_KEY_Return:
         case GDK_KEY_Left:
         case GDK_KEY_Right:
@@ -68,20 +65,28 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
         case GDK_KEY_Down:
             break;
         default:
-            this -> searchbox.handle_event(key_event);
-            this -> search_phrase = searchbox.get_text();
-            this -> filter_view();
-            return true;
+            // Focus the searchbox:
+            // because searchbox is now focused,
+            // Gtk::Window will delegate the event there
+            if (!this -> searchbox.is_focus()) {
+                this -> searchbox.grab_focus();
+                // when searchbox receives focus,
+                // its contents become selected
+                // and the incoming character will overwrite them
+                // so we make sure to drop the selection
+                this -> searchbox.prepare_to_insertion();
+            }
     }
-    //if the event has not been handled, call the base class
+    // Delegate handling to the base class
     return Gtk::Window::on_key_press_event(key_event);
 }
 
 void MainWindow::filter_view() {
-    if (this -> search_phrase.size() > 0) {
+    auto search_phrase = searchbox.get_text();
+    if (search_phrase.size() > 0) {
         this -> filtered_boxes.clear();
 
-        auto phrase = this -> search_phrase.casefold();
+        auto phrase = search_phrase.casefold();
         for (auto& box : this -> all_boxes) {
             if (box.name.casefold().find(phrase) != Glib::ustring::npos ||
                 box.exec.casefold().find(phrase) != Glib::ustring::npos ||
@@ -121,6 +126,10 @@ void MainWindow::rebuild_grid(bool filtered) {
             }
             cnt++;
         }
+        // Set keyboard focus to the first visible button
+        if (this -> fav_boxes.size() > 0) {
+            fav_boxes.front().grab_focus();
+        }
     } else {
         for (auto& box : this -> all_boxes) {
             this -> apps_grid.attach(box, column, row, 1, 1);
@@ -132,20 +141,12 @@ void MainWindow::rebuild_grid(bool filtered) {
             }
             cnt++;
         }
+        // Set keyboard focus to the first visible button
+        if (this -> all_boxes.size() > 0) {
+            all_boxes.front().grab_focus();
+        }
     }
     this -> apps_grid.thaw_child_notify();
-    // Set keyboard focus to the first visible button
-    if (this -> favs_grid.is_visible()) {
-        auto* first = favs_grid.get_child_at(0, 0);
-        if (first) {
-            first -> grab_focus();
-        }
-    } else {
-        auto* first = apps_grid.get_child_at(0, 0);
-        if (first) {
-            first -> grab_focus();
-        }
-    }
 }
 
 GridBox::GridBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment, bool pinned)
@@ -188,5 +189,17 @@ void GridBox::on_enter() {
 void GridBox::on_activate() {
     exec.append(" &");
     std::system(exec.data());
-    Gtk::Main::quit();
+    auto toplevel = dynamic_cast<MainWindow*>(this->get_toplevel());
+    toplevel->quit();
+}
+
+GridSearch::GridSearch() {
+    set_placeholder_text("Type to search");
+    set_sensitive(true);
+    set_name("searchbox");
+}
+
+void GridSearch::prepare_to_insertion() {
+    select_region(0, 0);
+    set_position(-1);
 }

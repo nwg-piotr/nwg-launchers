@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
     /* sort above by the 'name' field */
     std::sort(desktop_entries.begin(), desktop_entries.end(), [](auto& a, auto& b) { return a.name < b.name; });
 
-    Gtk::Main kit(argc, argv);
+    auto app = Gtk::Application::create();
 
     auto provider = Gtk::CssProvider::create();
     auto display = Gdk::Display::get_default();
@@ -263,8 +263,6 @@ int main(int argc, char *argv[]) {
     }
 
     MainWindow window;
-
-    window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
 
     window.show();
 
@@ -465,7 +463,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Time: " << end_ms - start_ms << "ms\n";
 
-    Gtk::Main::run(window);
+    app->run(window);
 
     return 0;
 }

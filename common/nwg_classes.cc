@@ -72,6 +72,15 @@ void CommonWindow::check_screen() {
     _SUPPORTS_ALPHA = (bool)visual;
 }
 
+void CommonWindow::quit() {
+    auto toplevel = dynamic_cast<Gtk::Window*>(this->get_toplevel());
+    if (!toplevel) {
+        std::cerr << "ERROR: Toplevel widget is not a window\n";
+        std::exit(EXIT_FAILURE);
+    }
+    toplevel->get_application()->quit();
+}
+
 AppBox::AppBox() {
     this -> set_always_show_image(true);
 }
