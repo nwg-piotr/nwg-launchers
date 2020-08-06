@@ -265,6 +265,7 @@ int main(int argc, char *argv[]) {
     MainWindow window;
 
     window.show();
+    window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
 
     /* Detect focused display geometry: {x, y, width, height} */
     auto geometry = display_geometry(wm, display, window.get_window());
@@ -340,7 +341,7 @@ int main(int argc, char *argv[]) {
                                                              std::move(de.exec),
                                                              std::move(de.comment),
                                                              false);
-                    
+
                     Gtk::Image* image = app_image(icon_theme_ref, de.icon);
                     ab.set_image_position(Gtk::POS_TOP);
                     ab.set_image(*image);
