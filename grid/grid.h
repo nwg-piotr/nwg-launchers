@@ -38,22 +38,39 @@ extern std::vector<std::string> pinned;
 extern ns::json cache;
 extern std::string cache_file;
 
+class GridBox : public AppBox {
+public:
+    /* name, exec, comment, pinned */
+    GridBox(Glib::ustring, Glib::ustring, Glib::ustring, bool);
+    bool on_button_press_event(GdkEventButton*) override;
+    bool on_focus_in_event(GdkEventFocus*) override;
+    void on_enter() override;
+    void on_activate() override;
+
+    bool pinned;
+};
+
+class GridSearch : public Gtk::SearchEntry {
+public:
+    GridSearch();
+    void prepare_to_insertion();
+};
+
 class MainWindow : public CommonWindow {
     public:
         MainWindow();
 
-        Gtk::SearchEntry searchbox;             // This will stay insensitive, updated with search_phrase value only
+        GridSearch searchbox;                   // Search apps
         Gtk::Label label_desc;                  // To display .desktop entry Comment field at the bottom
-        Glib::ustring search_phrase;            // updated on key_press_event
         Gtk::Grid apps_grid;                    // All application buttons grid
         Gtk::Grid favs_grid;                    // Favourites grid above
         Gtk::Grid pinned_grid;                  // Pinned entries grid above
         Gtk::Separator separator;               // between favs and all apps
         Gtk::Separator separator1;              // below pinned
-        std::list<AppBox> all_boxes {};         // attached to apps_grid unfiltered view
-        std::list<AppBox*> filtered_boxes {};   // attached to apps_grid filtered view
-        std::list<AppBox> fav_boxes {};         // attached to favs_grid
-        std::list<AppBox> pinned_boxes {};      // attached to pinned_grid
+        std::list<GridBox> all_boxes {};        // attached to apps_grid unfiltered view
+        std::list<GridBox*> filtered_boxes {};  // attached to apps_grid filtered view
+        std::list<GridBox> fav_boxes {};        // attached to favs_grid
+        std::list<GridBox> pinned_boxes {};     // attached to pinned_grid
 
     private:
         //Override default signal handler:
@@ -81,8 +98,3 @@ DesktopEntry desktop_entry(std::string&&, const std::string&);
 ns::json get_cache(const std::string&);
 std::vector<std::string> get_pinned(const std::string&);
 std::vector<CacheEntry> get_favourites(ns::json&&, int);
-bool on_button_entered(GdkEventCrossing *, const Glib::ustring&);
-bool on_button_focused(GdkEventFocus *, const Glib::ustring&);
-void on_button_clicked(std::string);
-bool on_grid_button_press(GdkEventButton *, const Glib::ustring&);
-bool on_pinned_button_press(GdkEventButton *, const Glib::ustring&);

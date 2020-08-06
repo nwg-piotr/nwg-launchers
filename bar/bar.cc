@@ -209,6 +209,12 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
+    if (!icon_theme) {
+        std::cerr << "ERROR: Failed to load icon theme\n";
+        return EXIT_FAILURE;
+    }
+    auto& icon_theme_ref = *icon_theme.get();
 
     if (std::filesystem::is_regular_file(css_file)) {
         provider->load_from_path(css_file);
@@ -243,19 +249,18 @@ int main(int argc, char *argv[]) {
 
     /* Create buttons */
     for (auto& entry : bar_entries) {
-        Gtk::Image* image = app_image(entry.icon);
+        Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
         auto& ab = window.boxes.emplace_back(std::move(entry.name),
-                                             entry.exec, // we'll need entry.exec for signal
+                                             std::move(entry.exec),
                                              std::move(entry.icon));
         ab.set_image_position(Gtk::POS_TOP);
         ab.set_image(*image);
-        ab.signal_clicked().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_button_clicked),
-                                                            std::move(entry.exec)));
     }
 
     int column = 0;
     int row = 0;
 
+    window.favs_grid.freeze_child_notify();
     for (auto& box : window.boxes) {
         window.favs_grid.attach(box, column, row, 1, 1);
         if (orientation == "v") {
@@ -264,6 +269,7 @@ int main(int argc, char *argv[]) {
             column++;
         }
     }
+    window.favs_grid.thaw_child_notify();
 
     Gtk::VBox inner_vbox;
 

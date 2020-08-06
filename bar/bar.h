@@ -29,15 +29,22 @@ namespace ns = nlohmann;
 extern double opacity;
 extern std::string wm;
 
+class BarBox : public AppBox {
+public:
+    BarBox(Glib::ustring, Glib::ustring, Glib::ustring);
+    bool on_button_press_event(GdkEventButton*) override;
+    void on_activate() override;
+};
+
 class MainWindow : public CommonWindow {
     public:
         MainWindow();
 
         Gtk::Grid favs_grid;                    // Favourites grid above
         Gtk::Separator separator;               // between favs and all apps
-        std::vector<AppBox> all_boxes {};        // attached to apps_grid unfiltered view
-        std::vector<AppBox> filtered_boxes {};   // attached to apps_grid filtered view
-        std::vector<AppBox> boxes {};            // attached to favs_grid
+        std::vector<BarBox> all_boxes {};        // attached to apps_grid unfiltered view
+        std::vector<BarBox> filtered_boxes {};   // attached to apps_grid filtered view
+        std::vector<BarBox> boxes {};            // attached to favs_grid
 
     private:
         //Override default signal handler:
@@ -48,7 +55,7 @@ struct BarEntry {
     std::string name;
     std::string exec;
     std::string icon;
-    BarEntry(std::string&&, std::string&&, std::string&&);
+    BarEntry(std::string, std::string, std::string);
 };
 
 /*
@@ -56,5 +63,3 @@ struct BarEntry {
  * */
 ns::json get_bar_json(const std::string&);
 std::vector<BarEntry> get_bar_entries(ns::json&&);
-
-void on_button_clicked(std::string);

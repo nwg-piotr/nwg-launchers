@@ -25,7 +25,7 @@ std::string_view InputParser::getCmdOption(std::string_view option) const {
     if (itr != this->tokens.end() && ++itr != this->tokens.end()){
         return *itr;
     }
-    return empty_string;
+    return {};
 }
 
 bool InputParser::cmdOptionExists(std::string_view option) const {
@@ -72,20 +72,28 @@ void CommonWindow::check_screen() {
     _SUPPORTS_ALPHA = (bool)visual;
 }
 
+void CommonWindow::quit() {
+    auto toplevel = dynamic_cast<Gtk::Window*>(this->get_toplevel());
+    if (!toplevel) {
+        std::cerr << "ERROR: Toplevel widget is not a window\n";
+        std::exit(EXIT_FAILURE);
+    }
+    toplevel->get_application()->quit();
+}
+
 AppBox::AppBox() {
     this -> set_always_show_image(true);
 }
 
-AppBox::AppBox(Glib::ustring name, std::string exec, Glib::ustring comment) {
+AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment) {
     this -> name = name;
-    Glib::ustring n = this -> name;
-    if (n.length() > 25) {
-        n = this -> name.substr(0, 22) + "...";
+    if (name.length() > 25) {
+        name = name.substr(0, 22) + "...";
     }
-    this -> exec = exec;
-    this -> comment = comment;
+    this -> exec = std::move(exec);
+    this -> comment = std::move(comment);
     this -> set_always_show_image(true);
-    this -> set_label(n);
+    this -> set_label(name);
 }
 
 AppBox::~AppBox() {

@@ -238,15 +238,7 @@ int main(int argc, char *argv[]) {
     /* sort above by the 'name' field */
     std::sort(desktop_entries.begin(), desktop_entries.end(), [](auto& a, auto& b) { return a.name < b.name; });
 
-    /* turn off borders, enable floating on sway */
-    if (wm == "sway") {
-        auto* cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
-        std::system(cmd);
-        cmd = "swaymsg for_window [title=\"~nwggrid*\"] border none";
-        std::system(cmd);
-    }
-
-    Gtk::Main kit(argc, argv);
+    auto app = Gtk::Application::create();
 
     auto provider = Gtk::CssProvider::create();
     auto display = Gdk::Display::get_default();
@@ -256,6 +248,11 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
+    if (!icon_theme) {
+        std::cerr << "ERROR: Failed to load icon theme\n";
+    }
+    auto& icon_theme_ref = *icon_theme.get();
 
     if (std::filesystem::is_regular_file(css_file)) {
         provider->load_from_path(css_file);
@@ -266,9 +263,8 @@ int main(int argc, char *argv[]) {
     }
 
     MainWindow window;
-    window.show();
 
-    window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
+    window.show();
 
     /* Detect focused display geometry: {x, y, width, height} */
     auto geometry = display_geometry(wm, display, window.get_window());
@@ -279,6 +275,14 @@ int main(int argc, char *argv[]) {
     int y = geometry.y;
     int w = geometry.width;
     int h = geometry.height;
+
+    /* turn off borders, enable floating on sway */
+    if (wm == "sway") {
+        auto* cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
+        std::system(cmd);
+        cmd = "swaymsg for_window [title=\"~nwggrid*\"] border none";
+        std::system(cmd);
+    }
 
     if (wm == "sway" || wm == "i3" || wm == "openbox") {
         window.resize(w, h);
@@ -297,31 +301,19 @@ int main(int argc, char *argv[]) {
 
     Gtk::ScrolledWindow scrolled_window;
     scrolled_window.set_propagate_natural_height(true);
+    scrolled_window.set_propagate_natural_width(true);
     scrolled_window.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_ALWAYS);
 
     /* Create buttons for all desktop entries */
     for (auto& entry : desktop_entries) {
         if (std::find(pinned.begin(), pinned.end(), entry.exec) == pinned.end()) {
-             auto glib_exec = Glib::ustring(entry.exec);
-             auto glib_comment = Glib::ustring(entry.comment);
-             auto& ab = window.all_boxes.emplace_back(entry.name,
+             auto& ab = window.all_boxes.emplace_back(std::move(entry.name),
+                                                      std::move(entry.exec),
                                                       std::move(entry.comment),
-                                                      std::move(entry.exec));
-             Gtk::Image* image = app_image(entry.icon);
+                                                      false);
+             Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
              ab.set_image_position(Gtk::POS_TOP);
              ab.set_image(*image);
-             ab.signal_clicked()
-               .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_clicked),
-                                                glib_exec));
-             ab.signal_button_press_event()
-               .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_grid_button_press),
-                                                std::move(glib_exec)));
-             ab.signal_enter_notify_event()
-               .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_entered),
-                                                glib_comment));
-             ab.signal_focus_in_event()
-               .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_focused),
-                                                std::move(glib_comment)));
         }
     }
     window.label_desc.set_text(std::to_string(window.all_boxes.size()));
@@ -344,27 +336,14 @@ int main(int argc, char *argv[]) {
                         continue;
                     }
 
-                    Gtk::Image* image = app_image(de.icon);
-                    auto glib_exec = Glib::ustring(de.exec);
-                    auto glib_comment = Glib::ustring(de.comment);
                     auto& ab = window.fav_boxes.emplace_back(std::move(de.name),
                                                              std::move(de.exec),
-                                                             std::move(de.comment));
+                                                             std::move(de.comment),
+                                                             false);
                     
+                    Gtk::Image* image = app_image(icon_theme_ref, de.icon);
                     ab.set_image_position(Gtk::POS_TOP);
                     ab.set_image(*image);
-                    ab.signal_clicked()
-                      .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_clicked),
-                                                       glib_exec));
-                    ab.signal_enter_notify_event()
-                      .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_entered),
-                                                       glib_comment));
-                    ab.signal_focus_in_event()
-                      .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_focused),
-                                                       std::move(glib_comment)));
-                    ab.signal_button_press_event()
-                      .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_grid_button_press),
-                                                       std::move(glib_exec)));
                 }
             }
         }
@@ -374,26 +353,13 @@ int main(int argc, char *argv[]) {
     if (pins && pinned.size() > 0) {
         for(auto& entry : desktop_entries) {
             if (std::find(pinned.begin(), pinned.end(), entry.exec) != pinned.end()) {
-                auto glib_exec = Glib::ustring(entry.exec);
-                auto glib_comment = Glib::ustring(entry.comment);
                 auto& ab = window.pinned_boxes.emplace_back(std::move(entry.name),
                                                             std::move(entry.exec),
-                                                            std::move(entry.comment));
-                Gtk::Image* image = app_image(entry.icon);
+                                                            std::move(entry.comment),
+                                                            true);
+                Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
                 ab.set_image_position(Gtk::POS_TOP);
                 ab.set_image(*image);
-                ab.signal_clicked()
-                  .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_clicked),
-                                                   glib_exec));
-                ab.signal_enter_notify_event()
-                  .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_entered),
-                                                   glib_comment));
-                ab.signal_focus_in_event()
-                  .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_button_focused),
-                                                   std::move(glib_comment)));
-                ab.signal_button_press_event()
-                  .connect(sigc::bind<Glib::ustring>(sigc::ptr_fun(&on_pinned_button_press),
-                                                   std::move(glib_exec)));
             }
         }
     }
@@ -401,6 +367,7 @@ int main(int argc, char *argv[]) {
     int column = 0;
     int row = 0;
     if (pins && pinned.size() > 0) {
+        window.pinned_grid.freeze_child_notify();
         for (auto& box : window.pinned_boxes) {
             window.pinned_grid.attach(box, column, row, 1, 1);
             if (column < num_col - 1) {
@@ -410,11 +377,13 @@ int main(int argc, char *argv[]) {
                 row++;
             }
         }
+        window.pinned_grid.thaw_child_notify();
     }
 
     column = 0;
     row = 0;
     if (favs && favourites.size() > 0) {
+        window.favs_grid.freeze_child_notify();
         for (auto& box : window.fav_boxes) {
             window.favs_grid.attach(box, column, row, 1, 1);
             if (column < num_col - 1) {
@@ -424,11 +393,13 @@ int main(int argc, char *argv[]) {
                 row++;
             }
         }
+        window.favs_grid.thaw_child_notify();
     }
 
     column = 0;
     row = 0;
     for (auto& box : window.all_boxes) {
+        window.apps_grid.freeze_child_notify();
         window.apps_grid.attach(box, column, row, 1, 1);
         if (column < num_col - 1) {
             column++;
@@ -436,6 +407,7 @@ int main(int argc, char *argv[]) {
             column = 0;
             row++;
         }
+        window.apps_grid.thaw_child_notify();
     }
 
     Gtk::VBox inner_vbox;
@@ -472,17 +444,17 @@ int main(int argc, char *argv[]) {
     if (favs && favourites.size() > 0) {
         auto* first = window.favs_grid.get_child_at(0, 0);
         if (first) {
-            first -> set_property("has_focus", true);
+            first -> grab_focus();
         }
     } else if (pins && pinned.size() > 0) {
         auto* first = window.pinned_grid.get_child_at(0, 0);
         if (first) {
-            first -> set_property("has_focus", true);
+            first -> grab_focus();
         }
     } else {
         auto* first = window.apps_grid.get_child_at(0, 0);
         if (first) {
-            first -> set_property("has_focus", true);
+            first -> grab_focus();
         }
     }
 
@@ -491,7 +463,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Time: " << end_ms - start_ms << "ms\n";
 
-    Gtk::Main::run(window);
+    app->run(window);
 
     return 0;
 }

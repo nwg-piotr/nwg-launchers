@@ -40,3 +40,28 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
     //if the event has not been handled, call the base class
     return Gtk::Window::on_key_press_event(key_event);
 }
+
+/*
+ * Constructor is required for std::vector::emplace_back to work
+ * It is not needed when compiling with C++20 and greater
+ * */
+BarEntry::BarEntry(std::string name, std::string exec, std::string icon)
+ : name(std::move(name)), exec(std::move(exec)), icon(std::move(icon)) {}
+
+BarBox::BarBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment)
+ : AppBox(std::move(name), std::move(exec), std::move(comment)) {}
+
+bool BarBox::on_button_press_event(GdkEventButton* event) {
+    (void)event; // suppress warning
+    
+    this->activate();
+    return false;
+}
+
+void BarBox::on_activate() {
+    exec.append(" &");
+    const char *command = exec.c_str();
+    std::system(command);
+
+    Gtk::Main::quit();
+}

@@ -123,24 +123,17 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
 /*
  * Returns Gtk::Image out of the icon name of file path
  * */
-Gtk::Image* app_image(const std::string& icon) {
-    Glib::RefPtr<Gtk::IconTheme> icon_theme;
+Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon) {
     Glib::RefPtr<Gdk::Pixbuf> pixbuf;
-
-    icon_theme = Gtk::IconTheme::get_default();
-
-    if (icon.find_first_of("/") != 0) {
-        try {
-            pixbuf = icon_theme->load_icon(icon, image_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
-        } catch (...) {
-            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
-        }
-    } else {
-        try {
+    
+    try {
+        if (icon.find_first_of("/") == std::string::npos) {
+            pixbuf = icon_theme.load_icon(icon, image_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
+        } else {
             pixbuf = Gdk::Pixbuf::create_from_file(icon, image_size, image_size, true);
-        } catch (...) {
-            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
         }
+    } catch (...) {
+        pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
     }
     auto image = Gtk::manage(new Gtk::Image(pixbuf));
 
@@ -202,6 +195,17 @@ std::vector<std::string_view> split_string(std::string_view str, std::string_vie
     result.emplace_back(str.substr(previous, current - previous));
 
     return result;
+}
+
+/*
+ * Splits string by delimiter and takes the last piece
+ * */
+std::string_view take_last_by(std::string_view str, std::string_view delimiter) {
+    auto pos = str.find_last_of(delimiter);
+    if (pos != std::string_view::npos) {
+        return str.substr(pos + 1);
+    }
+    return str;   
 }
 
 /*

@@ -14,13 +14,13 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
+#include "nwg_tools.h"
 #include "grid.h"
 
 MainWindow::MainWindow(): CommonWindow("~nwggrid", "~nwggrid") {
-    searchbox.set_text("Type to search");
-    searchbox.set_sensitive(false);
-    searchbox.set_name("searchbox");
-    search_phrase = "";
+    searchbox
+        .signal_search_changed()
+        .connect(sigc::mem_fun(*this, &MainWindow::filter_view));
     apps_grid.set_column_spacing(5);
     apps_grid.set_row_spacing(5);
     apps_grid.set_column_homogeneous(true);
@@ -50,44 +50,48 @@ MainWindow::MainWindow(): CommonWindow("~nwggrid", "~nwggrid") {
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
-    if (key_event -> keyval == GDK_KEY_Escape) {
-        Gtk::Main::quit();
-        return Gtk::Window::on_key_press_event(key_event);
-    } else if (((key_event -> keyval >= GDK_KEY_A && key_event -> keyval <= GDK_KEY_Z)
-        || (key_event -> keyval >= GDK_KEY_a && key_event -> keyval <= GDK_KEY_z)
-        || (key_event -> keyval >= GDK_KEY_0 && key_event -> keyval <= GDK_KEY_9)
-        || (key_event -> keyval == GDK_KEY_space))
-        && key_event->type == GDK_KEY_PRESS) {
-
-        char character = key_event -> keyval;
-        this -> search_phrase += character;
-        this -> searchbox.set_text(this -> search_phrase);
-        this -> filter_view();
-        return true;
-    } else if (key_event -> keyval == GDK_KEY_BackSpace && this -> search_phrase.size() > 0) {
-        this -> search_phrase = this -> search_phrase.substr(0, this -> search_phrase.size() - 1);
-        this -> searchbox.set_text(this -> search_phrase);
-        this -> filter_view();
-        return true;
-    } else if (key_event -> keyval == GDK_KEY_Delete) {
-        this -> search_phrase = "";
-        this -> searchbox.set_text(this -> search_phrase);
-        this -> filter_view();
-        return true;
+    auto key_val = key_event -> keyval;
+    switch (key_val) {
+        case GDK_KEY_Escape:
+            this->quit();
+            break;
+        case GDK_KEY_Delete:
+            this -> searchbox.set_text("");
+            break;
+        case GDK_KEY_Return:
+        case GDK_KEY_Left:
+        case GDK_KEY_Right:
+        case GDK_KEY_Up:
+        case GDK_KEY_Down:
+            break;
+        default:
+            // Focus the searchbox:
+            // because searchbox is now focused,
+            // Gtk::Window will delegate the event there
+            if (!this -> searchbox.is_focus()) {
+                this -> searchbox.grab_focus();
+                // when searchbox receives focus,
+                // its contents become selected
+                // and the incoming character will overwrite them
+                // so we make sure to drop the selection
+                this -> searchbox.prepare_to_insertion();
+            }
     }
-    //if the event has not been handled, call the base class
+    // Delegate handling to the base class
     return Gtk::Window::on_key_press_event(key_event);
 }
 
 void MainWindow::filter_view() {
-    if (this -> search_phrase.size() > 0) {
+    auto search_phrase = searchbox.get_text();
+    if (search_phrase.size() > 0) {
         this -> filtered_boxes.clear();
 
+        auto phrase = search_phrase.casefold();
         for (auto& box : this -> all_boxes) {
-            if (box.name.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos
-                || box.exec.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos
-                || box.comment.uppercase().find(this -> search_phrase.uppercase()) != std::string::npos) {
-
+            if (box.name.casefold().find(phrase) != Glib::ustring::npos ||
+                box.exec.casefold().find(phrase) != Glib::ustring::npos ||
+                box.comment.casefold().find(phrase) != Glib::ustring::npos)
+            {
                 this -> filtered_boxes.emplace_back(&box);
             }
         }
@@ -105,6 +109,7 @@ void MainWindow::rebuild_grid(bool filtered) {
     int column = 0;
     int row = 0;
 
+    this -> apps_grid.freeze_child_notify();
     for (Gtk::Widget *widget : this -> apps_grid.get_children()) {
         this -> apps_grid.remove(*widget);
         widget -> unset_state_flags(Gtk::STATE_FLAG_PRELIGHT);
@@ -121,6 +126,10 @@ void MainWindow::rebuild_grid(bool filtered) {
             }
             cnt++;
         }
+        // Set keyboard focus to the first visible button
+        if (this -> fav_boxes.size() > 0) {
+            fav_boxes.front().grab_focus();
+        }
     } else {
         for (auto& box : this -> all_boxes) {
             this -> apps_grid.attach(box, column, row, 1, 1);
@@ -132,17 +141,65 @@ void MainWindow::rebuild_grid(bool filtered) {
             }
             cnt++;
         }
-    }
-    // Set keyboard focus to the first visible button
-    if (this -> favs_grid.is_visible()) {
-        auto* first = favs_grid.get_child_at(0, 0);
-        if (first) {
-            first -> set_property("has_focus", true);
-        }
-    } else {
-        auto* first = apps_grid.get_child_at(0, 0);
-        if (first) {
-            first -> set_property("has_focus", true);
+        // Set keyboard focus to the first visible button
+        if (this -> all_boxes.size() > 0) {
+            all_boxes.front().grab_focus();
         }
     }
+    this -> apps_grid.thaw_child_notify();
+}
+
+GridBox::GridBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment, bool pinned)
+ : AppBox(std::move(name), std::move(exec), std::move(comment)), pinned(pinned) {}
+
+bool GridBox::on_button_press_event(GdkEventButton* event) {
+    int clicks = 0;
+    try {
+        clicks = cache[exec];
+        clicks++;
+    } catch(...) {
+        clicks = 1;
+    }
+    cache[exec] = clicks;
+    save_json(cache, cache_file);    
+
+    if (pins && event->button == 3) {
+        if (pinned) {
+            remove_and_save_pinned(exec);
+        } else {
+            add_and_save_pinned(exec);
+        }
+    }
+    this -> activate();
+    return false;
+}
+
+bool GridBox::on_focus_in_event(GdkEventFocus* event) {
+    (void) event; // suppress warning
+
+    description -> set_text(comment);
+    return true;
+}
+
+void GridBox::on_enter() {
+    description -> set_text(comment);
+    return AppBox::on_enter();
+}
+
+void GridBox::on_activate() {
+    exec.append(" &");
+    std::system(exec.data());
+    auto toplevel = dynamic_cast<MainWindow*>(this->get_toplevel());
+    toplevel->quit();
+}
+
+GridSearch::GridSearch() {
+    set_placeholder_text("Type to search");
+    set_sensitive(true);
+    set_name("searchbox");
+}
+
+void GridSearch::prepare_to_insertion() {
+    select_region(0, 0);
+    set_position(-1);
 }

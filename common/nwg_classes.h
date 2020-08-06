@@ -27,7 +27,6 @@ class InputParser{
         /// @author iain
         bool cmdOptionExists(std::string_view) const;
 
-        std::string_view empty_string{};
     private:
         std::vector <std::string_view> tokens;
 };
@@ -39,6 +38,7 @@ class CommonWindow : public Gtk::Window {
         virtual ~CommonWindow();
 
         void check_screen();
+        void quit();
 
     protected:
         bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr) override;
@@ -50,7 +50,7 @@ class CommonWindow : public Gtk::Window {
 class AppBox : public Gtk::Button {
     public:
         AppBox();
-        AppBox(Glib::ustring, std::string, Glib::ustring);
+        AppBox(Glib::ustring, Glib::ustring, Glib::ustring);
         AppBox(AppBox&&) = default;
         AppBox(const AppBox&) = delete;
 
