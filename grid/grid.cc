@@ -265,7 +265,6 @@ int main(int argc, char *argv[]) {
     MainWindow window;
 
     window.show();
-    window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
 
     /* Detect focused display geometry: {x, y, width, height} */
     auto geometry = display_geometry(wm, display, window.get_window());

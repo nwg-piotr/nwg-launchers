@@ -49,6 +49,13 @@ MainWindow::MainWindow(): CommonWindow("~nwggrid", "~nwggrid") {
     }
 }
 
+bool MainWindow::on_button_press_event(GdkEventButton *event) {
+    (void) event; // suppress warning
+
+    this->quit();
+    return true;
+}
+
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
     auto key_val = key_event -> keyval;
     switch (key_val) {
@@ -161,7 +168,7 @@ bool GridBox::on_button_press_event(GdkEventButton* event) {
         clicks = 1;
     }
     cache[exec] = clicks;
-    save_json(cache, cache_file);    
+    save_json(cache, cache_file);
 
     if (pins && event->button == 3) {
         if (pinned) {
