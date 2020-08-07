@@ -110,6 +110,11 @@ void MainWindow::filter_view() {
         this -> separator.show();
         this -> rebuild_grid(false);
     }
+    // set focus to the first icon search results
+    auto* first = this -> apps_grid.get_child_at(0, 0);
+    if (first) {
+        first -> grab_focus();
+    }
 }
 
 void MainWindow::rebuild_grid(bool filtered) {
