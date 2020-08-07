@@ -49,6 +49,13 @@ MainWindow::MainWindow(): CommonWindow("~nwggrid", "~nwggrid") {
     }
 }
 
+bool MainWindow::on_button_press_event(GdkEventButton *event) {
+    (void) event; // suppress warning
+
+    this->quit();
+    return true;
+}
+
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
     auto key_val = key_event -> keyval;
     switch (key_val) {
@@ -102,6 +109,11 @@ void MainWindow::filter_view() {
         this -> favs_grid.show();
         this -> separator.show();
         this -> rebuild_grid(false);
+    }
+    // set focus to the first icon search results
+    auto* first = this -> apps_grid.get_child_at(0, 0);
+    if (first) {
+        first -> grab_focus();
     }
 }
 
@@ -161,7 +173,7 @@ bool GridBox::on_button_press_event(GdkEventButton* event) {
         clicks = 1;
     }
     cache[exec] = clicks;
-    save_json(cache, cache_file);    
+    save_json(cache, cache_file);
 
     if (pins && event->button == 3) {
         if (pinned) {
