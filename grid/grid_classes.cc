@@ -165,24 +165,26 @@ GridBox::GridBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment, 
  : AppBox(std::move(name), std::move(exec), std::move(comment)), pinned(pinned) {}
 
 bool GridBox::on_button_press_event(GdkEventButton* event) {
-    int clicks = 0;
-    try {
-        clicks = cache[exec];
-        clicks++;
-    } catch(...) {
-        clicks = 1;
-    }
-    cache[exec] = clicks;
-    save_json(cache, cache_file);
+    std::cout << event -> button << "\n";
+    if (event -> button == 1) {
+        int clicks = 0;
+        try {
+            clicks = cache[exec];
+            clicks++;
+        } catch(...) {
+            clicks = 1;
+        }
+        cache[exec] = clicks;
+        save_json(cache, cache_file);
+        this -> activate();
 
-    if (pins && event->button == 3) {
+    } else if (pins && event -> button == 3) {
         if (pinned) {
             remove_and_save_pinned(exec);
         } else {
             add_and_save_pinned(exec);
         }
     }
-    this -> activate();
     return false;
 }
 
