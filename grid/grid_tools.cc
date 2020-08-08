@@ -55,42 +55,6 @@ std::string get_pinned_path() {
 }
 
 /*
- * Adds pinned entry and saves pinned cache file
- * */
-void add_and_save_pinned(const std::string& command) {
-    // Add if not yet pinned
-    if (std::find(pinned.begin(), pinned.end(), command) == pinned.end()) {
-        pinned.push_back(command);
-        std::ofstream out_file(pinned_file);
-        for (const auto &e : pinned) out_file << e << "\n";
-    }
-}
-
-/*
- * Removes pinned entry and saves pinned cache file
- * */
-void remove_and_save_pinned(const std::string& command) {
-    // Find the item index
-    bool found = false;
-    std::size_t idx;
-    for (std::size_t i = 0; i < pinned.size(); i++) {
-        if (pinned[i] == command) {
-            found = true;
-            idx = i;
-            break;
-        }
-    }
-
-    if (found) {
-        pinned.erase(pinned.begin() + idx);
-        std::ofstream out_file(pinned_file);
-        for (const auto &e : pinned) {
-            out_file << e << "\n";
-        }
-    }
-}
-
-/*
  * Returns locations of .desktop files
  * */
 std::vector<std::string> get_app_dirs() {

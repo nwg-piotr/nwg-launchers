@@ -253,6 +253,7 @@ int main(int argc, char *argv[]) {
         std::cerr << "ERROR: Failed to load icon theme\n";
     }
     auto& icon_theme_ref = *icon_theme.get();
+    icon_theme_ref.add_resource_path(DATA_DIR_STR "/icon-missing.svg");
 
     if (std::filesystem::is_regular_file(css_file)) {
         provider->load_from_path(css_file);
@@ -262,7 +263,7 @@ int main(int argc, char *argv[]) {
         std::cout << "Using " << default_css_file << '\n';
     }
 
-    MainWindow window;
+    MainWindow window{ favourites.size(), pinned.size() };
 
     window.show();
 
@@ -289,174 +290,79 @@ int main(int argc, char *argv[]) {
         window.move(x, y);
     }
 
-    Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
-    outer_box.set_spacing(15);
-
-    // hbox for searchbox
-    Gtk::HBox hbox_header;
-
-    hbox_header.pack_start(window.searchbox, Gtk::PACK_EXPAND_PADDING);
-
-    outer_box.pack_start(hbox_header, Gtk::PACK_SHRINK, Gtk::PACK_EXPAND_PADDING);
-
-    Gtk::ScrolledWindow scrolled_window;
-    scrolled_window.set_propagate_natural_height(true);
-    scrolled_window.set_propagate_natural_width(true);
-    scrolled_window.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_ALWAYS);
-
-    /* Create buttons for all desktop entries */
-    for (auto& entry : desktop_entries) {
-        if (std::find(pinned.begin(), pinned.end(), entry.exec) == pinned.end()) {
-             auto& ab = window.all_boxes.emplace_back(std::move(entry.name),
-                                                      std::move(entry.exec),
-                                                      std::move(entry.comment),
-                                                      false);
-             Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
-             ab.set_image_position(Gtk::POS_TOP);
-             ab.set_image(*image);
+    /* Create buttons for pinned entries */
+    for (auto& pin : pinned) {
+        auto find = [&pin](auto& container) {
+            return std::find_if(container.begin(), container.end(), [&pin](auto& e) {
+                return pin == e.exec;
+            });
+        };
+        auto iter = find(desktop_entries);
+        if (iter != desktop_entries.end()) {
+            auto& entry = *iter;
+            auto found = find(favourites) != favourites.end();
+            // 0 -> Common
+            // 1 -> Favorite
+            auto fav_tag = GridBox::FavTag{ found };
+            auto& ab = window.emplace_box(std::move(entry.name),
+                                          std::move(entry.exec),
+                                          std::move(entry.comment),
+                                          fav_tag,
+                                          GridBox::Pinned);
+            Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
+            ab.set_image_position(Gtk::POS_TOP);
+            ab.set_image(*image);
         }
     }
-    window.label_desc.set_text(std::to_string(window.all_boxes.size()));
 
     /* Create buttons for favourites */
-    if (favs) {
-        for (auto& entry : favourites) {
-            for (auto& de : desktop_entries) {
-                if (de.exec == entry.exec) {
+    for (auto& entry : favourites) {
+        for (auto& de : desktop_entries) {
+            if (entry.exec == de.exec) {
 
-                    // avoid adding twice the same exec w/ another name
-                    bool already_added {false};
-                    for (auto& app_box : window.fav_boxes) {
-                        if (app_box.exec == de.exec) {
-                            already_added = true;
-                            break;
-                        }
-                    }
-                    if (already_added) {
-                        continue;
-                    }
+                // avoid adding twice the same exec w/ another name
+                //bool already_added {false};
+                //for (auto& app_box : window.fav_boxes) {
+                //    if (app_box.exec == de.exec) {
+                //        already_added = true;
+                //        break;
+                //    }
+                //}
+                //if (already_added) {
+                //    continue;                  // TODO: reimpl this
+                //}
 
-                    auto& ab = window.fav_boxes.emplace_back(std::move(de.name),
-                                                             std::move(de.exec),
-                                                             std::move(de.comment),
-                                                             false);
-                    
-                    Gtk::Image* image = app_image(icon_theme_ref, de.icon);
-                    ab.set_image_position(Gtk::POS_TOP);
-                    ab.set_image(*image);
-                }
-            }
-        }
-    }
-
-    /* Create buttons for pinned entries */
-    if (pins && pinned.size() > 0) {
-        for(auto& entry : desktop_entries) {
-            if (std::find(pinned.begin(), pinned.end(), entry.exec) != pinned.end()) {
-                auto& ab = window.pinned_boxes.emplace_back(std::move(entry.name),
-                                                            std::move(entry.exec),
-                                                            std::move(entry.comment),
-                                                            true);
-                Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
+                auto& ab = window.emplace_box(std::move(de.name),
+                                              std::move(de.exec),
+                                              std::move(de.comment),
+                                              GridBox::Favorite, 
+                                              GridBox::Unpinned);
+                
+                Gtk::Image* image = app_image(icon_theme_ref, de.icon);
                 ab.set_image_position(Gtk::POS_TOP);
                 ab.set_image(*image);
             }
         }
     }
 
-    int column = 0;
-    int row = 0;
-    if (pins && pinned.size() > 0) {
-        window.pinned_grid.freeze_child_notify();
-        for (auto& box : window.pinned_boxes) {
-            window.pinned_grid.attach(box, column, row, 1, 1);
-            if (column < num_col - 1) {
-                column++;
-            } else {
-                column = 0;
-                row++;
-            }
-        }
-        window.pinned_grid.thaw_child_notify();
-    }
-
-    column = 0;
-    row = 0;
-    if (favs && favourites.size() > 0) {
-        window.favs_grid.freeze_child_notify();
-        for (auto& box : window.fav_boxes) {
-            window.favs_grid.attach(box, column, row, 1, 1);
-            if (column < num_col - 1) {
-                column++;
-            } else {
-                column = 0;
-                row++;
-            }
-        }
-        window.favs_grid.thaw_child_notify();
-    }
-
-    column = 0;
-    row = 0;
-    for (auto& box : window.all_boxes) {
-        window.apps_grid.freeze_child_notify();
-        window.apps_grid.attach(box, column, row, 1, 1);
-        if (column < num_col - 1) {
-            column++;
-        } else {
-            column = 0;
-            row++;
-        }
-        window.apps_grid.thaw_child_notify();
-    }
-
-    Gtk::VBox inner_vbox;
-
-    Gtk::HBox pinned_hbox;
-    pinned_hbox.pack_start(window.pinned_grid, true, false, 0);
-    inner_vbox.pack_start(pinned_hbox, false, false, 5);
-    if (pins && pinned.size() > 0) {
-        inner_vbox.pack_start(window.separator1, false, true, 0);
-    }
-
-    Gtk::HBox favs_hbox;
-    favs_hbox.pack_start(window.favs_grid, true, false, 0);
-    inner_vbox.pack_start(favs_hbox, false, false, 5);
-    if (favs && favourites.size() > 0) {
-        inner_vbox.pack_start(window.separator, false, true, 0);
-    }
-
-    Gtk::HBox apps_hbox;
-    apps_hbox.pack_start(window.apps_grid, Gtk::PACK_EXPAND_PADDING);
-    inner_vbox.pack_start(apps_hbox, true, true, 0);
-
-    scrolled_window.add(inner_vbox);
-
-    outer_box.pack_start(scrolled_window, Gtk::PACK_EXPAND_WIDGET);
-    scrolled_window.show_all_children();
-
-    outer_box.pack_start(window.label_desc, Gtk::PACK_SHRINK);
-
-    window.add(outer_box);
-    window.show_all_children();
-
-    // Set keyboard focus to the first visible button
-    if (favs && favourites.size() > 0) {
-        auto* first = window.favs_grid.get_child_at(0, 0);
-        if (first) {
-            first -> grab_focus();
-        }
-    } else if (pins && pinned.size() > 0) {
-        auto* first = window.pinned_grid.get_child_at(0, 0);
-        if (first) {
-            first -> grab_focus();
-        }
-    } else {
-        auto* first = window.apps_grid.get_child_at(0, 0);
-        if (first) {
-            first -> grab_focus();
+    /* Create buttons for the rest of entries */
+    for (auto& entry : desktop_entries) {
+        // if it's empty, it was probably moved from during the previous steps
+        // there should be some better way, but it works
+        if (!entry.exec.empty()) {
+             auto& ab = window.emplace_box(std::move(entry.name),
+                                           std::move(entry.exec),
+                                           std::move(entry.comment),
+                                           GridBox::Common,
+                                           GridBox::Unpinned);
+             Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
+             ab.set_image_position(Gtk::POS_TOP);
+             ab.set_image(*image);
         }
     }
+
+    
+    window.build_grids();
 
     gettimeofday(&tp, NULL);
     long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;

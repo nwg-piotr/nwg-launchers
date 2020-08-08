@@ -63,8 +63,6 @@ int main(int argc, char *argv[]) {
     }
     save_string_to_file(mypid, pid_file);
 
-    std::string lang ("");
-
     InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
         std::cout << HELP_MESSAGE;

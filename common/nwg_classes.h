@@ -38,8 +38,6 @@ class CommonWindow : public Gtk::Window {
         virtual ~CommonWindow();
 
         void check_screen();
-        void quit();
-
     protected:
         bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr) override;
         void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) override;

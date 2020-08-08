@@ -144,20 +144,14 @@ Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon)
  * Returns current locale
  * */
 std::string get_locale() {
-    std::string l {"en"};
-    if (getenv("LANG") != NULL) {
-        char* env_val = getenv("LANG");
-        std::string loc(env_val);
-        if (!loc.empty()) {
-            if (loc.find("_") != std::string::npos) {
-                int idx = loc.find_first_of("_");
-                l = loc.substr(0, idx);
-            } else {
-                l = loc;
-            }
+    std::string loc = getenv("LANG");
+    if (!loc.empty()) {
+        if (loc.find("_") != std::string::npos) {
+            auto idx = loc.find_first_of("_");
+            return loc.substr(0, idx);
         }
     }
-    return l;
+    return "en";
 }
 
 /*
