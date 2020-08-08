@@ -305,6 +305,7 @@ int main(int argc, char *argv[]) {
     scrolled_window.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_ALWAYS);
 
     /* Create buttons for all desktop entries */
+    /* @Siborgium: We can not std::move them here, it breaks favourites: (de.exec == entry.exec) is always false */
     for (auto& entry : desktop_entries) {
         if (std::find(pinned.begin(), pinned.end(), entry.exec) == pinned.end()) {
              auto& ab = window.all_boxes.emplace_back(entry.name,
