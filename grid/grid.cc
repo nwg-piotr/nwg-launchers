@@ -307,9 +307,9 @@ int main(int argc, char *argv[]) {
     /* Create buttons for all desktop entries */
     for (auto& entry : desktop_entries) {
         if (std::find(pinned.begin(), pinned.end(), entry.exec) == pinned.end()) {
-             auto& ab = window.all_boxes.emplace_back(std::move(entry.name),
-                                                      std::move(entry.exec),
-                                                      std::move(entry.comment),
+             auto& ab = window.all_boxes.emplace_back(entry.name,
+                                                      entry.exec,
+                                                      entry.comment,
                                                       false);
              Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
              ab.set_image_position(Gtk::POS_TOP);
@@ -319,7 +319,7 @@ int main(int argc, char *argv[]) {
     window.label_desc.set_text(std::to_string(window.all_boxes.size()));
 
     /* Create buttons for favourites */
-    if (favs) {
+    if (favs && favourites.size() > 0) {
         for (auto& entry : favourites) {
             for (auto& de : desktop_entries) {
                 if (de.exec == entry.exec) {
