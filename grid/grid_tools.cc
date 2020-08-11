@@ -93,6 +93,8 @@ std::vector<std::string> list_entries(const std::vector<std::string>& paths) {
  * Parses .desktop file to DesktopEntry struct
  * */
 DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
+    using namespace std::literals::string_view_literals;
+
     DesktopEntry entry;
 
     std::ifstream file(path);
@@ -106,55 +108,70 @@ DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
     std::string comment_ln {};      // localized: Comment[ln]=
     std::string loc_comment = "Comment[" + lang + "]=";
 
+    auto header = "[Desktop Entry]"sv;
+    auto name_ = "Name="sv;
+    auto exec_ = "Exec="sv;
+    auto icon_ = "Icon="sv;
+    auto comment_ = "Comment="sv;
+
+    // Skip everything not related
     while (std::getline(file, str)) {
-        auto view = std::string_view(str.data(), str.size());
-        bool read_me = true;
-        if (view.find("[") == 0) {
-            read_me = (view.find("[Desktop Entry") != std::string_view::npos);
-            if (!read_me) {
-                break;
-            } else {
-                continue;
-            }
-        }
-        if (read_me) {
-            if (view.find(loc_name) == 0) {
-                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
-                    name_ln = view.substr(idx + 1);
-                }
-            }
-            if (view.find("Name=") == 0) {
-                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
-                    name = view.substr(idx + 1);
-                }
-            }
-            if (view.find("Exec=") == 0) {
-                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
-                    auto val = view.substr(idx + 1);
-                    // strip ' %' and following
-                    if (auto idx = val.find_first_of("%"); idx != std::string_view::npos) {
-                        val = val.substr(0, idx - 1);
-                    }
-                    entry.exec = std::move(val);
-                }
-            }
-            if (view.find("Icon=") == 0) {
-                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
-                    entry.icon = view.substr(idx + 1);
-                }
-            }
-            if (view.find("Comment=") == 0) {
-                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
-                    comment = view.substr(idx + 1);
-                }
-            }
-            if (view.find(loc_comment) == 0) {
-                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
-                    comment_ln = view.substr(idx + 1);
-                }
-            }
+        str.resize(header.size());
+        if (str == header) {
+            break;
         }
     }
+    // Repeat until the next section
+    while (std::getline(file, str)) {
+        if (str.empty()) {
+            continue;
+        }
+        if (str[0] == '[') {
+            break;
+        }
+        auto view = std::string_view{str};
+        auto view_len = std::size(view);
+        struct Result {
+            bool   found;
+            size_t index;
+        };
+        auto strip_prefix = [&view, view_len](auto& prefix) {
+            auto len = std::min(view_len, std::size(prefix));
+            return Result {
+                prefix == view.substr(0, len),
+                len
+            };
+        };
+        if (auto [r, i] = strip_prefix(loc_name); r) {
+            name_ln = view.substr(i);
+            continue;
+        }
+        if (auto [r, i] = strip_prefix(name_); r) {
+            name = view.substr(i);
+            continue;
+        }
+        if (auto [r, i] = strip_prefix(exec_); r) {
+            auto val = view.substr(i);
+            if (auto idx = val.find_first_of("%"); idx != std::string_view::npos) {
+                val = val.substr(0, idx - 1);
+            }
+            entry.exec = val;
+            continue;
+        }
+        if (auto [r, i] = strip_prefix(icon_); r) {
+            entry.icon = view.substr(i);
+            continue;
+        }
+        if (auto [r, i] = strip_prefix(comment_); r) {
+            comment = view.substr(i);
+            continue;
+        }
+        if (auto [r, i] = strip_prefix(loc_comment); r) {
+            comment_ln = view.substr(i);
+            continue;
+        }
+    }
+
     if (name_ln.empty()) {
         entry.name = std::move(name);
     } else {
@@ -183,7 +200,7 @@ ns::json get_cache(const std::string& cache_file) {
  * */
 std::vector<std::string> get_pinned(const std::string& pinned_file) {
     std::vector<std::string> lines;
-    std::ifstream in(pinned_file.c_str());
+    std::ifstream in(pinned_file);
     if(!in) {
         std::cerr << "Could not find " << pinned_file << ", creating!" << std::endl;
         save_string_to_file("", pinned_file);
