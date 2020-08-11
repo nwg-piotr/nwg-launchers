@@ -114,49 +114,6 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
     return Gtk::Window::on_key_press_event(key_event);
 }
 
-void MainWindow::filter_view() {
-    auto search_phrase = searchbox.get_text();
-    auto filtered = search_phrase.size() > 0;
-    if (filtered) {
-        auto phrase = search_phrase.casefold();
-        auto matches = [&phrase](auto& str) {
-            return str.casefold().find(phrase) != Glib::ustring::npos;
-        };
-
-        this -> filtered_boxes.clear();
-        for (auto& box : this -> apps_boxes) {
-            if (matches(box->name) || matches(box->exec) || matches(box->comment)) {
-                this -> filtered_boxes.emplace_back(box);
-            }
-        }
-        this -> favs_grid.hide();
-        this -> separator.hide();
-    } else {
-        this -> favs_grid.show();
-        this -> separator.show();
-    }
-    this -> rebuild_grid(filtered);
-}
-
-void MainWindow::clear_grids() {
-    this -> pinned_grid.freeze_child_notify();
-    this -> favs_grid.freeze_child_notify();
-    this -> apps_grid.freeze_child_notify();
-
-    auto clear_grid = [](auto& grid) {
-        grid.foreach([&grid](auto& child) {
-            grid.remove(child);
-        });
-    };
-    clear_grid(this -> pinned_grid);
-    clear_grid(this -> favs_grid);
-    clear_grid(this -> apps_grid);
-    
-    this -> pinned_grid.thaw_child_notify();
-    this -> favs_grid.thaw_child_notify();
-    this -> apps_grid.thaw_child_notify();
-}
-
 inline auto advance = [](auto& x, auto& y) {
     x++;
     if (x == num_col) {
@@ -195,6 +152,42 @@ inline auto fill_hole = [](auto x_, auto y_, auto& grid, auto x__, auto y__) {
     }
 };
 
+void MainWindow::filter_view() {
+    auto& grid = apps_grid;
+    auto* container = &apps_boxes;
+
+    auto search_phrase = searchbox.get_text();
+    auto filtered = search_phrase.size() > 0;
+    if (filtered) {
+        auto phrase = search_phrase.casefold();
+        auto matches = [&phrase](auto& str) {
+            return str.casefold().find(phrase) != Glib::ustring::npos;
+        };
+
+        this -> filtered_boxes.clear();
+        for (auto& box : this -> apps_boxes) {
+            if (matches(box->name) || matches(box->exec) || matches(box->comment)) {
+                this -> filtered_boxes.emplace_back(box);
+            }
+        }
+        this -> favs_grid.hide();
+        this -> separator.hide();
+
+        container = &this->filtered_boxes;
+    } else {
+        this -> favs_grid.show();
+        this -> separator.show();
+    }
+    grid.freeze_child_notify();
+    grid.foreach([&grid](auto& child) {
+        grid.remove(child);
+        child.unset_state_flags(Gtk::STATE_FLAG_PRELIGHT);
+    });
+    build_grid(grid, *container);
+    this -> focus_first_box();
+    grid.thaw_child_notify();
+}
+
 void MainWindow::build_grids() {
     this -> pinned_grid.freeze_child_notify();
     this -> favs_grid.freeze_child_notify();
@@ -215,22 +208,6 @@ void MainWindow::build_grids() {
     this -> apps_grid.thaw_child_notify();
 
     this -> set_description(std::to_string(apps_boxes.size()));
-}
-
-void MainWindow::rebuild_grid(bool filtered) {
-    auto& grid = this->apps_grid;
-    auto* container = &this->apps_boxes;
-    if (filtered) {
-        container = &this->filtered_boxes;
-    }
-    grid.freeze_child_notify();
-    grid.foreach([&grid](auto& child) {
-        grid.remove(child);
-        child.unset_state_flags(Gtk::STATE_FLAG_PRELIGHT);
-    });
-    build_grid(grid, *container);
-    this -> focus_first_box();
-    grid.thaw_child_notify();
 }
 
 void MainWindow::focus_first_box() {

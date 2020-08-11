@@ -103,10 +103,8 @@ class MainWindow : public CommonWindow {
         std::vector<GridBox*> pinned_boxes {};   // attached to pinned_grid
         bool pins_changed = false;
 
-        void clear_grids();
         void focus_first_box();
         void filter_view();
-        void rebuild_grid(bool filtered);
 };
 
 template<typename ... Args>
