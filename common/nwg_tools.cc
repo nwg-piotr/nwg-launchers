@@ -146,10 +146,11 @@ Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon)
 std::string get_locale() {
     std::string loc = getenv("LANG");
     if (!loc.empty()) {
-        if (loc.find("_") != std::string::npos) {
-            auto idx = loc.find_first_of("_");
-            return loc.substr(0, idx);
+        auto idx = loc.find_first_of("_");
+        if (idx != std::string::npos) {
+            loc.resize(idx);
         }
+        return loc;
     }
     return "en";
 }
