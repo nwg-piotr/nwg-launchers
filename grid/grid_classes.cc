@@ -23,6 +23,9 @@ MainWindow::MainWindow(size_t fav_size, size_t pinned_size)
     searchbox
         .signal_search_changed()
         .connect(sigc::mem_fun(*this, &MainWindow::filter_view));
+    searchbox.set_placeholder_text("Type to search");
+    searchbox.set_sensitive(true);
+    searchbox.set_name("searchbox");
     apps_grid.set_column_spacing(5);
     apps_grid.set_row_spacing(5);
     apps_grid.set_column_homogeneous(true);
@@ -107,7 +110,9 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
                 // its contents become selected
                 // and the incoming character will overwrite them
                 // so we make sure to drop the selection
-                this -> searchbox.prepare_to_insertion();
+                this -> searchbox.select_region(0, 0);
+                this -> searchbox.set_position(-1);
+            
             }
     }
     // Delegate handling to the base class
@@ -234,21 +239,14 @@ void MainWindow::toggle_pinned(GridBox& box) {
     auto is_pinned = box.pinned == GridBox::Pinned;
     box.pinned = GridBox::PinTag{ !is_pinned };
 
-    // init just to use type deduction
     auto* from_grid = &this->apps_grid;
     auto* from = &this->apps_boxes;
 
-    // actual initialization here
-    switch (box.favorite) {
-        case GridBox::Common:
-            from = &this->apps_boxes;
-            from_grid = &this->apps_grid;
-            break;
-        case GridBox::Favorite:
-            from = &this->fav_boxes;
-            from_grid = &this->favs_grid;
-            break;
+    if (box.favorite) {
+        from_grid = &this->favs_grid;
+        from = &this->fav_boxes;
     }
+
     auto* to = &this->pinned_boxes;
     auto* to_grid = &this->pinned_grid;
     if (is_pinned) {
@@ -347,15 +345,4 @@ void GridBox::on_activate() {
     std::system(exec.data());
     auto toplevel = dynamic_cast<MainWindow*>(this->get_toplevel());
     toplevel->close();
-}
-
-GridSearch::GridSearch() {
-    set_placeholder_text("Type to search");
-    set_sensitive(true);
-    set_name("searchbox");
-}
-
-void GridSearch::prepare_to_insertion() {
-    select_region(0, 0);
-    set_position(-1);
 }

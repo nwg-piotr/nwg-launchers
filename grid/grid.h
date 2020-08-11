@@ -60,17 +60,11 @@ public:
     PinTag pinned;
 };
 
-class GridSearch : public Gtk::SearchEntry {
-public:
-    GridSearch();
-    void prepare_to_insertion();
-};
-
 class MainWindow : public CommonWindow {
     public:
         MainWindow(size_t, size_t);
 
-        GridSearch searchbox;                    // Search apps
+        Gtk::SearchEntry searchbox;              // Search apps
         Gtk::Label description;                  // To display .desktop entry Comment field at the bottom
         Gtk::Grid apps_grid;                     // All application buttons grid
         Gtk::Grid favs_grid;                     // Favourites grid above
@@ -86,7 +80,7 @@ class MainWindow : public CommonWindow {
         Gtk::ScrolledWindow scrolled_window;
 
         template<typename ... Args>
-        GridBox& emplace_box(Args&& ... args);  // emplace box
+        GridBox& emplace_box(Args&& ... args);   // emplace box
 
         void build_grids();
         void toggle_pinned(GridBox& box);
