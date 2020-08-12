@@ -202,8 +202,6 @@ void MainWindow::build_grids() {
     build_grid(this->favs_grid, this->fav_boxes);
     build_grid(this->apps_grid, this->apps_boxes);
 
-    this -> focus_first_box();
-
     this -> pinned_grid.show_all_children();
     this -> favs_grid.show_all_children();
     this -> apps_grid.show_all_children();
@@ -285,8 +283,17 @@ void MainWindow::toggle_pinned(GridBox& box) {
     fill_hole(x, y, *from_grid, x_, y_);
     from_grid->thaw_child_notify();    
 
-    to->push_back(&box);
-    to_grid->attach(box, xnew, ynew, 1, 1);
+    auto name = box.name.casefold();
+    auto iter = std::find_if(to->begin(), to->end(), [&name](auto e) {
+        return name < e->name.casefold();
+    });
+    to->insert(iter, &box);
+    to_grid->foreach([to_grid](auto& child) {
+        to_grid->remove(child);
+    });
+    build_grid(*to_grid, *to);
+    //to->push_back(&box);
+    //to_grid->attach(box, xnew, ynew, 1, 1);
 }
 
 /*
