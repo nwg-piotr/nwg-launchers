@@ -8,6 +8,7 @@
 
 #include <filesystem>
 #include <string_view>
+#include <variant>
 
 #include "nwg_tools.h"
 #include "grid.h"
@@ -89,6 +90,11 @@ std::vector<std::string> list_entries(const std::vector<std::string>& paths) {
     return desktop_paths;
 }
 
+// desktop_entry helpers
+template<typename> inline constexpr bool lazy_false_v = false;
+template<typename ... Ts> struct visitor : Ts... { using Ts::operator()...; };
+template<typename ... Ts> visitor(Ts...) -> visitor<Ts...>;
+
 /*
  * Parses .desktop file to DesktopEntry struct
  * */
@@ -108,13 +114,28 @@ DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
     std::string comment_ln {};      // localized: Comment[ln]=
     std::string loc_comment = "Comment[" + lang + "]=";
 
-    auto header = "[Desktop Entry]"sv;
-    auto name_ = "Name="sv;
-    auto exec_ = "Exec="sv;
-    auto icon_ = "Icon="sv;
-    auto comment_ = "Comment="sv;
+    struct nop_t { } nop;
+    struct cut_t { } cut;
+    struct Match {
+        std::string_view           prefix;
+        std::string*               dest;
+        std::variant<nop_t, cut_t> tag;
+    };
+    struct Result {
+        bool   found;
+        size_t index;
+    };
+    Match matches[] = {
+        { "Name="sv,    &name,       nop },
+        { loc_name,     &name_ln,    nop },
+        { "Exec="sv,    &entry.exec, cut },
+        { "Icon="sv,    &entry.icon, nop },
+        { "Comment="sv, &comment,    nop },
+        { loc_comment,  &comment_ln, nop }
+    };
 
     // Skip everything not related
+    constexpr auto header = "[Desktop Entry]"sv;
     while (std::getline(file, str)) {
         str.resize(header.size());
         if (str == header) {
@@ -123,52 +144,34 @@ DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
     }
     // Repeat until the next section
     while (std::getline(file, str)) {
-        if (str.empty()) {
-            continue;
-        }
-        if (str[0] == '[') {
+        if (str[0] == '[') { // new section begins, break
             break;
         }
         auto view = std::string_view{str};
         auto view_len = std::size(view);
-        struct Result {
-            bool   found;
-            size_t index;
-        };
-        auto strip_prefix = [&view, view_len](auto& prefix) {
+        auto try_strip_prefix = [&view, view_len](auto& prefix) {
             auto len = std::min(view_len, std::size(prefix));
             return Result {
                 prefix == view.substr(0, len),
                 len
             };
         };
-        if (auto [r, i] = strip_prefix(loc_name); r) {
-            name_ln = view.substr(i);
-            continue;
-        }
-        if (auto [r, i] = strip_prefix(name_); r) {
-            name = view.substr(i);
-            continue;
-        }
-        if (auto [r, i] = strip_prefix(exec_); r) {
-            auto val = view.substr(i);
-            if (auto idx = val.find_first_of("%"); idx != std::string_view::npos) {
-                val = val.substr(0, idx - 1);
+        for (auto& [prefix, dest, tag] : matches) {
+            auto [ok, pos] = try_strip_prefix(prefix);
+            if (ok) {
+                std::visit(visitor {
+                    [dest, pos, &view](nop_t) { *dest = view.substr(pos); },
+                    [dest, pos, &view](cut_t) {
+                        auto idx = view.find_first_of('%', pos);
+                        if (idx == std::string_view::npos) {
+                            idx = std::size(view);
+                        }
+                        *dest = view.substr(pos, idx - pos);
+                    }
+                },
+                tag);
+                break;
             }
-            entry.exec = val;
-            continue;
-        }
-        if (auto [r, i] = strip_prefix(icon_); r) {
-            entry.icon = view.substr(i);
-            continue;
-        }
-        if (auto [r, i] = strip_prefix(comment_); r) {
-            comment = view.substr(i);
-            continue;
-        }
-        if (auto [r, i] = strip_prefix(loc_comment); r) {
-            comment_ln = view.substr(i);
-            continue;
         }
     }
 
