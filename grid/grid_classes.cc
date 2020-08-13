@@ -85,6 +85,13 @@ MainWindow::MainWindow(size_t fav_size, size_t pinned_size)
     this -> show_all_children();
 }
 
+bool MainWindow::on_button_press_event(GdkEventButton *event) {
+    (void) event; // suppress warning
+
+    this->close();
+    return true;
+}
+
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
     auto key_val = key_event -> keyval;
     switch (key_val) {
