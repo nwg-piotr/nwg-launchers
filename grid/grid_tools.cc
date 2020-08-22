@@ -154,6 +154,14 @@ DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
             }
         }
         if (read_me) {
+            // This is to resolve `Respect the NoDisplay setting in .desktop files #84`,
+            // see https://wiki.archlinux.org/index.php/desktop_entries#Hide_desktop_entries.
+            // The ~/.local/share/applications folder is going to be read first. Entries created from here won't be
+            // overwritten from e.g. /usr/share/applications, as duplicates are being skipped.
+            if (view.find("NoDisplay=true") == 0) {
+                entry.no_display = true;
+            }
+
             if (view.find(loc_name) == 0) {
                 if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
                     name_ln = view.substr(idx + 1);

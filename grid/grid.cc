@@ -307,14 +307,17 @@ int main(int argc, char *argv[]) {
     /* Create buttons for all desktop entries */
     /* @Siborgium: We can not std::move them here, it breaks favourites: (de.exec == entry.exec) is always false */
     for (auto& entry : desktop_entries) {
-        if (std::find(pinned.begin(), pinned.end(), entry.exec) == pinned.end()) {
-             auto& ab = window.all_boxes.emplace_back(entry.name,
-                                                      entry.exec,
-                                                      entry.comment,
-                                                      false);
-             Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
-             ab.set_image_position(Gtk::POS_TOP);
-             ab.set_image(*image);
+        // Ignore .desktop entries with NoDisplay=true
+        if (!entry.no_display) {
+            if (std::find(pinned.begin(), pinned.end(), entry.exec) == pinned.end()) {
+                 auto& ab = window.all_boxes.emplace_back(entry.name,
+                                                          entry.exec,
+                                                          entry.comment,
+                                                          false);
+                 Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
+                 ab.set_image_position(Gtk::POS_TOP);
+                 ab.set_image(*image);
+            }
         }
     }
     window.label_desc.set_text(std::to_string(window.all_boxes.size()));
@@ -323,7 +326,7 @@ int main(int argc, char *argv[]) {
     if (favs && favourites.size() > 0) {
         for (auto& entry : favourites) {
             for (auto& de : desktop_entries) {
-                if (de.exec == entry.exec) {
+                if (de.exec == entry.exec && !de.no_display) {
 
                     // avoid adding twice the same exec w/ another name
                     bool already_added {false};
@@ -353,14 +356,16 @@ int main(int argc, char *argv[]) {
     /* Create buttons for pinned entries */
     if (pins && pinned.size() > 0) {
         for(auto& entry : desktop_entries) {
-            if (std::find(pinned.begin(), pinned.end(), entry.exec) != pinned.end()) {
-                auto& ab = window.pinned_boxes.emplace_back(std::move(entry.name),
-                                                            std::move(entry.exec),
-                                                            std::move(entry.comment),
-                                                            true);
-                Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
-                ab.set_image_position(Gtk::POS_TOP);
-                ab.set_image(*image);
+            if (!entry.no_display) {
+                if (std::find(pinned.begin(), pinned.end(), entry.exec) != pinned.end()) {
+                    auto& ab = window.pinned_boxes.emplace_back(std::move(entry.name),
+                                                                std::move(entry.exec),
+                                                                std::move(entry.comment),
+                                                                true);
+                    Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
+                    ab.set_image_position(Gtk::POS_TOP);
+                    ab.set_image(*image);
+                }
             }
         }
     }

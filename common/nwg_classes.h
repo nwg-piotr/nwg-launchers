@@ -76,4 +76,5 @@ struct DesktopEntry {
     std::string exec;
     std::string icon;
     std::string comment;
+    bool no_display {false};
 };
