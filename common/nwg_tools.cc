@@ -125,7 +125,7 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
  * */
 Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon) {
     Glib::RefPtr<Gdk::Pixbuf> pixbuf;
-    
+
     try {
         if (icon.find_first_of("/") == std::string::npos) {
             pixbuf = icon_theme.load_icon(icon, image_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
@@ -205,7 +205,7 @@ std::string_view take_last_by(std::string_view str, std::string_view delimiter) 
     if (pos != std::string_view::npos) {
         return str.substr(pos + 1);
     }
-    return str;   
+    return str;
 }
 
 /*
@@ -224,6 +224,13 @@ ns::json string_to_json(const std::string& jsonString) {
 void save_json(const ns::json& json_obj, const std::string& filename) {
     std::ofstream o(filename);
     o << std::setw(2) << json_obj << std::endl;
+}
+
+/*
+ * Sets RGBA background according to hex strings
+* */
+void set_background(const std::string_view s) {
+    std::cout << s << " | " << background.alpha << "\n";
 }
 
 /*

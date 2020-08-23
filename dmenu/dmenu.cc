@@ -26,7 +26,7 @@ int image_size {72};                        // make linker happy
 
 std::string h_align {""};                   // horizontal alignment
 std::string v_align {""};                   // vertical alignment
-double opacity (0.3);                       // overlay window opacity
+RGBA background = {0.0, 0.0, 0.0, 0.3};
 std::string wm {""};                        // detected or forced window manager name
 std::string settings_file {""};
 
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
         try {
             auto o = std::stod(std::string{opa});
             if (o >= 0.0 && o <= 1.0) {
-                opacity = o;
+                background.alpha = o;
             } else {
                 std::cerr << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
             }
@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
         }
 
         /* Sort case insensitive */
-        std::sort(all_commands.begin(), all_commands.end(), [](auto& a, auto& b) { 
+        std::sort(all_commands.begin(), all_commands.end(), [](auto& a, auto& b) {
             return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(), [](auto a, auto b) {
                 return std::tolower(a) < std::tolower(b);
             });

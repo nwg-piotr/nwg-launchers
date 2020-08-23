@@ -17,9 +17,9 @@
 #include "bar.h"
 
 int image_size {72};            // button image size in pixels
-double opacity {0.9};           // overlay window opacity
+RGBA background = {0.0, 0.0, 0.0, 0.9};
 std::string wm {""};            // detected or forced window manager name
-const char* const HELP_MESSAGE = 
+const char* const HELP_MESSAGE =
 "GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
 Options:\n\
 -h            show this help message and exit\n\
@@ -45,9 +45,9 @@ int main(int argc, char *argv[]) {
 
     pid_t pid = getpid();
     std::string mypid = std::to_string(pid);
-    
+
     std::string pid_file = "/var/run/user/" + std::to_string(getuid()) + "/nwgbar.pid";
-    
+
     int saved_pid {};
     if (std::ifstream(pid_file)) {
         try {
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
     if (!css_name.empty()){
         custom_css_file = css_name;
     }
-    
+
     auto wm_name = input.getCmdOption("-wm");
     if (!wm_name.empty()){
         wm = wm_name;
@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
         try {
             auto o = std::stod(std::string{opa});
             if (o >= 0.0 && o <= 1.0) {
-                opacity = o;
+                background.alpha = o;
             } else {
                 std::cerr << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
             }
@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
     if (wm.empty()) {
         wm = detect_wm();
     }
-    
+
     std::cout << "WM: " << wm << "\n";
 
     /* turn off borders, enable floating on sway */

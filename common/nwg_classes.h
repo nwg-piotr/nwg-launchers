@@ -31,7 +31,6 @@ class InputParser{
         std::vector <std::string_view> tokens;
 };
 
-extern double opacity;
 class CommonWindow : public Gtk::Window {
     public:
         CommonWindow(const Glib::ustring&, const Glib::ustring&);
@@ -78,3 +77,11 @@ struct DesktopEntry {
     std::string comment;
     bool no_display {false};
 };
+
+struct RGBA {
+    double red;
+    double green;
+    double blue;
+    double alpha;
+};
+extern RGBA background;

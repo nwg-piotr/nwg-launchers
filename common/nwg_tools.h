@@ -36,6 +36,7 @@ std::string_view take_last_by(std::string_view, std::string_view);
 
 ns::json string_to_json(const std::string&);
 void save_json(const ns::json&, const std::string&);
+void set_background(const std::string_view);
 
 std::string get_output(const std::string&);
 
