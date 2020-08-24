@@ -2,6 +2,8 @@
  * Tools for nwg-launchers
  * Copyright (c) 2020 Érico Nogueira
  * e-mail: ericonr@disroot.org
+ * Copyright (c) 2020 Piotr Miller
+ * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
  * License: GPL3
@@ -36,6 +38,7 @@ std::string_view take_last_by(std::string_view, std::string_view);
 
 ns::json string_to_json(const std::string&);
 void save_json(const ns::json&, const std::string&);
+void set_background(const std::string_view);
 
 std::string get_output(const std::string&);
 

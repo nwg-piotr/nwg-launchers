@@ -60,6 +60,9 @@ To uninstall:
 $ sudo ninja -C builddir uninstall
 ```
 
+**Note: the descriptions below apply to the `master` branch. Certain features may or may not be available in the latest
+release, as well as in the current package for your Linux distribution.**
+
 # nwggrid
 
 This command creates a GNOME-like application grid, with the search box, optionally prepended with a row of `-f` favourites
@@ -78,19 +81,25 @@ This only works with the `-p` argument:
 
 ```
 $ nwggrid -h
-GTK application grid: nwggrid v0.1.8 (c) Piotr Miller 2020
+GTK application grid: nwggrid 0.3.1 (c) Piotr Miller 2020 & Contributors
 
 Options:
--h            show this help message and exit
--f            display favourites (most used entries)
--p            display pinned entries
--o <opacity>  background opacity (0.0 - 1.0, default 0.9)
--n <col>      number of grid columns (default: 6)
--s <size>     button image size (default: 72)
--c <name>     css file name (default: style.css)
--l <ln>       force use of <ln> language
--wm <wmname>  window manager name (if can not be detected)
+-h               show this help message and exit
+-f               display favourites (most used entries)
+-p               display pinned entries
+-o <opacity>     default (black) background opacity (0.0 - 1.0, default 0.9)
+-b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)
+-n <col>         number of grid columns (default: 6)
+-s <size>        button image size (default: 72)
+-c <name>        css file name (default: style.css)
+-l <ln>          force use of <ln> language
+-wm <wmname>     window manager name (if can not be detected)
 ```
+
+### Custom background
+
+Use -b <RRGGBB> | <RRGGBBAA> argument (w/o #) to define custom background colour. If alpha value given, it overrides
+the opacity, as well default, as defined with the -o <opacity> argument.
 
 ### Custom styling
 
@@ -107,19 +116,25 @@ This command creates a horizontal or vertical button bar, out of a template file
 
 ```
 $ nwgbar -h
-GTK button bar: nwgbar v0.1.8 (c) Piotr Miller 2020
+GTK button bar: nwgbar 0.3.1 (c) Piotr Miller & Contributors 2020
 
 Options:
--h            show this help message and exit
--v            arrange buttons vertically
--ha <l>|<r>   horizontal alignment left/right (default: center)
--va <t>|<b>   vertical alignment top/bottom (default: middle)
--t <name>     template file name (default: bar.json)
--c <name>     css file name (default: style.css)
--o <opacity>  background opacity (0.0 - 1.0, default 0.9)
--s <size>     button image size (default: 72)
--wm <wmname>  window manager name (if can not be detected)
+-h               show this help message and exit
+-v               arrange buttons vertically
+-ha <l>|<r>      horizontal alignment left/right (default: center)
+-va <t>|<b>      vertical alignment top/bottom (default: middle)
+-t <name>        template file name (default: bar.json)
+-c <name>        css file name (default: style.css)
+-o <opacity>     background opacity (0.0 - 1.0, default 0.9)
+-b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)
+-s <size>        button image size (default: 72)
+-wm <wmname>     window manager name (if can not be detected)
 ```
+
+### Custom background
+
+Use -b <RRGGBB> | <RRGGBBAA> argument (w/o #) to define custom background colour. If alpha value given, it overrides
+the opacity, as well default, as defined with the -o <opacity> argument.
 
 ### Customization
 
@@ -173,22 +188,27 @@ This program provides 2 commands:
 ### Usage
 
 ```
-$ $ nwgdmenu -h
-GTK dynamic menu: nwgdmenu 0.1.9 (c) Piotr Miller & Contributors 2020
+$ nwgdmenu -h
+GTK dynamic menu: nwgdmenu 0.3.1 (c) Piotr Miller & Contributors 2020
 
-<input> | nwgdmenu - displays newline-separated stdin input as a GTK menu(1)
+<input> | nwgdmenu - displays newline-separated stdin input as a GTK menu
 nwgdmenu - creates a GTK menu out of commands found in $PATH
 
 Options:
--h            show this help message and exit
--n            no search box
--ha <l>|<r>   horizontal alignment left/right (default: center)
--va <t>|<b>   vertical alignment top/bottom (default: middle)
--r <rows>     number of rows (default: 20)
--c <name>     css file name (default: style.css)
--o <opacity>  background opacity (0.0 - 1.0, default 0.3)
--wm <wmname>  window manager name (if can not be detected)
--run          ignore stdin, always build from commands in $PATH(1)
+-h               show this help message and exit
+-n               no search box
+-ha <l>|<r>      horizontal alignment left/right (default: center)
+-va <t>|<b>      vertical alignment top/bottom (default: middle)
+-r <rows>        number of rows (default: 20)
+-c <name>        css file name (default: style.css)
+-o <opacity>     background opacity (0.0 - 1.0, default 0.3)
+-b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)
+-wm <wmname>     window manager name (if can not be detected)
+-run             ignore stdin, always build from commands in $PATH(1)
+
+Hotkeys:
+Delete        clear search box
+Insert        switch case sensitivity
 ```
 
 (1) _The program should auto-detect if something has been passed in `stdin`, and build the menu out of the `stdin` content
@@ -201,6 +221,11 @@ Notice: if you start your WM from a script (w/o DM), only sway and i3 will be au
 `nwgdmenu -wm dwm`
 
 The generic name `tiling` will be accepted as well.
+
+### Custom background
+
+Use -b <RRGGBB> | <RRGGBBAA> argument (w/o #) to define custom background colour. If alpha value given, it overrides
+the opacity, as well default, as defined with the -o <opacity> argument.
 
 ### Custom styling
 

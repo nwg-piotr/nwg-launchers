@@ -26,7 +26,7 @@ int image_size {72};                        // make linker happy
 
 std::string h_align {""};                   // horizontal alignment
 std::string v_align {""};                   // vertical alignment
-double opacity (0.3);                       // overlay window opacity
+RGBA background = {0.0, 0.0, 0.0, 0.3};
 std::string wm {""};                        // detected or forced window manager name
 std::string settings_file {""};
 
@@ -42,15 +42,16 @@ const char* const HELP_MESSAGE =
 <input> | nwgdmenu - displays newline-separated stdin input as a GTK menu\n\
 nwgdmenu - creates a GTK menu out of commands found in $PATH\n\n\
 Options:\n\
--h            show this help message and exit\n\
--n            no search box\n\
--ha <l>|<r>   horizontal alignment left/right (default: center)\n\
--va <t>|<b>   vertical alignment top/bottom (default: middle)\n\
--r <rows>     number of rows (default: " STR(ROWS_DEFAULT) ")\n\
--c <name>     css file name (default: style.css)\n\
--o <opacity>  background opacity (0.0 - 1.0, default 0.3)\n\
--wm <wmname>  window manager name (if can not be detected)\n\
--run          ignore stdin, always build from commands in $PATH\n\n\
+-h               show this help message and exit\n\
+-n               no search box\n\
+-ha <l>|<r>      horizontal alignment left/right (default: center)\n\
+-va <t>|<b>      vertical alignment top/bottom (default: middle)\n\
+-r <rows>        number of rows (default: " STR(ROWS_DEFAULT) ")\n\
+-c <name>        css file name (default: style.css)\n\
+-o <opacity>     background opacity (0.0 - 1.0, default 0.3)\n\
+-b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
+-wm <wmname>     window manager name (if can not be detected)\n\
+-run             ignore stdin, always build from commands in $PATH\n\n\
 Hotkeys:\n\
 Delete        clear search box\n\
 Insert        switch case sensitivity\n";
@@ -140,13 +141,18 @@ int main(int argc, char *argv[]) {
         try {
             auto o = std::stod(std::string{opa});
             if (o >= 0.0 && o <= 1.0) {
-                opacity = o;
+                background.alpha = o;
             } else {
                 std::cerr << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
             }
         } catch (...) {
             std::cerr << "\nERROR: Invalid opacity value\n\n";
         }
+    }
+
+    std::string_view bcg = input.getCmdOption("-b");
+    if (!bcg.empty()) {
+        set_background(bcg);
     }
 
     auto rw = input.getCmdOption("-r");
@@ -205,7 +211,7 @@ int main(int argc, char *argv[]) {
         }
 
         /* Sort case insensitive */
-        std::sort(all_commands.begin(), all_commands.end(), [](auto& a, auto& b) { 
+        std::sort(all_commands.begin(), all_commands.end(), [](auto& a, auto& b) {
             return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(), [](auto a, auto b) {
                 return std::tolower(a) < std::tolower(b);
             });

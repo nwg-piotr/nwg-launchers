@@ -27,7 +27,6 @@ namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
 extern bool pins;
-extern double opacity;
 extern std::string wm;
 
 extern int num_col;

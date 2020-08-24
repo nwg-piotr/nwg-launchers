@@ -2,6 +2,8 @@
  * Tools for nwg-launchers
  * Copyright (c) 2020 Érico Nogueira
  * e-mail: ericonr@disroot.org
+ * Copyright (c) 2020 Piotr Miller
+ * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
  * License: GPL3
@@ -125,7 +127,7 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
  * */
 Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon) {
     Glib::RefPtr<Gdk::Pixbuf> pixbuf;
-    
+
     try {
         if (icon.find_first_of("/") == std::string::npos) {
             pixbuf = icon_theme.load_icon(icon, image_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
@@ -205,7 +207,7 @@ std::string_view take_last_by(std::string_view str, std::string_view delimiter) 
     if (pos != std::string_view::npos) {
         return str.substr(pos + 1);
     }
-    return str;   
+    return str;
 }
 
 /*
@@ -224,6 +226,39 @@ ns::json string_to_json(const std::string& jsonString) {
 void save_json(const ns::json& json_obj, const std::string& filename) {
     std::ofstream o(filename);
     o << std::setw(2) << json_obj << std::endl;
+}
+
+/*
+ * Sets RGBA background according to hex strings
+* */
+void set_background(const std::string_view string) {
+    std::string hex_string {"0x"};
+    unsigned long int rgba;
+    std::stringstream ss;
+    try {
+        if (string.find("#") == 0) {
+            hex_string += string.substr(1);
+        } else {
+            hex_string += string;
+        }
+        ss << std::hex << hex_string;
+        ss >> rgba;
+        if (hex_string.size() == 8) {
+            background.red = ((rgba >> 16) & 0xff) / 255.0;
+            background.green = ((rgba >> 8) & 0xff) / 255.0;
+            background.blue = ((rgba) & 0xff) / 255.0;
+        } else if (hex_string.size() == 10) {
+            background.red = ((rgba >> 24) & 0xff) / 255.0;
+            background.green = ((rgba >> 16) & 0xff) / 255.0;
+            background.blue = ((rgba >> 8) & 0xff) / 255.0;
+            background.alpha = ((rgba) & 0xff) / 255.0;
+        } else {
+            std::cerr << "ERROR: invalid color value. Should be RRGGBB or RRGGBBAA";
+        }
+    }
+    catch (...) {
+        std::cerr << "Error parsing RGB(A) value \n";
+    }
 }
 
 /*

@@ -30,7 +30,6 @@ namespace ns = nlohmann;
 
 extern std::string h_align;
 extern std::string v_align;
-extern double opacity;
 extern std::string wm;
 extern std::string settings_file;
 

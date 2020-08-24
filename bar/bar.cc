@@ -17,20 +17,21 @@
 #include "bar.h"
 
 int image_size {72};            // button image size in pixels
-double opacity {0.9};           // overlay window opacity
+RGBA background = {0.0, 0.0, 0.0, 0.9};
 std::string wm {""};            // detected or forced window manager name
-const char* const HELP_MESSAGE = 
+const char* const HELP_MESSAGE =
 "GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
 Options:\n\
--h            show this help message and exit\n\
--v            arrange buttons vertically\n\
--ha <l>|<r>   horizontal alignment left/right (default: center)\n\
--va <t>|<b>   vertical alignment top/bottom (default: middle)\n\
--t <name>     template file name (default: bar.json)\n\
--c <name>     css file name (default: style.css)\n\
--o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n\
--s <size>     button image size (default: 72)\n\
--wm <wmname>  window manager name (if can not be detected)\n";
+-h               show this help message and exit\n\
+-v               arrange buttons vertically\n\
+-ha <l>|<r>      horizontal alignment left/right (default: center)\n\
+-va <t>|<b>      vertical alignment top/bottom (default: middle)\n\
+-t <name>        template file name (default: bar.json)\n\
+-c <name>        css file name (default: style.css)\n\
+-o <opacity>     background opacity (0.0 - 1.0, default 0.9)\n\
+-b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
+-s <size>        button image size (default: 72)\n\
+-wm <wmname>     window manager name (if can not be detected)\n";
 
 int main(int argc, char *argv[]) {
     std::string definition_file {"bar.json"};
@@ -45,9 +46,9 @@ int main(int argc, char *argv[]) {
 
     pid_t pid = getpid();
     std::string mypid = std::to_string(pid);
-    
+
     std::string pid_file = "/var/run/user/" + std::to_string(getuid()) + "/nwgbar.pid";
-    
+
     int saved_pid {};
     if (std::ifstream(pid_file)) {
         try {
@@ -102,7 +103,7 @@ int main(int argc, char *argv[]) {
     if (!css_name.empty()){
         custom_css_file = css_name;
     }
-    
+
     auto wm_name = input.getCmdOption("-wm");
     if (!wm_name.empty()){
         wm = wm_name;
@@ -113,13 +114,18 @@ int main(int argc, char *argv[]) {
         try {
             auto o = std::stod(std::string{opa});
             if (o >= 0.0 && o <= 1.0) {
-                opacity = o;
+                background.alpha = o;
             } else {
                 std::cerr << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
             }
         } catch (...) {
             std::cerr << "\nERROR: Invalid opacity value\n\n";
         }
+    }
+
+    std::string_view bcg = input.getCmdOption("-b");
+    if (!bcg.empty()) {
+        set_background(bcg);
     }
 
     auto i_size = input.getCmdOption("-s");
@@ -188,7 +194,7 @@ int main(int argc, char *argv[]) {
     if (wm.empty()) {
         wm = detect_wm();
     }
-    
+
     std::cout << "WM: " << wm << "\n";
 
     /* turn off borders, enable floating on sway */
