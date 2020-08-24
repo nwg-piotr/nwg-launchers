@@ -22,15 +22,16 @@ std::string wm {""};            // detected or forced window manager name
 const char* const HELP_MESSAGE =
 "GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
 Options:\n\
--h            show this help message and exit\n\
--v            arrange buttons vertically\n\
--ha <l>|<r>   horizontal alignment left/right (default: center)\n\
--va <t>|<b>   vertical alignment top/bottom (default: middle)\n\
--t <name>     template file name (default: bar.json)\n\
--c <name>     css file name (default: style.css)\n\
--o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n\
--s <size>     button image size (default: 72)\n\
--wm <wmname>  window manager name (if can not be detected)\n";
+-h               show this help message and exit\n\
+-v               arrange buttons vertically\n\
+-ha <l>|<r>      horizontal alignment left/right (default: center)\n\
+-va <t>|<b>      vertical alignment top/bottom (default: middle)\n\
+-t <name>        template file name (default: bar.json)\n\
+-c <name>        css file name (default: style.css)\n\
+-o <opacity>     background opacity (0.0 - 1.0, default 0.9)\n\
+-b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
+-s <size>        button image size (default: 72)\n\
+-wm <wmname>     window manager name (if can not be detected)\n";
 
 int main(int argc, char *argv[]) {
     std::string definition_file {"bar.json"};
@@ -120,6 +121,11 @@ int main(int argc, char *argv[]) {
         } catch (...) {
             std::cerr << "\nERROR: Invalid opacity value\n\n";
         }
+    }
+
+    std::string_view bcg = input.getCmdOption("-b");
+    if (!bcg.empty()) {
+        set_background(bcg);
     }
 
     auto i_size = input.getCmdOption("-s");
