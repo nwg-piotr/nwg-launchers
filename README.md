@@ -11,12 +11,11 @@ It's damned difficult to make all the stuff behave properly on all window manage
 
 Feel free to report issues you encounter on other window managers / desktop environments, but they may or may not be resolved.
 
-For now the first three launchers seem to work pretty well, at least on Arch Linux.
-
 # Packages
 
 The latest released version is [available](https://aur.archlinux.org/packages/nwg-launchers) in Arch User Repository.
-Current development version may be installed as the `nwg-launchers-git` AUR package.
+Current development version (`master` branch) may be installed as the `nwg-launchers-git` AUR package.
+For other Linux distributions see the table below.
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/nwg-launchers.svg)](https://repology.org/project/nwg-launchers/versions)
 
@@ -103,7 +102,7 @@ the opacity, as well default, as defined with the -o <opacity> argument.
 
 ### Custom styling
 
-On first run the program creates the `nwgbar` folder in your .config directory. You'll find the `style.css` files inside.
+On first run the program creates the `nwg-launchers/nwggrid` folder in your .config directory. You'll find the `style.css` files inside.
 You may edit the style sheet to your liking.
 
 # nwgbar
@@ -138,7 +137,7 @@ the opacity, as well default, as defined with the -o <opacity> argument.
 
 ### Customization
 
-On first run the program creates the `nwggrid` folder in your .config directory. You'll find a sample template `bar.json`
+On first run the program creates the `nwg-launchers/nwgbar` folder in your .config directory. You'll find a sample template `bar.json`
 and the `style.css` files inside.
 
 Templates use json format. The default one defines an example Exit menu for sway window manager on Arch Linux:
@@ -229,7 +228,7 @@ the opacity, as well default, as defined with the -o <opacity> argument.
 
 ### Custom styling
 
-On first run the program creates the `nwgdmenu` folder in your .config directory. You'll find the
+On first run the program creates the `nwg-launchers/nwgdmenu` folder in your .config directory. You'll find the
 default `style.css` files inside. Use it to adjust styling and a vertical margin to the menu, if needed.
 
 ### i3 note
