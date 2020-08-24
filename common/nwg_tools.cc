@@ -229,8 +229,34 @@ void save_json(const ns::json& json_obj, const std::string& filename) {
 /*
  * Sets RGBA background according to hex strings
 * */
-void set_background(const std::string_view s) {
-    std::cout << s << " | " << background.alpha << "\n";
+void set_background(const std::string_view string) {
+    std::string hex_string {"0x"};
+    unsigned long int rgba;
+    std::stringstream ss;
+    try {
+        if (string.find("#") == 0) {
+            hex_string += string.substr(1);
+        } else {
+            hex_string += string;
+        }
+        ss << std::hex << hex_string;
+        ss >> rgba;
+        if (hex_string.size() == 8) {
+            background.red = ((rgba >> 16) & 0xff) / 255.0;;
+            background.green = ((rgba >> 8) & 0xff) / 255.0;;
+            background.blue = (rgba & 0xff) / 255.0;
+        } else if (hex_string.size() == 10) {
+            background.red = ((rgba >> 32) & 0xff) / 255.0;
+            background.green = ((rgba >> 16) & 0xff) / 255.0;
+            background.blue = ((rgba >> 8) & 0xff) / 255.0;
+            background.alpha = (rgba & 0xff) / 255.0;
+        } else {
+            std::cerr << "ERROR: invalid color value. Should be RRGGBB or RRGGBBAA";
+        }
+    }
+    catch (...) {
+        std::cerr << "Error parsing RGB(A) value \n";
+    }
 }
 
 /*
