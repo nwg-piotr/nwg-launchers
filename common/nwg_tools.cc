@@ -242,17 +242,18 @@ void set_background(const std::string_view string) {
         ss << std::hex << hex_string;
         ss >> rgba;
         if (hex_string.size() == 8) {
-            background.red = ((rgba >> 16) & 0xff) / 255.0;;
-            background.green = ((rgba >> 8) & 0xff) / 255.0;;
-            background.blue = (rgba & 0xff) / 255.0;
+            background.red = ((rgba >> 16) & 0xff) / 255.0;
+            background.green = ((rgba >> 8) & 0xff) / 255.0;
+            background.blue = ((rgba) & 0xff) / 255.0;
         } else if (hex_string.size() == 10) {
-            background.red = ((rgba >> 32) & 0xff) / 255.0;
+            background.red = ((rgba >> 24) & 0xff) / 255.0;
             background.green = ((rgba >> 16) & 0xff) / 255.0;
             background.blue = ((rgba >> 8) & 0xff) / 255.0;
-            background.alpha = (rgba & 0xff) / 255.0;
+            background.alpha = ((rgba) & 0xff) / 255.0;
         } else {
             std::cerr << "ERROR: invalid color value. Should be RRGGBB or RRGGBBAA";
         }
+        std::cout << "R: " << background.red << " G: " << background.green << " B: " << background.blue << " A: " << background.alpha << "\n";
     }
     catch (...) {
         std::cerr << "Error parsing RGB(A) value \n";
