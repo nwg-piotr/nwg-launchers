@@ -38,7 +38,7 @@ Options:\n\
 -f               display favourites (most used entries)\n\
 -p               display pinned entries \n\
 -o <opacity>     default (black) background opacity (0.0 - 1.0, default 0.9)\n\
--b <background>  background colour in #RRGGBB or #RRGGBBAA format (#RRGGBBAA overrides <opacity>)\n\
+-b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
 -n <col>         number of grid columns (default: 6)\n\
 -s <size>        button image size (default: 72)\n\
 -c <name>        css file name (default: style.css)\n\
