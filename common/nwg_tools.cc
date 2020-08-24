@@ -255,7 +255,6 @@ void set_background(const std::string_view string) {
         } else {
             std::cerr << "ERROR: invalid color value. Should be RRGGBB or RRGGBBAA";
         }
-        std::cout << "R: " << background.red << " G: " << background.green << " B: " << background.blue << " A: " << background.alpha << "\n";
     }
     catch (...) {
         std::cerr << "Error parsing RGB(A) value \n";
