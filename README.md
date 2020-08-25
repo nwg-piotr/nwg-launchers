@@ -4,6 +4,8 @@ As it's never too late to learn something new, I decided to try and code my
 By the way I'm trying to simplify their usage, by reducing the number of arguments. Whatever possible, is being moved
 to css style sheets.
 
+![demo-gif](http://nwg.pl/Lychee/uploads/big/0b284762e075ee04df1d0a378ce5e20a.gif)
+
 It's damned difficult to make all the stuff behave properly on all window managers. My priorities are:
 
 1. it **must work well** on sway;
