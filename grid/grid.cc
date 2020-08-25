@@ -218,7 +218,7 @@ int main(int argc, char *argv[]) {
 
     /* get a list of paths to all *.desktop entries */
     std::vector<std::string> entries = list_entries(app_dirs);
-    std::cout << entries.size() << " .desktop entries found\n";
+    std::cout << entries.size() << " .desktop entries found, ";
 
     /* create the vector of DesktopEntry structs */
     std::vector<DesktopEntry> desktop_entries {};
@@ -231,7 +231,8 @@ int main(int argc, char *argv[]) {
             // avoid adding duplicates
             bool found = false;
             for (auto& e: desktop_entries) {
-                if (entry.name == e.name && entry.exec == e.exec) {
+                // Checking the mime_type field should resolve #89
+                if (entry.name == e.name && entry.exec == e.exec && entry.mime_type == e.mime_type) {
                     found = true;
                 }
             }
@@ -240,6 +241,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+    std::cout << desktop_entries.size() << " w/o duplicates \n";
 
     /* sort above by the 'name' field */
     std::sort(desktop_entries.begin(), desktop_entries.end(), [](auto& a, auto& b) { return a.name < b.name; });
