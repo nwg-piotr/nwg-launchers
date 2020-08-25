@@ -222,9 +222,13 @@ int main(int argc, char *argv[]) {
 
     /* create the vector of DesktopEntry structs */
     std::vector<DesktopEntry> desktop_entries {};
+    int hidden {0};
     for (auto& entry_ : entries) {
         // string path -> DesktopEntry
         auto entry = desktop_entry(std::move(entry_), lang);
+        if (entry.no_display) {
+            hidden++;
+        }
 
         // only add if 'name' and 'exec' not empty
         if (!entry.name.empty() && !entry.exec.empty()) {
@@ -241,7 +245,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    std::cout << desktop_entries.size() << " w/o duplicates \n";
+    std::cout << desktop_entries.size() << " unique, " << hidden << " hidden by NoDisplay=true\n";
 
     /* sort above by the 'name' field */
     std::sort(desktop_entries.begin(), desktop_entries.end(), [](auto& a, auto& b) { return a.name < b.name; });
