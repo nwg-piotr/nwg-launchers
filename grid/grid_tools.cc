@@ -197,6 +197,11 @@ DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
                     comment_ln = view.substr(idx + 1);
                 }
             }
+            if (view.find("MimeType=") == 0) {
+                if (auto idx = view.find_first_of("="); idx != std::string_view::npos) {
+                    entry.mime_type = view.substr(idx + 1);
+                }
+            }
         }
     }
     if (name_ln.empty()) {

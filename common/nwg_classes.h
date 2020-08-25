@@ -77,6 +77,7 @@ struct DesktopEntry {
     std::string exec;
     std::string icon;
     std::string comment;
+    std::string mime_type;
     bool no_display {false};
 };
 
