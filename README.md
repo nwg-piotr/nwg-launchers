@@ -233,10 +233,16 @@ the opacity, as well default, as defined with the -o <opacity> argument.
 On first run the program creates the `nwg-launchers/nwgdmenu` folder in your .config directory. You'll find the
 default `style.css` files inside. Use it to adjust styling and a vertical margin to the menu, if needed.
 
-### i3 note
+## i3 note
 
 In case you use default window borders, an exclusion like this may be necessary:
 
 ```
 for_window [title="~nwg"] border none
 ```
+
+## Tips & tricks
+
+### Hide unwanted icons in nwggrid
+
+See: [https://wiki.archlinux.org/index.php/desktop_entries#Hide_desktop_entries](https://wiki.archlinux.org/index.php/desktop_entries#Hide_desktop_entries)
