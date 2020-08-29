@@ -4,7 +4,7 @@ project('nwg-launchers', 'cpp',
 			'warning_level=3'
 			],
 	license: 'GPL-3.0-or-later',
-	version: '0.3.2'
+	version: '0.3.3'
 )
 
 compiler = meson.get_compiler('cpp')
