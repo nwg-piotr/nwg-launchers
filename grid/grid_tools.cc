@@ -106,11 +106,14 @@ std::vector<std::string> get_app_dirs() {
         }
     }
     // Add flatpak dirs if not found in XDG_DATA_DIRS
-    if (std::find(result.begin(), result.end(), "~/.local/share/flatpak/exports/share/applications") == result.end()) {
-        result.emplace_back("~/.local/share/flatpak/exports/share/applications");
-    }
-    if (std::find(result.begin(), result.end(), "/var/lib/flatpak/exports/share/applications") == result.end()) {
-        result.emplace_back("/var/lib/flatpak/exports/share/applications");
+    std::string flatpak_data_dirs[] = {
+        homedir + "/.local/share/flatpak/exports/share/applications",
+        "/var/lib/flatpak/exports/share/applications"
+    };
+    for (std::string fp_dir : flatpak_data_dirs) {
+        if (std::find(result.begin(), result.end(), fp_dir) == result.end()) {
+            result.emplace_back(fp_dir);
+        }
     }
     return result;
 }
