@@ -10,12 +10,18 @@
  * */
 
 #include <stdlib.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <signal.h>
 
 #include <iostream>
 #include <fstream>
 
 #include "nwgconfig.h"
 #include <nwg_tools.h>
+
+// stores the name of the pid_file, for use in atexit
+static std::string pid_file{};
 
 /*
  * Returns config dir
@@ -276,4 +282,77 @@ std::string get_output(const std::string& cmd) {
         result += buffer.data();
     }
     return result;
+}
+
+
+/*
+ * Remove pid_file created by create_pid_file_or_kill_pid.
+ * This function will be run before exiting.
+ * */
+static void clean_pid_file(void) {
+    unlink(pid_file.c_str());
+}
+
+/*
+ * Signal handler to exit normally with SIGTERM
+ * */
+static void exit_normal(int sig) {
+    if (sig == SIGTERM) {
+        std::cerr << "Received SIGTERM, exiting...\n";
+    }
+
+    std::exit(1);
+}
+
+/*
+ * Creates PID file for the new instance,
+ * or kills the other cmd instance.
+ *
+ * If it creates a PID file, it also sets up a signal handler to exit
+ * normally if it receives SIGTERM; and registers an atexit() action
+ * to run when exiting normally.
+ *
+ * This allows for behavior where using the shortcut to open one
+ * of the launchers closes the currently running one.
+ * */
+void create_pid_file_or_kill_pid(std::string cmd) {
+    std::string myuid = std::to_string(getuid());
+
+    char *runtime_dir_tmp = getenv("XDG_RUNTIME_DIR");
+    std::string runtime_dir;
+    if (runtime_dir_tmp) {
+        runtime_dir = runtime_dir_tmp;
+    } else {
+        runtime_dir = "/var/run/user/" + myuid;
+    }
+
+    pid_file = runtime_dir + "/" + cmd + ".pid";
+
+    auto pid_read = std::ifstream(pid_file);
+    // set to not throw exceptions
+    pid_read.exceptions(std::ifstream::goodbit);
+    if (pid_read.is_open()) {
+        // opening file worked - file exists
+        pid_t saved_pid;
+        pid_read >> saved_pid;
+
+        if (saved_pid > 0 && kill(saved_pid, 0) == 0) {
+            // found running instance
+            // PID file will be deleted by process's atexit routine
+            int rv = kill(saved_pid, SIGTERM);
+
+            // exit with status dependent on kill success
+            std::exit(rv == 0 ? 0 : 1);
+        }
+    }
+
+    std::string mypid = std::to_string(getpid());
+    save_string_to_file(mypid, pid_file);
+
+    // register function to clean pid file
+    atexit(clean_pid_file);
+    // register signal handler for SIGTERM
+    struct sigaction act {};
+    act.sa_handler = exit_normal;
+    sigaction(SIGTERM, &act, nullptr);
 }
