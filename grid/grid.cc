@@ -53,25 +53,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&tp, NULL);
     long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-    pid_t pid = getpid();
-    std::string mypid = std::to_string(pid);
-
-    std::string pid_file = "/var/run/user/" + std::to_string(getuid()) + "/nwggrid.pid";
-
-    int saved_pid {};
-    if (std::ifstream(pid_file)) {
-        try {
-            saved_pid = std::stoi(read_file_to_string(pid_file));
-            if (kill(saved_pid, 0) != -1) {  // found running instance!
-                kill(saved_pid, 9);
-                save_string_to_file(mypid, pid_file);
-                std::exit(0);
-            }
-        } catch (...) {
-            std::cerr << "\nError reading pid file\n\n";
-        }
-    }
-    save_string_to_file(mypid, pid_file);
+    create_pid_file_or_kill_pid("nwggrid");
 
     std::string lang ("");
 
