@@ -15,7 +15,10 @@
 #include <fstream>
 
 #include "nwgconfig.h"
-#include <nwg_tools.h>
+#include "nwg_tools.h"
+
+// extern variables from nwg_tools.h
+int image_size = 72;
 
 /*
  * Returns config dir

@@ -16,7 +16,6 @@
 #include "on_event.h"
 #include "bar.h"
 
-int image_size {72};            // button image size in pixels
 RGBA background = {0.0, 0.0, 0.0, 0.9};
 std::string wm {""};            // detected or forced window manager name
 const char* const HELP_MESSAGE =
