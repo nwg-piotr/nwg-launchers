@@ -66,9 +66,9 @@ class MainWindow : public CommonWindow {
 
         Gtk::SearchEntry searchbox;              // Search apps
         Gtk::Label description;                  // To display .desktop entry Comment field at the bottom
-        Gtk::Grid apps_grid;                     // All application buttons grid
-        Gtk::Grid favs_grid;                     // Favourites grid above
-        Gtk::Grid pinned_grid;                   // Pinned entries grid above
+        Gtk::FlowBox apps_grid;                  // All application buttons grid
+        Gtk::FlowBox favs_grid;                  // Favourites grid above
+        Gtk::FlowBox pinned_grid;                // Pinned entries grid above
         Gtk::Separator separator;                // between favs and all apps
         Gtk::Separator separator1;               // below pinned
         Gtk::VBox outer_vbox;

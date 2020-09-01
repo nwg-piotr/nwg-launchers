@@ -17,6 +17,25 @@
 #include "nwg_tools.h"
 #include "grid.h"
 
+int by_name(Gtk::FlowBoxChild* a_, Gtk::FlowBoxChild* b_) {
+    auto a = dynamic_cast<GridBox*>(a_->get_child()); // ugly
+    auto b = dynamic_cast<GridBox*>(b_->get_child());
+    return a->name.compare(b->name);
+}
+
+bool pins_only(Gtk::FlowBoxChild* c_) {
+    auto c = dynamic_cast<GridBox*>(c_->get_child());
+    return c->pinned;
+}
+bool favs_only(Gtk::FlowBoxChild* c_) {
+    auto c = dynamic_cast<GridBox*>(c_->get_child());
+    return !c->pinned && c->favorite;
+}
+bool the_rest(Gtk::FlowBoxChild* c_) {
+    auto c = dynamic_cast<GridBox*>(c_->get_child());
+    return !c->pinned && !c->favorite;
+}
+
 MainWindow::MainWindow(size_t fav_size, size_t pinned_size)
  : CommonWindow("~nwggrid", "~nwggrid")
 {
@@ -26,15 +45,29 @@ MainWindow::MainWindow(size_t fav_size, size_t pinned_size)
     searchbox.set_placeholder_text("Type to search");
     searchbox.set_sensitive(true);
     searchbox.set_name("searchbox");
-    apps_grid.set_column_spacing(5);
-    apps_grid.set_row_spacing(5);
-    apps_grid.set_column_homogeneous(true);
-    favs_grid.set_column_spacing(5);
-    favs_grid.set_row_spacing(5);
-    favs_grid.set_column_homogeneous(true);
-    pinned_grid.set_column_spacing(5);
-    pinned_grid.set_row_spacing(5);
-    pinned_grid.set_column_homogeneous(true);
+
+    auto setup_grid = [](auto& grid) {
+        grid.set_column_spacing(5);
+        grid.set_row_spacing(5);
+        grid.set_homogeneous(true);
+        grid.set_halign(Gtk::ALIGN_CENTER);
+    };
+    setup_grid(apps_grid);
+    setup_grid(favs_grid);
+    setup_grid(pinned_grid);
+    apps_grid.set_sort_func(&by_name);
+    apps_grid.set_filter_func([this](Gtk::FlowBoxChild* c_) {
+        auto c = dynamic_cast<GridBox*>(c_->get_child());
+        auto text = this->searchbox.get_text();
+        if (text.size() == 0) {
+            return true;
+        }
+        auto phrase = text.casefold();
+        auto matches = [&phrase](auto& str) { return str.casefold().find(phrase) != Glib::ustring::npos; };
+        return matches(c->name) || matches(c->exec) || matches(c->comment);
+    });
+    favs_grid.set_sort_func(&by_name);
+
     description.set_text("");
     description.set_name("description");
     separator.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
@@ -52,16 +85,16 @@ MainWindow::MainWindow(size_t fav_size, size_t pinned_size)
         set_decorated(false);
     }
     outer_vbox.set_spacing(15);
-    hbox_header.pack_start(searchbox, Gtk::PACK_EXPAND_PADDING);
-    outer_vbox.pack_start(hbox_header, Gtk::PACK_SHRINK, Gtk::PACK_EXPAND_PADDING);
+    hbox_header.pack_start(searchbox, Gtk::PACK_EXPAND_PADDING, 0);
+    outer_vbox.pack_start(hbox_header, Gtk::PACK_SHRINK, 0);
 
     scrolled_window.set_propagate_natural_height(true);
     scrolled_window.set_propagate_natural_width(true);
     scrolled_window.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_ALWAYS);
     scrolled_window.add(inner_vbox);
 
-    pinned_hbox.pack_start(pinned_grid, true, false, 0);
-    inner_vbox.pack_start(pinned_hbox, false, false, 5);
+    pinned_hbox.pack_start(pinned_grid, Gtk::PACK_EXPAND_WIDGET, 0);
+    inner_vbox.pack_start(pinned_hbox, Gtk::PACK_EXPAND_PADDING, 5);
     if (pins && pinned_size > 0) {
         inner_vbox.pack_start(separator1, false, true, 0);
     }
@@ -126,84 +159,39 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
     return Gtk::Window::on_key_press_event(key_event);
 }
 
-inline auto advance = [](auto& x, auto& y) {
-    x++;
-    if (x == num_col) {
-        x = 0;
-        y++;
-    }
-};
-
-// fills empty `grid` with elements from `container` respecting `num_col` global variable
-inline auto build_grid = [](auto& grid, auto& container) {
-    int x = 0;
-    int y = 0;
-    for (auto* child : container) {
-        grid.attach(*child, x, y, 1, 1);
-        advance(x, y);
-    }
-};
-
-// shifts elements of `grid` from `x_`, `y_` to `x__`, `y__` respecting `num_col` global variable,
-// effectively filling the hole created by removing an element
-inline auto fill_hole = [](auto x_, auto y_, auto& grid, auto x__, auto y__) {
-    auto x = x_;
-    auto y = y_;
-
-    advance(x, y);
-    advance(x__, y__);
-
-    while (x != x__ || y != y__) {
-        auto child = grid.get_child_at(x, y);
-        if (child) {
-            grid.child_property_left_attach(*child).set_value(x_);
-            grid.child_property_top_attach(*child).set_value(y_);
-            advance(x_, y_);
-        }
-        advance(x, y);
-    }
-};
 
 void MainWindow::filter_view() {
-    auto& grid = apps_grid;
-    auto* container = &apps_boxes;
-
     auto search_phrase = searchbox.get_text();
     auto filtered = search_phrase.size() > 0;
     if (filtered) {
-        auto phrase = search_phrase.casefold();
-        auto matches = [&phrase](auto& str) {
-            return str.casefold().find(phrase) != Glib::ustring::npos;
-        };
-
-        this -> filtered_boxes.clear();
-        for (auto& box : this -> apps_boxes) {
-            if (matches(box->name) || matches(box->exec) || matches(box->comment)) {
-                this -> filtered_boxes.emplace_back(box);
-            }
-        }
         this -> favs_grid.hide();
         this -> separator.hide();
-
-        container = &this->filtered_boxes;
     } else {
         this -> favs_grid.show();
         this -> separator.show();
     }
-    grid.freeze_child_notify();
-    grid.foreach([&grid](auto& child) {
-        grid.remove(child);
-        child.unset_state_flags(Gtk::STATE_FLAG_PRELIGHT);
-    });
-    build_grid(grid, *container);
+    this -> apps_grid.invalidate_filter();
     this -> focus_first_box();
-    grid.thaw_child_notify();
+    apps_grid.thaw_child_notify();
 }
+
+inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container) {
+    auto size = container.size();
+    decltype(size) cols = num_col;
+    flowbox.set_max_children_per_line(std::min(size, cols));
+};
 
 void MainWindow::build_grids() {
     this -> pinned_grid.freeze_child_notify();
     this -> favs_grid.freeze_child_notify();
     this -> apps_grid.freeze_child_notify();
+
+    auto build_grid = [&](auto& grid, auto& container) {
+        for (auto child : container) {
+            grid.add(*child);
+        }
+        refresh_max_children_per_line(grid, container);
+    };
 
     build_grid(this->pinned_grid, this->pinned_boxes);
     build_grid(this->favs_grid, this->fav_boxes);
@@ -258,49 +246,20 @@ void MainWindow::toggle_pinned(GridBox& box) {
         std::swap(from, to);
         std::swap(from_grid, to_grid);
     }
-
-    // now `to` is the container we want to move `box` to from `from` :^)
-    // and `from_grid` is where we move to `to_grid` from
-    std::remove(from->begin(), from->end(), &box);
-
-    auto x = from_grid->child_property_left_attach(box).get_value();
-    auto y = from_grid->child_property_top_attach(box).get_value();
-
-    // `from` is not empty, it contains atleast the widget we want to remove
-    auto last = from->back();
-    auto x_ = from_grid->child_property_left_attach(*last).get_value();
-    auto y_ = from_grid->child_property_top_attach(*last).get_value();
-
-    decltype(x_) xnew = 0;
-    decltype(y_) ynew = 0;
-
-    if (to->size() > 0) {
-        auto last = to->back();
-        xnew = to_grid->child_property_left_attach(*last).get_value();
-        ynew = to_grid->child_property_top_attach(*last).get_value();
-        advance(xnew, ynew);
-    }
-
-    if (x > x_ && y > y_) {
-        std::cerr << "ERROR: Critical failure -- failed to retrieve box coordinates\n";
-        std::abort();
-    }
-    from_grid->freeze_child_notify();    
-    from_grid->remove(box);
-    fill_hole(x, y, *from_grid, x_, y_);
-    from_grid->thaw_child_notify();    
-
-    auto name = box.name.casefold();
-    auto iter = std::find_if(to->begin(), to->end(), [&name](auto e) {
-        return name < e->name.casefold();
-    });
-    to->insert(iter, &box);
-    to_grid->foreach([to_grid](auto& child) {
-        to_grid->remove(child);
-    });
-    build_grid(*to_grid, *to);
-    //to->push_back(&box);
-    //to_grid->attach(box, xnew, ynew, 1, 1);
+    auto to_remove = std::remove(from->begin(), from->end(), &box);;
+    from->erase(to_remove);
+    to->push_back(&box);
+    refresh_max_children_per_line(*from_grid, *from);
+    refresh_max_children_per_line(*to_grid, *to);
+    
+    // get_parent is important
+    // FlowBox { ... FlowBoxChild { box } ... }
+    // box is not child to FlowBox
+    // but its parent, FlowBoxChild is
+    // so we need to reparent FlowBoxChild, not the box itself
+    box.get_parent()->reparent(*to_grid);
+    from_grid->invalidate_filter();
+    to_grid->invalidate_filter();
 }
 
 /*
