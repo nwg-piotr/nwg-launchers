@@ -18,7 +18,10 @@
 #include <fstream>
 
 #include "nwgconfig.h"
-#include <nwg_tools.h>
+#include "nwg_tools.h"
+
+// extern variables from nwg_tools.h
+int image_size = 72;
 
 // stores the name of the pid_file, for use in atexit
 static std::string pid_file{};

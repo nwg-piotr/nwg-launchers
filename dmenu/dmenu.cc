@@ -21,8 +21,6 @@
 #define STR_EXPAND(x) #x
 #define STR(x) STR_EXPAND(x)
 
-int image_size {72};                        // make linker happy
-
 std::string h_align {""};                   // horizontal alignment
 std::string v_align {""};                   // vertical alignment
 RGBA background = {0.0, 0.0, 0.0, 0.3};

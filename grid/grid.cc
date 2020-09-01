@@ -22,7 +22,6 @@ RGBA background = {0.0, 0.0, 0.0, 0.9};
 std::string wm {""};            // detected or forced window manager name
 
 int num_col = 6;                // number of grid columns
-int image_size = 72;            // button image size in pixels
 Gtk::Label *description;
 
 std::string pinned_file {};
