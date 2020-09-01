@@ -9,6 +9,8 @@ please consider the priority list:
 2. new features
 3. optimization, refactoring, e.t.c.
 
+Please test your changes not in sway only, but also in i3 and Openbox.
+
 Before submitting a major PR, it makes sense to open an issue, and discuss the changes you're planning on.
 
 ### Code formatting
