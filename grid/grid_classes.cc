@@ -18,22 +18,9 @@
 #include "grid.h"
 
 int by_name(Gtk::FlowBoxChild* a_, Gtk::FlowBoxChild* b_) {
-    auto a = dynamic_cast<GridBox*>(a_->get_child()); // ugly
+    auto a = dynamic_cast<GridBox*>(a_->get_child());
     auto b = dynamic_cast<GridBox*>(b_->get_child());
     return a->name.compare(b->name);
-}
-
-bool pins_only(Gtk::FlowBoxChild* c_) {
-    auto c = dynamic_cast<GridBox*>(c_->get_child());
-    return c->pinned;
-}
-bool favs_only(Gtk::FlowBoxChild* c_) {
-    auto c = dynamic_cast<GridBox*>(c_->get_child());
-    return !c->pinned && c->favorite;
-}
-bool the_rest(Gtk::FlowBoxChild* c_) {
-    auto c = dynamic_cast<GridBox*>(c_->get_child());
-    return !c->pinned && !c->favorite;
 }
 
 MainWindow::MainWindow(size_t fav_size, size_t pinned_size)
@@ -161,6 +148,8 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
 
 
 void MainWindow::filter_view() {
+    // FlowBox will filter the content for us,
+    // but we still need to hide unrelevant widgets
     auto search_phrase = searchbox.get_text();
     auto filtered = search_phrase.size() > 0;
     if (filtered) {
@@ -175,6 +164,9 @@ void MainWindow::filter_view() {
     apps_grid.thaw_child_notify();
 }
 
+/* In order to keep Gtk FlowBox content properly haligned, we have to maintain
+ * `max_children_per_line` equal to the total number of children
+ * */
 inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container) {
     auto size = container.size();
     decltype(size) cols = num_col;
@@ -186,7 +178,7 @@ void MainWindow::build_grids() {
     this -> favs_grid.freeze_child_notify();
     this -> apps_grid.freeze_child_notify();
 
-    auto build_grid = [&](auto& grid, auto& container) {
+    auto build_grid = [](auto& grid, auto& container) {
         for (auto child : container) {
             grid.add(*child);
         }
@@ -209,7 +201,7 @@ void MainWindow::build_grids() {
 }
 
 void MainWindow::focus_first_box() {
-    auto containers = { &filtered_boxes, &pinned_boxes, &fav_boxes, &apps_boxes };
+    std::array containers{ &filtered_boxes, &pinned_boxes, &fav_boxes, &apps_boxes };
     for (auto container : containers) {
         if (container->size() > 0) {
             container->front()->grab_focus();
@@ -258,8 +250,6 @@ void MainWindow::toggle_pinned(GridBox& box) {
     // but its parent, FlowBoxChild is
     // so we need to reparent FlowBoxChild, not the box itself
     box.get_parent()->reparent(*to_grid);
-    from_grid->invalidate_filter();
-    to_grid->invalidate_filter();
 }
 
 /*
