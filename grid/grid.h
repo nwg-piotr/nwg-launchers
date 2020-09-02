@@ -74,9 +74,10 @@ class MainWindow : public CommonWindow {
         Gtk::HBox apps_hbox;
         Gtk::ScrolledWindow scrolled_window;
 
-        template<typename ... Args>
-        GridBox& emplace_box(Args&& ... args);   // emplace box
+        template <typename ... Args>
+        GridBox& emplace_box(Args&& ... args);      // emplace box
 
+        bool has_fav_with_exec(const std::string&) const;
         void build_grids();
         void toggle_pinned(GridBox& box);
         void set_description(const Glib::ustring&);
@@ -97,7 +98,7 @@ class MainWindow : public CommonWindow {
         void filter_view();
 };
 
-template<typename ... Args>
+template <typename ... Args>
 GridBox& MainWindow::emplace_box(Args&& ... args) {
     auto& ab = this -> all_boxes.emplace_back(std::forward<Args>(args)...);
     if (ab.pinned) {

@@ -22,7 +22,6 @@ RGBA background = {0.0, 0.0, 0.0, 0.9};
 std::string wm {""};            // detected or forced window manager name
 
 int num_col = 6;                // number of grid columns
-Gtk::Label *description;
 
 std::string pinned_file {};
 std::vector<std::string> pinned;    // list of commands of pinned icons
@@ -314,18 +313,10 @@ int main(int argc, char *argv[]) {
     for (auto& entry : favourites) {
         for (auto& de : desktop_entries) {
             if (entry.exec == de.exec) {
-
-                // avoid adding twice the same exec w/ another name
-                //bool already_added {false};
-                //for (auto& app_box : window.fav_boxes) {
-                //    if (app_box.exec == de.exec) {
-                //        already_added = true;
-                //        break;
-                //    }
-                //}
-                //if (already_added) {
-                //    continue;                  // TODO: reimpl this
-                //}
+                auto already_added = window.has_fav_with_exec(entry.exec);
+                if (already_added) {
+                    continue;
+                }
 
                 auto& ab = window.emplace_box(std::move(de.name),
                                               std::move(de.exec),

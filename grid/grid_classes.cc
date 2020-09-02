@@ -267,6 +267,11 @@ bool MainWindow::on_delete_event(GdkEventAny* event) {
     return CommonWindow::on_delete_event(event);
 }
 
+bool MainWindow::has_fav_with_exec(const std::string& exec) const {
+    auto pred = [&exec](auto* b) { return exec == b->exec; };
+    return std::find_if(fav_boxes.begin(), fav_boxes.end(), pred) != fav_boxes.end();
+}
+
 // This constructor is not needed since C++20
 GridBox::GridBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment, GridBox::FavTag fav, GridBox::PinTag pinned)
  : AppBox(std::move(name), std::move(exec), std::move(comment)), favorite(fav), pinned(pinned) {}
