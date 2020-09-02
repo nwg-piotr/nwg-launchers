@@ -159,19 +159,14 @@ void MainWindow::filter_view() {
 }
 
 void MainWindow::refresh_separators() {
-    auto empty = 0;
-    empty += pinned_boxes.empty();
-    empty += fav_boxes.empty() && favs_grid.get_visible();
-    empty += apps_boxes.empty();
-    if (empty <= 1) {
+    auto set_shown = [](auto c, auto& s) { if (c) s.show(); else s.hide(); };
+    auto p = !pinned_boxes.empty();
+    auto f = !fav_boxes.empty() && favs_grid.get_visible();
+    auto a = !apps_boxes.empty();
+    set_shown(p && f, separator1);
+    set_shown(f && a, separator);
+    if (p && a) {
         separator.show();
-    } else {
-        separator.hide();
-    }
-    if (empty == 0) {
-        separator1.show();
-    } else {
-        separator1.hide();
     }
 }
 
