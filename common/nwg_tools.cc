@@ -54,19 +54,22 @@ std::string get_config_dir(std::string app) {
  * Returns window manager name
  * */
 std::string detect_wm() {
-    /* Actually we only need to check if we're on sway or not,
+    /* Actually we only need to check if we're on sway, i3 or other WM,
      * but let's try to find a WM name if possible. If not, let it be just "other" */
-    const char *env_var[2] = {"DESKTOP_SESSION", "SWAYSOCK"};
-    char *env_val[2];
+    const char *env_var[3] = {"DESKTOP_SESSION", "SWAYSOCK", "I3SOCK"};
+    char *env_val;
     std::string wm_name{"other"};
 
-    for(int i=0; i<2; i++) {
+    for(int i=0; i<3; i++) {
         // get environment values
-        env_val[i] = getenv(env_var[i]);
-        if (env_val[i] != NULL) {
-            std::string s(env_val[i]);
+        env_val = getenv(env_var[i]);
+        if (env_val != NULL) {
+            std::string s(env_val);
             if (s.find("sway") != std::string::npos) {
                 wm_name = "sway";
+                break;
+            } else if (s.find("i3") != std::string::npos) {
+                wm_name = "i3";
                 break;
             } else {
                 // is the value a full path or just a name?

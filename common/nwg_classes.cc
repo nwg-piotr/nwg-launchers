@@ -72,6 +72,7 @@ void CommonWindow::check_screen() {
         std::cerr << "Your screen does not support alpha channels!\n";
     }
     _SUPPORTS_ALPHA = (bool)visual;
+    gtk_widget_set_visual(GTK_WIDGET(gobj()), visual->gobj());
 }
 
 void CommonWindow::quit() {
