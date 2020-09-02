@@ -2,18 +2,29 @@
  * Tools for nwg-launchers
  * Copyright (c) 2020 Érico Nogueira
  * e-mail: ericonr@disroot.org
+ * Copyright (c) 2020 Piotr Miller
+ * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
  * License: GPL3
  * */
 
 #include <stdlib.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <signal.h>
 
 #include <iostream>
 #include <fstream>
 
 #include "nwgconfig.h"
-#include <nwg_tools.h>
+#include "nwg_tools.h"
+
+// extern variables from nwg_tools.h
+int image_size = 72;
+
+// stores the name of the pid_file, for use in atexit
+static std::string pid_file{};
 
 /*
  * Returns config dir
@@ -43,19 +54,22 @@ std::string get_config_dir(std::string app) {
  * Returns window manager name
  * */
 std::string detect_wm() {
-    /* Actually we only need to check if we're on sway or not,
+    /* Actually we only need to check if we're on sway, i3 or other WM,
      * but let's try to find a WM name if possible. If not, let it be just "other" */
-    const char *env_var[2] = {"DESKTOP_SESSION", "SWAYSOCK"};
-    char *env_val[2];
+    const char *env_var[3] = {"DESKTOP_SESSION", "SWAYSOCK", "I3SOCK"};
+    char *env_val;
     std::string wm_name{"other"};
 
-    for(int i=0; i<2; i++) {
+    for(int i=0; i<3; i++) {
         // get environment values
-        env_val[i] = getenv(env_var[i]);
-        if (env_val[i] != NULL) {
-            std::string s(env_val[i]);
+        env_val = getenv(env_var[i]);
+        if (env_val != NULL) {
+            std::string s(env_val);
             if (s.find("sway") != std::string::npos) {
                 wm_name = "sway";
+                break;
+            } else if (s.find("i3") != std::string::npos) {
+                wm_name = "i3";
                 break;
             } else {
                 // is the value a full path or just a name?
@@ -125,7 +139,7 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
  * */
 Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon) {
     Glib::RefPtr<Gdk::Pixbuf> pixbuf;
-    
+
     try {
         if (icon.find_first_of("/") == std::string::npos) {
             pixbuf = icon_theme.load_icon(icon, image_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
@@ -200,7 +214,7 @@ std::string_view take_last_by(std::string_view str, std::string_view delimiter) 
     if (pos != std::string_view::npos) {
         return str.substr(pos + 1);
     }
-    return str;   
+    return str;
 }
 
 /*
@@ -222,6 +236,39 @@ void save_json(const ns::json& json_obj, const std::string& filename) {
 }
 
 /*
+ * Sets RGBA background according to hex strings
+* */
+void set_background(std::string_view string) {
+    std::string hex_string {"0x"};
+    unsigned long int rgba;
+    std::stringstream ss;
+    try {
+        if (string.find("#") == 0) {
+            hex_string += string.substr(1);
+        } else {
+            hex_string += string;
+        }
+        ss << std::hex << hex_string;
+        ss >> rgba;
+        if (hex_string.size() == 8) {
+            background.red = ((rgba >> 16) & 0xff) / 255.0;
+            background.green = ((rgba >> 8) & 0xff) / 255.0;
+            background.blue = ((rgba) & 0xff) / 255.0;
+        } else if (hex_string.size() == 10) {
+            background.red = ((rgba >> 24) & 0xff) / 255.0;
+            background.green = ((rgba >> 16) & 0xff) / 255.0;
+            background.blue = ((rgba >> 8) & 0xff) / 255.0;
+            background.alpha = ((rgba) & 0xff) / 255.0;
+        } else {
+            std::cerr << "ERROR: invalid color value. Should be RRGGBB or RRGGBBAA";
+        }
+    }
+    catch (...) {
+        std::cerr << "Error parsing RGB(A) value \n";
+    }
+}
+
+/*
  * Returns output of a command as string
  * */
 std::string get_output(const std::string& cmd) {
@@ -236,4 +283,77 @@ std::string get_output(const std::string& cmd) {
         result += buffer.data();
     }
     return result;
+}
+
+
+/*
+ * Remove pid_file created by create_pid_file_or_kill_pid.
+ * This function will be run before exiting.
+ * */
+static void clean_pid_file(void) {
+    unlink(pid_file.c_str());
+}
+
+/*
+ * Signal handler to exit normally with SIGTERM
+ * */
+static void exit_normal(int sig) {
+    if (sig == SIGTERM) {
+        std::cerr << "Received SIGTERM, exiting...\n";
+    }
+
+    std::exit(1);
+}
+
+/*
+ * Creates PID file for the new instance,
+ * or kills the other cmd instance.
+ *
+ * If it creates a PID file, it also sets up a signal handler to exit
+ * normally if it receives SIGTERM; and registers an atexit() action
+ * to run when exiting normally.
+ *
+ * This allows for behavior where using the shortcut to open one
+ * of the launchers closes the currently running one.
+ * */
+void create_pid_file_or_kill_pid(std::string cmd) {
+    std::string myuid = std::to_string(getuid());
+
+    char *runtime_dir_tmp = getenv("XDG_RUNTIME_DIR");
+    std::string runtime_dir;
+    if (runtime_dir_tmp) {
+        runtime_dir = runtime_dir_tmp;
+    } else {
+        runtime_dir = "/var/run/user/" + myuid;
+    }
+
+    pid_file = runtime_dir + "/" + cmd + ".pid";
+
+    auto pid_read = std::ifstream(pid_file);
+    // set to not throw exceptions
+    pid_read.exceptions(std::ifstream::goodbit);
+    if (pid_read.is_open()) {
+        // opening file worked - file exists
+        pid_t saved_pid;
+        pid_read >> saved_pid;
+
+        if (saved_pid > 0 && kill(saved_pid, 0) == 0) {
+            // found running instance
+            // PID file will be deleted by process's atexit routine
+            int rv = kill(saved_pid, SIGTERM);
+
+            // exit with status dependent on kill success
+            std::exit(rv == 0 ? 0 : 1);
+        }
+    }
+
+    std::string mypid = std::to_string(getpid());
+    save_string_to_file(mypid, pid_file);
+
+    // register function to clean pid file
+    atexit(clean_pid_file);
+    // register signal handler for SIGTERM
+    struct sigaction act {};
+    act.sa_handler = exit_normal;
+    sigaction(SIGTERM, &act, nullptr);
 }

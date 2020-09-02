@@ -6,14 +6,10 @@
  * License: GPL3
  * */
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <fcntl.h>
-
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <optional>
 
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
@@ -27,7 +23,6 @@ namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
 extern bool pins;
-extern double opacity;
 extern std::string wm;
 
 extern int num_col;
@@ -124,11 +119,11 @@ struct CacheEntry {
 /*
  * Function declarations
  * */
-std::string get_cache_path(void);
-std::string get_pinned_path(void);
-std::vector<std::string> get_app_dirs(void);
-std::vector<std::string> list_entries(const std::vector<std::string>&);
-DesktopEntry desktop_entry(std::string&&, const std::string&);
-ns::json get_cache(const std::string&);
-std::vector<std::string> get_pinned(const std::string&);
-std::vector<CacheEntry> get_favourites(ns::json&&, int);
+ns::json                    get_cache(const std::string&);
+std::string                 get_cache_path(void);
+std::string                 get_pinned_path(void);
+std::vector<std::string>    get_app_dirs(void);
+std::vector<std::string>    list_entries(const std::vector<std::string>&);
+std::vector<std::string>    get_pinned(const std::string&);
+std::vector<CacheEntry>     get_favourites(ns::json&&, int);
+std::optional<DesktopEntry> desktop_entry(std::string&&, const std::string&);

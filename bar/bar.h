@@ -26,7 +26,6 @@
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-extern double opacity;
 extern std::string wm;
 
 class BarBox : public AppBox {

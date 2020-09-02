@@ -2,6 +2,8 @@
  * Classes for nwg-launchers
  * Copyright (c) 2020 Érico Nogueira
  * e-mail: ericonr@disroot.org
+ * Copyright (c) 2020 Piotr Miller
+ * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
  * License: GPL3
@@ -47,9 +49,9 @@ CommonWindow::~CommonWindow() { }
 bool CommonWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     cr->save();
     if (_SUPPORTS_ALPHA) {
-        cr->set_source_rgba(0.0, 0.0, 0.0, opacity);
+        cr->set_source_rgba(background.red, background.green, background.blue, background.alpha);
     } else {
-        cr->set_source_rgb(0.0, 0.0, 0.0);
+        cr->set_source_rgb(background.red, background.green, background.blue);
     }
     cr->set_operator(Cairo::OPERATOR_SOURCE);
     cr->paint();
@@ -70,6 +72,7 @@ void CommonWindow::check_screen() {
         std::cerr << "Your screen does not support alpha channels!\n";
     }
     _SUPPORTS_ALPHA = (bool)visual;
+    gtk_widget_set_visual(GTK_WIDGET(gobj()), visual->gobj());
 }
 
 AppBox::AppBox() {

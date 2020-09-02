@@ -70,6 +70,16 @@ std::vector<std::string> get_app_dirs() {
             result.emplace_back(dir);
         }
     }
+    // Add flatpak dirs if not found in XDG_DATA_DIRS
+    std::string flatpak_data_dirs[] = {
+        homedir + "/.local/share/flatpak/exports/share/applications",
+        "/var/lib/flatpak/exports/share/applications"
+    };
+    for (std::string fp_dir : flatpak_data_dirs) {
+        if (std::find(result.begin(), result.end(), fp_dir) == result.end()) {
+            result.emplace_back(fp_dir);
+        }
+    }
     return result;
 }
 
@@ -98,7 +108,7 @@ template<typename ... Ts> visitor(Ts...) -> visitor<Ts...>;
 /*
  * Parses .desktop file to DesktopEntry struct
  * */
-DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
+std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string& lang) {
     using namespace std::literals::string_view_literals;
 
     DesktopEntry entry;
@@ -126,12 +136,13 @@ DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
         size_t index;
     };
     Match matches[] = {
-        { "Name="sv,    &name,       nop },
-        { loc_name,     &name_ln,    nop },
-        { "Exec="sv,    &entry.exec, cut },
-        { "Icon="sv,    &entry.icon, nop },
-        { "Comment="sv, &comment,    nop },
-        { loc_comment,  &comment_ln, nop }
+        { "Name="sv,     &entry.name,      nop },
+        { loc_name,      &name_ln,         nop },
+        { "Exec="sv,     &entry.exec,      cut },
+        { "Icon="sv,     &entry.icon,      nop },
+        { "Comment="sv,  &entry.comment,   nop },
+        { loc_comment,   &comment_ln,      nop },
+        { "MimeType="sv, &entry.mime_type, nop },
     };
 
     // Skip everything not related
@@ -143,6 +154,7 @@ DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
         }
     }
     // Repeat until the next section
+    constexpr auto nodisplay = "NoDisplay=true"sv;
     while (std::getline(file, str)) {
         if (str[0] == '[') { // new section begins, break
             break;
@@ -156,6 +168,9 @@ DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
                 len
             };
         };
+        if (view == nodisplay) {
+            return std::nullopt;
+        }
         for (auto& [prefix, dest, tag] : matches) {
             auto [ok, pos] = try_strip_prefix(prefix);
             if (ok) {
@@ -175,15 +190,10 @@ DesktopEntry desktop_entry(std::string&& path, const std::string& lang) {
         }
     }
 
-    if (name_ln.empty()) {
-        entry.name = std::move(name);
-    } else {
+    if (!name_ln.empty()) {
         entry.name = std::move(name_ln);
     }
-
-    if (comment_ln.empty()) {
-        entry.comment = std::move(comment);
-    } else {
+    if (!comment_ln.empty()) {
         entry.comment = std::move(comment_ln);
     }
     return entry;

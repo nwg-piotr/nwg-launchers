@@ -2,6 +2,8 @@
  * Classes for nwg-launchers
  * Copyright (c) 2020 Érico Nogueira
  * e-mail: ericonr@disroot.org
+ * Copyright (c) 2020 Piotr Miller
+ * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
  * License: GPL3
@@ -31,7 +33,6 @@ class InputParser{
         std::vector <std::string_view> tokens;
 };
 
-extern double opacity;
 class CommonWindow : public Gtk::Window {
     public:
         CommonWindow(const Glib::ustring&, const Glib::ustring&);
@@ -74,4 +75,13 @@ struct DesktopEntry {
     std::string exec;
     std::string icon;
     std::string comment;
+    std::string mime_type;
 };
+
+struct RGBA {
+    double red;
+    double green;
+    double blue;
+    double alpha;
+};
+extern RGBA background;

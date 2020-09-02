@@ -18,11 +18,10 @@
 #include "grid.h"
 
 bool pins = false;              // whether to display pinned
-double opacity = 0.9;           // overlay window opacity
+RGBA background = {0.0, 0.0, 0.0, 0.9};
 std::string wm {""};            // detected or forced window manager name
 
 int num_col = 6;                // number of grid columns
-int image_size = 72;            // button image size in pixels
 Gtk::Label *description;
 
 std::string pinned_file {};
@@ -34,15 +33,16 @@ const char* const HELP_MESSAGE =
 "GTK application grid: nwggrid " VERSION_STR " (c) Piotr Miller 2020 & Contributors \n\n\
 \
 Options:\n\
--h            show this help message and exit\n\
--f            display favourites (most used entries)\n\
--p            display pinned entries \n\
--o <opacity>  background opacity (0.0 - 1.0, default 0.9)\n\
--n <col>      number of grid columns (default: 6)\n\
--s <size>     button image size (default: 72)\n\
--c <name>     css file name (default: style.css)\n\
--l <ln>       force use of <ln> language\n\
--wm <wmname>  window manager name (if can not be detected)\n";
+-h               show this help message and exit\n\
+-f               display favourites (most used entries)\n\
+-p               display pinned entries \n\
+-o <opacity>     default (black) background opacity (0.0 - 1.0, default 0.9)\n\
+-b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
+-n <col>         number of grid columns (default: 6)\n\
+-s <size>        button image size (default: 72)\n\
+-c <name>        css file name (default: style.css)\n\
+-l <ln>          force use of <ln> language\n\
+-wm <wmname>     window manager name (if can not be detected)\n";
 
 int main(int argc, char *argv[]) {
     bool favs (false);              // whether to display favourites
@@ -52,25 +52,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&tp, NULL);
     long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-    pid_t pid = getpid();
-    std::string mypid = std::to_string(pid);
-
-    std::string pid_file = "/var/run/user/" + std::to_string(getuid()) + "/nwggrid.pid";
-
-    int saved_pid {};
-    if (std::ifstream(pid_file)) {
-        try {
-            saved_pid = std::stoi(read_file_to_string(pid_file));
-            if (kill(saved_pid, 0) != -1) {  // found running instance!
-                kill(saved_pid, 9);
-                save_string_to_file(mypid, pid_file);
-                std::exit(0);
-            }
-        } catch (...) {
-            std::cerr << "\nError reading pid file\n\n";
-        }
-    }
-    save_string_to_file(mypid, pid_file);
+    create_pid_file_or_kill_pid("nwggrid");
 
     std::string lang ("");
 
@@ -119,13 +101,18 @@ int main(int argc, char *argv[]) {
         try {
             auto o = std::stod(std::string{opa});
             if (o >= 0.0 && o <= 1.0) {
-                opacity = o;
+                background.alpha = o;
             } else {
                 std::cerr << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
             }
         } catch(...) {
             std::cerr << "\nERROR: Invalid opacity value\n\n";
         }
+    }
+
+    std::string_view bcg = input.getCmdOption("-b");
+    if (!bcg.empty()) {
+        set_background(bcg);
     }
 
     auto i_size = input.getCmdOption("-s");
@@ -208,24 +195,31 @@ int main(int argc, char *argv[]) {
     std::cout << "Locale: " << lang << "\n";
 
     /* get all applications dirs */
-    std::vector<std::string> app_dirs = get_app_dirs();
+    auto app_dirs = get_app_dirs();
 
     /* get a list of paths to all *.desktop entries */
-    std::vector<std::string> entries = list_entries(app_dirs);
-    std::cout << entries.size() << " .desktop entries found\n";
+    auto entries = list_entries(app_dirs);
+    std::cout << entries.size() << " .desktop entries found, ";
 
     /* create the vector of DesktopEntry structs */
     std::vector<DesktopEntry> desktop_entries {};
+    std::size_t hidden = 0;
     for (auto& entry_ : entries) {
         // string path -> DesktopEntry
-        auto entry = desktop_entry(std::move(entry_), lang);
+        auto maybe_entry = desktop_entry(std::move(entry_), lang);
+        if (!maybe_entry) {
+            hidden++;
+            continue; // the entry is NoDisplay, discard it and continue
+        }
+        auto& entry = *maybe_entry;
 
         // only add if 'name' and 'exec' not empty
         if (!entry.name.empty() && !entry.exec.empty()) {
             // avoid adding duplicates
             bool found = false;
             for (auto& e: desktop_entries) {
-                if (entry.name == e.name && entry.exec == e.exec) {
+                // Checking the mime_type field should resolve #89
+                if (entry.name == e.name && entry.exec == e.exec && entry.mime_type == e.mime_type) {
                     found = true;
                 }
             }
@@ -234,6 +228,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+    std::cout << desktop_entries.size() << " unique, " << hidden << " hidden by NoDisplay=true\n";
 
     /* sort above by the 'name' field */
     std::sort(desktop_entries.begin(), desktop_entries.end(), [](auto& a, auto& b) { return a.name < b.name; });
