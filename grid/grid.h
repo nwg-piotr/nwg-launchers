@@ -93,6 +93,7 @@ class MainWindow : public CommonWindow {
         std::vector<GridBox*> fav_boxes {};      // attached to favs_grid
         std::vector<GridBox*> pinned_boxes {};   // attached to pinned_grid
         bool pins_changed = false;
+        bool is_filtered = false;
 
         void focus_first_box();
         void filter_view();

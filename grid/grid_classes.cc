@@ -44,16 +44,6 @@ MainWindow::MainWindow()
     setup_grid(favs_grid);
     setup_grid(pinned_grid);
     apps_grid.set_sort_func(&by_name);
-    apps_grid.set_filter_func([this](Gtk::FlowBoxChild* c_) {
-        auto c = dynamic_cast<GridBox*>(c_->get_child());
-        auto text = this->searchbox.get_text();
-        if (text.size() == 0) {
-            return true;
-        }
-        auto phrase = text.casefold();
-        auto matches = [&phrase](auto& str) { return str.casefold().find(phrase) != Glib::ustring::npos; };
-        return matches(c->name) || matches(c->exec) || matches(c->comment);
-    });
     favs_grid.set_sort_func(&by_name);
 
     description.set_text("");
@@ -142,43 +132,8 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
     return Gtk::Window::on_key_press_event(key_event);
 }
 
-
-void MainWindow::filter_view() {
-    // FlowBox will filter the content for us,
-    // but we still need to hide unrelevant widgets
-    auto search_phrase = searchbox.get_text();
-    auto filtered = search_phrase.size() > 0;
-    if (filtered) {
-        this -> favs_grid.hide();
-    } else {
-        this -> favs_grid.show();
-    }
-    this -> apps_grid.invalidate_filter();
-    // TODO: fix this ugly hack
-    // I know no way to get total count of filtered items in FlowBox
-    // so we'll count them on our own
-    decltype(num_col) filtered_count = 0;
-    this -> apps_grid.foreach([&filtered_count](auto& child) {
-        filtered_count += child.get_visible();
-    });
-    this -> apps_grid.set_max_children_per_line(std::min(num_col, filtered_count));
-    this -> focus_first_box();
-    apps_grid.thaw_child_notify();
-}
-
-void MainWindow::refresh_separators() {
-    auto set_shown = [](auto c, auto& s) { if (c) s.show(); else s.hide(); };
-    auto p = !pinned_boxes.empty();
-    auto f = !fav_boxes.empty() && favs_grid.get_visible();
-    auto a = !apps_boxes.empty();
-    set_shown(p && f, separator1);
-    set_shown(f && a, separator);
-    if (p && a) {
-        separator.show();
-    }
-}
-
-/* In order to keep Gtk FlowBox content properly haligned, we have to maintain
+/*
+ * In order to keep Gtk FlowBox content properly haligned, we have to maintain
  * `max_children_per_line` equal to the total number of children
  * */
 inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container) {
@@ -188,19 +143,69 @@ inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container) {
         flowbox.set_max_children_per_line(std::min(size, cols));
     }
 };
+/*
+ * Populate grid with widgets from container
+ * */
+inline auto build_grid = [](auto& grid, auto& container) {
+    for (auto child : container) {
+        grid.add(*child);
+        child->get_parent()->set_can_focus(false); // FlowBoxChild shouldn't consume focus
+    }
+    refresh_max_children_per_line(grid, container);
+};
+
+void MainWindow::filter_view() {
+    auto clean_grid = [](auto& grid) {
+        grid.foreach([&grid](auto& child) {
+            grid.remove(child);
+            dynamic_cast<Gtk::FlowBoxChild*>(&child)->remove();
+        });
+    };
+    auto search_phrase = searchbox.get_text();
+    is_filtered = search_phrase.size() > 0;
+    filtered_boxes.clear();
+    apps_grid.freeze_child_notify();
+    if (is_filtered) {
+        favs_grid.hide();
+        auto phrase = search_phrase.casefold();
+        auto matches = [&phrase](auto& str) {
+            return str.casefold().find(phrase) != Glib::ustring::npos;
+        };
+        for (auto* box : apps_boxes) {
+            if (matches(box->name) || matches(box->exec) || matches(box->comment)) {
+                filtered_boxes.push_back(box);
+            }
+        }
+        clean_grid(apps_grid);
+        build_grid(apps_grid, filtered_boxes);
+    } else {
+        favs_grid.show();
+        clean_grid(apps_grid);
+        build_grid(apps_grid, apps_boxes);
+    }
+    this -> refresh_separators();
+    this -> focus_first_box();
+    apps_grid.thaw_child_notify();
+}
+
+void MainWindow::refresh_separators() {
+    auto set_shown = [](auto c, auto& s) { if (c) s.show(); else s.hide(); };
+    auto p = !pinned_boxes.empty();
+    auto f = !fav_boxes.empty() && !is_filtered;
+    auto a1 = !filtered_boxes.empty() && is_filtered;
+    auto a2 = !apps_boxes.empty() && !is_filtered;
+    auto a = a1 || a2;
+    set_shown(p && f, separator1);
+    set_shown(f && a, separator);
+    if (p && a) {
+        separator.show();
+    }
+}
 
 void MainWindow::build_grids() {
     this -> pinned_grid.freeze_child_notify();
     this -> favs_grid.freeze_child_notify();
     this -> apps_grid.freeze_child_notify();
-
-    auto build_grid = [](auto& grid, auto& container) {
-        for (auto child : container) {
-            grid.add(*child);
-            child->get_parent()->set_can_focus(false); // FlowBoxChild shouldn't consume focus
-        }
-        refresh_max_children_per_line(grid, container);
-    };
 
     build_grid(this->pinned_grid, this->pinned_boxes);
     build_grid(this->favs_grid, this->fav_boxes);
