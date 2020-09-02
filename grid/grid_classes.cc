@@ -154,6 +154,14 @@ void MainWindow::filter_view() {
         this -> favs_grid.show();
     }
     this -> apps_grid.invalidate_filter();
+    // TODO: fix this ugly hack
+    // I know no way to get total count of filtered items in FlowBox
+    // so we'll count them on our own
+    decltype(num_col) filtered_count = 0;
+    this -> apps_grid.foreach([&filtered_count](auto& child) {
+        filtered_count += child.get_visible();
+    });
+    this -> apps_grid.set_max_children_per_line(std::min(num_col, filtered_count));
     this -> focus_first_box();
     apps_grid.thaw_child_notify();
 }
