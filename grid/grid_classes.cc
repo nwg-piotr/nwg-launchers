@@ -38,6 +38,7 @@ MainWindow::MainWindow(size_t fav_size, size_t pinned_size)
         grid.set_row_spacing(5);
         grid.set_homogeneous(true);
         grid.set_halign(Gtk::ALIGN_CENTER);
+        grid.set_selection_mode(Gtk::SELECTION_NONE);
     };
     setup_grid(apps_grid);
     setup_grid(favs_grid);
@@ -181,6 +182,7 @@ void MainWindow::build_grids() {
     auto build_grid = [](auto& grid, auto& container) {
         for (auto child : container) {
             grid.add(*child);
+            child->get_parent()->set_can_focus(false); // FlowBoxChild shouldn't consume focus
         }
         refresh_max_children_per_line(grid, container);
     };

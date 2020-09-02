@@ -84,7 +84,7 @@ class MainWindow : public CommonWindow {
         //Override default signal handler:
         bool on_key_press_event(GdkEventKey*) override;
         bool on_delete_event(GdkEventAny*) override;
-        bool on_button_press_event(GdkEventButton* event) override;
+        bool on_button_press_event(GdkEventButton*) override;
     private:
         std::list<GridBox> all_boxes {};         // stores all applications buttons
         std::vector<GridBox*> apps_boxes {};     // boxes attached to apps_grid
