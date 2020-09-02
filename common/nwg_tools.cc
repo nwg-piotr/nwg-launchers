@@ -56,17 +56,20 @@ std::string get_config_dir(std::string app) {
 std::string detect_wm() {
     /* Actually we only need to check if we're on sway or not,
      * but let's try to find a WM name if possible. If not, let it be just "other" */
-    const char *env_var[2] = {"DESKTOP_SESSION", "SWAYSOCK"};
+    const char *env_var[3] = {"DESKTOP_SESSION", "SWAYSOCK", "I3SOCK"};
     char *env_val[2];
     std::string wm_name{"other"};
 
-    for(int i=0; i<2; i++) {
+    for(int i=0; i<3; i++) {
         // get environment values
         env_val[i] = getenv(env_var[i]);
         if (env_val[i] != NULL) {
             std::string s(env_val[i]);
             if (s.find("sway") != std::string::npos) {
                 wm_name = "sway";
+                break;
+            } else if (s.find("i3") != std::string::npos) {
+                wm_name = "i3";
                 break;
             } else {
                 // is the value a full path or just a name?
