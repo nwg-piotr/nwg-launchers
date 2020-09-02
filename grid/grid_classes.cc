@@ -23,7 +23,7 @@ int by_name(Gtk::FlowBoxChild* a_, Gtk::FlowBoxChild* b_) {
     return a->name.compare(b->name);
 }
 
-MainWindow::MainWindow(size_t fav_size, size_t pinned_size)
+MainWindow::MainWindow()
  : CommonWindow("~nwggrid", "~nwggrid")
 {
     searchbox
@@ -83,16 +83,11 @@ MainWindow::MainWindow(size_t fav_size, size_t pinned_size)
 
     pinned_hbox.pack_start(pinned_grid, Gtk::PACK_EXPAND_WIDGET, 0);
     inner_vbox.pack_start(pinned_hbox, Gtk::PACK_EXPAND_PADDING, 5);
-    if (pins && pinned_size > 0) {
-        inner_vbox.pack_start(separator1, false, true, 0);
-    }
+    inner_vbox.pack_start(separator1, false, true, 0);
     
     favs_hbox.pack_start(favs_grid, true, false, 0);
     inner_vbox.pack_start(favs_hbox, false, false, 5);
-    // if favs disabled, fav_size == 0
-    if (fav_size > 0) {
-        inner_vbox.pack_start(separator, false, true, 0);
-    }
+    inner_vbox.pack_start(separator, false, true, 0);
 
     apps_hbox.pack_start(apps_grid, Gtk::PACK_EXPAND_PADDING);
     inner_vbox.pack_start(apps_hbox, true, true, 0);
@@ -155,14 +150,29 @@ void MainWindow::filter_view() {
     auto filtered = search_phrase.size() > 0;
     if (filtered) {
         this -> favs_grid.hide();
-        this -> separator.hide();
     } else {
         this -> favs_grid.show();
-        this -> separator.show();
     }
     this -> apps_grid.invalidate_filter();
     this -> focus_first_box();
     apps_grid.thaw_child_notify();
+}
+
+void MainWindow::refresh_separators() {
+    auto empty = 0;
+    empty += pinned_boxes.empty();
+    empty += fav_boxes.empty() && favs_grid.get_visible();
+    empty += apps_boxes.empty();
+    if (empty <= 1) {
+        separator.show();
+    } else {
+        separator.hide();
+    }
+    if (empty == 0) {
+        separator1.show();
+    } else {
+        separator1.hide();
+    }
 }
 
 /* In order to keep Gtk FlowBox content properly haligned, we have to maintain
@@ -202,6 +212,7 @@ void MainWindow::build_grids() {
     this -> apps_grid.thaw_child_notify();
 
     this -> set_description(std::to_string(apps_boxes.size()));
+    this -> refresh_separators();
 }
 
 void MainWindow::focus_first_box() {
@@ -254,6 +265,7 @@ void MainWindow::toggle_pinned(GridBox& box) {
     // but its parent, FlowBoxChild is
     // so we need to reparent FlowBoxChild, not the box itself
     box.get_parent()->reparent(*to_grid);
+    this->refresh_separators();
 }
 
 /*

@@ -257,7 +257,7 @@ int main(int argc, char *argv[]) {
         std::cout << "Using " << default_css_file << '\n';
     }
 
-    MainWindow window{ favourites.size(), pinned.size() };
+    MainWindow window;
 
     window.show();
 

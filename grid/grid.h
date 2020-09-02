@@ -57,7 +57,7 @@ public:
 
 class MainWindow : public CommonWindow {
     public:
-        MainWindow(size_t, size_t);
+        MainWindow();
 
         Gtk::SearchEntry searchbox;              // Search apps
         Gtk::Label description;                  // To display .desktop entry Comment field at the bottom
@@ -96,6 +96,7 @@ class MainWindow : public CommonWindow {
 
         void focus_first_box();
         void filter_view();
+        void refresh_separators();
 };
 
 template <typename ... Args>
