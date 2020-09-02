@@ -171,7 +171,9 @@ void MainWindow::filter_view() {
 inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container) {
     auto size = container.size();
     decltype(size) cols = num_col;
-    flowbox.set_max_children_per_line(std::min(size, cols));
+    if (auto min = std::min(cols, size)) {
+        flowbox.set_max_children_per_line(std::min(size, cols));
+    }
 };
 
 void MainWindow::build_grids() {
