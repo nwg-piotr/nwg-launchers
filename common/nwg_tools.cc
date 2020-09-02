@@ -260,11 +260,11 @@ void set_background(std::string_view string) {
             background.blue = ((rgba >> 8) & 0xff) / 255.0;
             background.alpha = ((rgba) & 0xff) / 255.0;
         } else {
-            std::cerr << "ERROR: invalid color value. Should be RRGGBB or RRGGBBAA";
+            std::cerr << "ERROR: invalid color value. Should be RRGGBB or RRGGBBAA\n";
         }
     }
     catch (...) {
-        std::cerr << "Error parsing RGB(A) value \n";
+        std::cerr << "Error parsing RGB(A) value\n";
     }
 }
 

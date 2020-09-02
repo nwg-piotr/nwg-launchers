@@ -116,11 +116,9 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
     std::ifstream file(path);
     std::string str;
 
-    std::string name {};            // Name=
     std::string name_ln {};         // localized: Name[ln]=
     std::string loc_name = "Name[" + lang + "]=";
 
-    std::string comment {};         // Comment=
     std::string comment_ln {};      // localized: Comment[ln]=
     std::string loc_comment = "Comment[" + lang + "]=";
 
