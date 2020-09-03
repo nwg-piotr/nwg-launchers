@@ -140,6 +140,7 @@ inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container) {
     auto size = container.size();
     decltype(size) cols = num_col;
     if (auto min = std::min(cols, size)) {
+        flowbox.set_min_children_per_line(std::min(size, cols));
         flowbox.set_max_children_per_line(std::min(size, cols));
     }
 };
