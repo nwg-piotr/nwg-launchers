@@ -332,8 +332,8 @@ void GridBox::on_enter() {
 }
 
 void GridBox::on_activate() {
-    exec.append(" &");
-    std::system(exec.data());
+    auto cmd = exec + " &";
+    std::system(cmd.data());
     auto toplevel = dynamic_cast<MainWindow*>(this->get_toplevel());
     toplevel->close();
 }
