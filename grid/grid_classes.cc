@@ -44,7 +44,6 @@ MainWindow::MainWindow()
     setup_grid(favs_grid);
     setup_grid(pinned_grid);
     apps_grid.set_sort_func(&by_name);
-    favs_grid.set_sort_func(&by_name);
 
     description.set_text("");
     description.set_name("description");
@@ -219,7 +218,7 @@ void MainWindow::build_grids() {
     this -> favs_grid.thaw_child_notify();
     this -> apps_grid.thaw_child_notify();
 
-    this -> set_description(std::to_string(apps_boxes.size()));
+    this -> focus_first_box();
     this -> refresh_separators();
 }
 
