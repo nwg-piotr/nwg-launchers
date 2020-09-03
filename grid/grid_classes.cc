@@ -168,7 +168,6 @@ void MainWindow::filter_view() {
     filtered_boxes.clear();
     apps_grid.freeze_child_notify();
     if (is_filtered) {
-        favs_grid.hide();
         auto phrase = search_phrase.casefold();
         auto matches = [&phrase](auto& str) {
             return str.casefold().find(phrase) != Glib::ustring::npos;
@@ -181,7 +180,6 @@ void MainWindow::filter_view() {
         clean_grid(apps_grid);
         build_grid(apps_grid, filtered_boxes);
     } else {
-        favs_grid.show();
         clean_grid(apps_grid);
         build_grid(apps_grid, apps_boxes);
     }
@@ -193,7 +191,7 @@ void MainWindow::filter_view() {
 void MainWindow::refresh_separators() {
     auto set_shown = [](auto c, auto& s) { if (c) s.show(); else s.hide(); };
     auto p = !pinned_boxes.empty();
-    auto f = !fav_boxes.empty() && !is_filtered;
+    auto f = !fav_boxes.empty();
     auto a1 = !filtered_boxes.empty() && is_filtered;
     auto a2 = !apps_boxes.empty() && !is_filtered;
     auto a = a1 || a2;
