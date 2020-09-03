@@ -72,7 +72,8 @@ MainWindow::MainWindow()
     scrolled_window.add(inner_vbox);
 
     pinned_hbox.pack_start(pinned_grid, Gtk::PACK_EXPAND_WIDGET, 0);
-    inner_vbox.pack_start(pinned_hbox, Gtk::PACK_EXPAND_PADDING, 5);
+    inner_vbox.set_halign(Gtk::ALIGN_CENTER);
+    inner_vbox.pack_start(pinned_hbox, Gtk::PACK_SHRINK, 5);
     inner_vbox.pack_start(separator1, false, true, 0);
     
     favs_hbox.pack_start(favs_grid, true, false, 0);
@@ -80,7 +81,7 @@ MainWindow::MainWindow()
     inner_vbox.pack_start(separator, false, true, 0);
 
     apps_hbox.pack_start(apps_grid, Gtk::PACK_EXPAND_PADDING);
-    inner_vbox.pack_start(apps_hbox, true, true, 0);
+    inner_vbox.pack_start(apps_hbox, Gtk::PACK_SHRINK);
 
     outer_vbox.pack_start(scrolled_window, Gtk::PACK_EXPAND_WIDGET);
     scrolled_window.show_all_children();
