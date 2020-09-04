@@ -175,7 +175,7 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
                 std::visit(visitor {
                     [dest, pos, &view](nop_t) { *dest = view.substr(pos); },
                     [dest, pos, &view](cut_t) {
-                        auto idx = view.find_first_of('%', pos);
+                        auto idx = view.find(" %", pos);
                         if (idx == std::string_view::npos) {
                             idx = std::size(view);
                         }
