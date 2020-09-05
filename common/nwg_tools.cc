@@ -158,20 +158,15 @@ Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon)
  * Returns current locale
  * */
 std::string get_locale() {
-    std::string l {"en"};
-    if (getenv("LANG") != NULL) {
-        char* env_val = getenv("LANG");
-        std::string loc(env_val);
-        if (!loc.empty()) {
-            if (loc.find("_") != std::string::npos) {
-                int idx = loc.find_first_of("_");
-                l = loc.substr(0, idx);
-            } else {
-                l = loc;
-            }
+    std::string loc = getenv("LANG");
+    if (!loc.empty()) {
+        auto idx = loc.find_first_of("_");
+        if (idx != std::string::npos) {
+            loc.resize(idx);
         }
+        return loc;
     }
-    return l;
+    return "en";
 }
 
 /*
@@ -243,7 +238,7 @@ void save_json(const ns::json& json_obj, const std::string& filename) {
 /*
  * Sets RGBA background according to hex strings
 * */
-void set_background(const std::string_view string) {
+void set_background(std::string_view string) {
     std::string hex_string {"0x"};
     unsigned long int rgba;
     std::stringstream ss;
@@ -265,11 +260,11 @@ void set_background(const std::string_view string) {
             background.blue = ((rgba >> 8) & 0xff) / 255.0;
             background.alpha = ((rgba) & 0xff) / 255.0;
         } else {
-            std::cerr << "ERROR: invalid color value. Should be RRGGBB or RRGGBBAA";
+            std::cerr << "ERROR: invalid color value. Should be RRGGBB or RRGGBBAA\n";
         }
     }
     catch (...) {
-        std::cerr << "Error parsing RGB(A) value \n";
+        std::cerr << "Error parsing RGB(A) value\n";
     }
 }
 

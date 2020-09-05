@@ -45,8 +45,6 @@ int main(int argc, char *argv[]) {
 
     create_pid_file_or_kill_pid("nwgbar");
 
-    std::string lang ("");
-
     InputParser input(argc, argv);
     if(input.cmdOptionExists("-h")){
         std::cout << HELP_MESSAGE;
