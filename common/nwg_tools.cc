@@ -109,6 +109,22 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
             return geo;
         }
         catch (...) { }
+    } else if (wm == "i3") {
+        try {
+            auto jsonString = get_output("i3-msg -t get_workspaces");
+            auto jsonObj = string_to_json(jsonString);
+            for (auto&& entry : jsonObj) {
+                if (entry.at("focused")) {
+                    auto&& rect = entry.at("rect");
+                    geo.x = rect.at("x");
+                    geo.y = rect.at("y");
+                    geo.width = rect.at("width");
+                    geo.height = rect.at("height");
+                    break;
+                }
+            }
+        }
+        catch (...) { }
     }
 
     // it's going to fail until the window is actually open
