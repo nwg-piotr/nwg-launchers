@@ -241,6 +241,18 @@ In case you use default window borders, an exclusion like this may be necessary:
 for_window [title="~nwg"] border none
 ```
 
+## Openbox Note
+
+To start nwgdmenu from a key binding, use the `-run` argument, e.g.:
+
+```xml
+<keybind key="W-D">
+  <action name="Execute">
+    <command>nwgdmenu -run</command>
+  </action>
+</keybind>
+```
+
 ## Tips & tricks
 
 ### Hide unwanted icons in nwggrid
