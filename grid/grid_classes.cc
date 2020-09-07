@@ -272,7 +272,12 @@ void MainWindow::toggle_pinned(GridBox& box) {
     // but its parent, FlowBoxChild is
     // so we need to reparent FlowBoxChild, not the box itself
     box.get_parent()->reparent(*to_grid);
-    this->refresh_separators();
+    // refresh filter if needed
+    if (is_filtered) {
+        this->filter_view();
+    } else {
+        this->refresh_separators();
+    }
 }
 
 /*
