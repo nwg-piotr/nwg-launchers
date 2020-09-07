@@ -59,27 +59,53 @@ std::string get_pinned_path() {
  * Returns locations of .desktop files
  * */
 std::vector<std::string> get_app_dirs() {
-    std::string homedir = getenv("HOME");
-    std::vector<std::string> result = {homedir + "/.local/share/applications", "/usr/share/applications",
-        "/usr/local/share/applications"};
+    std::vector<std::string> result;
 
-    auto xdg_data_dirs = getenv("XDG_DATA_DIRS");
-    if (xdg_data_dirs != NULL) {
-        auto dirs = split_string(xdg_data_dirs, ":");
+    result.reserve(8);
+    auto append = [](auto&& str, auto&& suf) {
+        if (str.back() != '/') {
+            str.push_back('/');
+        }
+        str.append(suf);
+    };
+
+    std::string home = getenv("HOME");
+    
+    auto xdg_data_home = getenv("XDG_DATA_HOME");
+    if (xdg_data_home) {
+        auto dirs = split_string(xdg_data_home, ":");
         for (auto& dir : dirs) {
-            result.emplace_back(dir);
+            auto& s = result.emplace_back(dir);
+            append(s, "applications");
+        }
+    } else {
+        if (!home.empty()) {
+            auto& s = result.emplace_back(home);
+            append(s, ".local/share/applications");
         }
     }
+    
+    const char* xdg_data_dirs = getenv("XDG_DATA_DIRS");
+    if (!xdg_data_dirs) {
+        xdg_data_dirs = "/usr/local/share/:/usr/share/";
+    }
+    auto dirs = split_string(xdg_data_dirs, ":");
+    for (auto& dir : dirs) {
+        auto& s = result.emplace_back(dir);
+        append(s, "applications");
+    }
+
     // Add flatpak dirs if not found in XDG_DATA_DIRS
     std::string flatpak_data_dirs[] = {
-        homedir + "/.local/share/flatpak/exports/share/applications",
+        home + "/.local/share/flatpak/exports/share/applications",
         "/var/lib/flatpak/exports/share/applications"
     };
-    for (std::string fp_dir : flatpak_data_dirs) {
+    for (auto& fp_dir : flatpak_data_dirs) {
         if (std::find(result.begin(), result.end(), fp_dir) == result.end()) {
             result.emplace_back(fp_dir);
         }
     }
+ 
     return result;
 }
 
