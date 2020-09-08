@@ -193,7 +193,9 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
             };
         };
         if (view == nodisplay) {
-            return std::nullopt;
+            // @Siborgium: return std::nullopt won't do the job, as we DO NEED this object.
+            // See https://wiki.archlinux.org/index.php/desktop_entries#Hide_desktop_entries
+            entry.no_display = true;
         }
         for (auto& [prefix, dest, tag] : matches) {
             auto [ok, pos] = try_strip_prefix(prefix);

@@ -206,11 +206,15 @@ int main(int argc, char *argv[]) {
     for (auto& entry_ : entries) {
         // string path -> DesktopEntry
         auto maybe_entry = desktop_entry(std::move(entry_), lang);
-        if (!maybe_entry) {
-            hidden++;
-            continue; // the entry is NoDisplay, discard it and continue
-        }
+        // We need hidden desktop entries!
+        //if (!maybe_entry) {
+        //    hidden++;
+        //     continue; // the entry is NoDisplay, discard it and continue
+        //}
         auto& entry = *maybe_entry;
+        if (entry.no_display) {
+            hidden++;
+        }
 
         // only add if 'name' and 'exec' not empty
         if (!entry.name.empty() && !entry.exec.empty()) {
@@ -321,9 +325,9 @@ int main(int argc, char *argv[]) {
                 auto& ab = window.emplace_box(std::move(de.name),
                                               std::move(de.exec),
                                               std::move(de.comment),
-                                              GridBox::Favorite, 
+                                              GridBox::Favorite,
                                               GridBox::Unpinned);
-                
+
                 Gtk::Image* image = app_image(icon_theme_ref, de.icon);
                 ab.set_image_position(Gtk::POS_TOP);
                 ab.set_image(*image);
@@ -335,7 +339,7 @@ int main(int argc, char *argv[]) {
     for (auto& entry : desktop_entries) {
         // if it's empty, it was probably moved from during the previous steps
         // there should be some better way, but it works
-        if (!entry.exec.empty()) {
+        if (!entry.exec.empty() && !entry.no_display) {
              auto& ab = window.emplace_box(std::move(entry.name),
                                            std::move(entry.exec),
                                            std::move(entry.comment),
@@ -347,7 +351,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    
+
     window.build_grids();
 
     gettimeofday(&tp, NULL);
