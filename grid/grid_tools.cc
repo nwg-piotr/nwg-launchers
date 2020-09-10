@@ -13,7 +13,7 @@
 #include "nwg_tools.h"
 #include "grid.h"
 
-CacheEntry::CacheEntry(std::string exec, int clicks): exec(std::move(exec)), clicks(clicks) { }
+CacheEntry::CacheEntry(std::string desktop_id, int clicks): desktop_id(std::move(desktop_id)), clicks(clicks) { }
 
 /*
  * Returns cache file path
@@ -193,6 +193,9 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
     }
     if (!comment_ln.empty()) {
         entry.comment = std::move(comment_ln);
+    }
+    if (entry.name.empty() || entry.exec.empty()) {
+        return std::nullopt;
     }
     return entry;
 }

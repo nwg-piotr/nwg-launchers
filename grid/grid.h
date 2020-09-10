@@ -114,7 +114,7 @@ GridBox& MainWindow::emplace_box(Args&& ... args) {
 }
 
 struct CacheEntry {
-    std::string exec;
+    std::string desktop_id;
     int clicks;
     CacheEntry(std::string, int);
 };
