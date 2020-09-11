@@ -17,10 +17,12 @@
 #include "nwg_tools.h"
 #include "grid.h"
 
-int by_name(Gtk::FlowBoxChild* a_, Gtk::FlowBoxChild* b_) {
-    auto a = dynamic_cast<GridBox*>(a_->get_child());
-    auto b = dynamic_cast<GridBox*>(b_->get_child());
-    return a->name.compare(b->name);
+inline auto child_ = [](auto c) -> auto& { return *dynamic_cast<GridBox*>(c->get_child()); };
+int by_name(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
+    return child_(a).name.compare(child_(b).name);
+}
+int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
+    return child_(a).stats().clicks < child_(b).stats().clicks;
 }
 
 MainWindow::MainWindow()
@@ -44,6 +46,7 @@ MainWindow::MainWindow()
     setup_grid(favs_grid);
     setup_grid(pinned_grid);
     apps_grid.set_sort_func(&by_name);
+    favs_grid.set_sort_func(&by_clicks);
 
     description.set_text("");
     description.set_name("description");
@@ -139,7 +142,7 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
 inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container) {
     auto size = container.size();
     decltype(size) cols = num_col;
-    if (auto min = std::min(cols, size)) {
+    if (auto min = std::min(cols, size)) { // suppress gtk warnings about size=0
         flowbox.set_min_children_per_line(std::min(size, cols));
         flowbox.set_max_children_per_line(std::min(size, cols));
     }

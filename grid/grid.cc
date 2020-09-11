@@ -196,10 +196,6 @@ int main(int argc, char *argv[]) {
     /* get all applications dirs */
     auto dirs = get_app_dirs();
 
-//    /* get a list of paths to all *.desktop entries */
-//    auto entries = list_entries(app_dirs);
-//    std::cout << entries.size() << " .desktop entries found, ";
-
     gettimeofday(&tp, NULL);
     long int commons_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
