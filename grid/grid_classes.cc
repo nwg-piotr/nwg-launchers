@@ -243,13 +243,13 @@ void MainWindow::toggle_pinned(GridBox& box) {
     // disable prelight
     box.unset_state_flags(Gtk::STATE_FLAG_PRELIGHT);
 
-    auto is_pinned = box.pinned == GridBox::Pinned;
-    box.pinned = GridBox::PinTag{ !is_pinned };
+    auto is_pinned = box.stats().pinned == Stats::Pinned;
+    box.stats().pinned = Stats::PinTag{ !is_pinned };
 
     auto* from_grid = &this->apps_grid;
     auto* from = &this->apps_boxes;
 
-    if (box.favorite) {
+    if (box.stats().favorite) {
         from_grid = &this->favs_grid;
         from = &this->fav_boxes;
     }
@@ -299,8 +299,8 @@ bool MainWindow::has_fav_with_exec(const std::string& exec) const {
 }
 
 // This constructor is not needed since C++20
-GridBox::GridBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment, GridBox::FavTag fav, GridBox::PinTag pinned)
- : AppBox(std::move(name), std::move(exec), std::move(comment)), favorite(fav), pinned(pinned) {}
+GridBox::GridBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment, Stats& stats)
+ : AppBox(std::move(name), std::move(exec), std::move(comment)), _stats(&stats) { }
 
 bool GridBox::on_button_press_event(GdkEventButton* event) {
     if (pins && event->button == 3) {
@@ -315,8 +315,6 @@ bool GridBox::on_button_press_event(GdkEventButton* event) {
             clicks = 1;
         }
         cache[exec] = clicks;
-        save_json(cache, cache_file);    
-
         this -> activate();
     }
     return AppBox::on_button_press_event(event);

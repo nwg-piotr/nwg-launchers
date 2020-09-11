@@ -32,8 +32,7 @@ extern std::vector<std::string> pinned;
 extern ns::json cache;
 extern std::string cache_file;
 
-class GridBox : public AppBox {
-public:
+struct Stats {
     enum FavTag: bool {
         Common = 0,
         Favorite = 1,
@@ -42,17 +41,23 @@ public:
         Unpinned = 0,
         Pinned = 1,
     };
+    int    clicks;
+    FavTag favorite;
+    PinTag pinned;
+    Stats(int c, FavTag f, PinTag p): clicks(c), favorite(f), pinned(p) { }
+};
 
+class GridBox : public AppBox {
+public:
     /* name, exec, comment, favorite, pinned */
-    GridBox(Glib::ustring, Glib::ustring, Glib::ustring, FavTag, PinTag);
+    GridBox(Glib::ustring, Glib::ustring, Glib::ustring, Stats&);
     bool on_button_press_event(GdkEventButton*) override;
     bool on_focus_in_event(GdkEventFocus*) override;
     void on_enter() override;
     void on_activate() override;
 
-
-    FavTag favorite;
-    PinTag pinned;
+    constexpr Stats& stats() const noexcept { return *_stats; }
+    Stats* _stats;
 };
 
 class MainWindow : public CommonWindow {
@@ -103,13 +108,13 @@ class MainWindow : public CommonWindow {
 template <typename ... Args>
 GridBox& MainWindow::emplace_box(Args&& ... args) {
     auto& ab = this -> all_boxes.emplace_back(std::forward<Args>(args)...);
-    if (ab.pinned) {
-        pinned_boxes.push_back(&ab);
-    } else if (ab.favorite) {
-        fav_boxes.push_back(&ab);
-    } else {
-        apps_boxes.push_back(&ab);
+    auto* boxes = &apps_boxes;
+    if (ab.stats().pinned) {
+        boxes = &pinned_boxes;
+    } else if (ab.stats().favorite) {
+        boxes = &fav_boxes;
     }
+    boxes->push_back(&ab);
     return ab;
 }
 

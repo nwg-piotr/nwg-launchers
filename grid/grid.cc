@@ -202,13 +202,8 @@ int main(int argc, char *argv[]) {
 
     gettimeofday(&tp, NULL);
     long int commons_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+
     /* TODO: Provide meaningful explanation */
-    struct Stats {
-        int             clicks; // TODO: std::size_t?
-        GridBox::FavTag fav;
-        GridBox::PinTag pin;
-        Stats(int c, decltype(fav) f, decltype(pin) p): clicks(c), fav(f), pin(p) { }
-    };
     std::unordered_map<std::string, std::size_t> desktop_ids;
     std::vector<std::optional<DesktopEntry>>     desktop_entries;
     std::vector<Stats>                           stats;
@@ -237,7 +232,7 @@ int main(int argc, char *argv[]) {
                 auto pos = desktop_ids.size();
                 desktop_ids.emplace_hint(result, id, pos);
                 desktop_entries.emplace_back(desktop_entry(path, lang));
-                stats.emplace_back(0, GridBox::Common, GridBox::Unpinned);
+                stats.emplace_back(0, Stats::Common, Stats::Unpinned);
                 images.emplace_back(nullptr);
             }
         }
@@ -245,13 +240,13 @@ int main(int argc, char *argv[]) {
 
     for (auto& pin : pinned) {
         if (auto result = desktop_ids.find(pin); result != desktop_ids.end()) {
-            stats[result->second].pin = GridBox::Pinned;
+            stats[result->second].pinned = Stats::Pinned;
         }
     }
     for (auto& [fav, clicks] : favourites) {
         if (auto result = desktop_ids.find(fav); result != desktop_ids.end()) {
-            stats[result->second].clicks = clicks;
-            stats[result->second].fav = GridBox::Favorite;
+            stats[result->second].clicks   = clicks;
+            stats[result->second].favorite = Stats::Favorite;
         }
     }
 
@@ -298,9 +293,10 @@ int main(int argc, char *argv[]) {
     int h = geometry.height;
 
     /* turn off borders, enable floating on sway */
-    if (wm == "sway") {
+    if (wm == "sway") { // TODO: Use sway-ipc
         auto* cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
         std::system(cmd);
+        cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
     }
 
     if (wm == "sway" || wm == "i3" || wm == "openbox") {
@@ -311,6 +307,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&tp, NULL);
     long int images_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
+    // The most expensive part
     for (std::size_t i = 0; i < desktop_entries.size(); i++) {
         if (desktop_entries[i]) {
             images[i] = app_image(icon_theme_ref, desktop_entries[i]->icon);
@@ -324,12 +321,10 @@ int main(int argc, char *argv[]) {
         auto& entry_ = desktop_entries[pos];
         if (entry_) {
             auto& entry = *entry_;
-            auto [clicks, fav, pin] = stats[pos];
             auto& ab = window.emplace_box(std::move(entry.name),
                                           std::move(entry.exec),
                                           std::move(entry.comment),
-                                          fav,
-                                          pin);
+                                          stats[pos]);
             ab.set_image_position(Gtk::POS_TOP);
             ab.set_image(*images[pos]);
         }
