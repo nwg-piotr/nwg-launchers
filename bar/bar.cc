@@ -178,10 +178,9 @@ int main(int argc, char *argv[]) {
 
     /* turn off borders, enable floating on sway */
     if (wm == "sway") {
-        auto* cmd = "swaymsg for_window [title=\"~nwgbar*\"] floating enable";
-        std::system(cmd);
-        cmd = "swaymsg for_window [title=\"~nwgbar*\"] border none";
-        std::system(cmd);
+        SwaySock sock;
+        sock.run("for_window [title=\"~nwgbar*\"] floating enable");
+        sock.run("for_window [title=\"~nwgbar*\"] border none");
     }
 
     Gtk::Main kit(argc, argv);

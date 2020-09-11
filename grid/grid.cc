@@ -266,6 +266,7 @@ int main(int argc, char *argv[]) {
     auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
     if (!icon_theme) {
         std::cerr << "ERROR: Failed to load icon theme\n";
+        std::exit(EXIT_FAILURE);
     }
     auto& icon_theme_ref = *icon_theme.get();
     icon_theme_ref.add_resource_path(DATA_DIR_STR "/icon-missing.svg");
@@ -293,10 +294,10 @@ int main(int argc, char *argv[]) {
     int h = geometry.height;
 
     /* turn off borders, enable floating on sway */
-    if (wm == "sway") { // TODO: Use sway-ipc
-        auto* cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
-        std::system(cmd);
-        cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
+    if (wm == "sway") {
+        SwaySock sock;
+        sock.run("for_window [title=\"~nwggrid*\"] floating enable");
+        sock.run("for_window [title=\"~nwggrid*\"] border none");
     }
 
     if (wm == "sway" || wm == "i3" || wm == "openbox") {

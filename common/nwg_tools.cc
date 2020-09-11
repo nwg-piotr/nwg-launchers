@@ -13,6 +13,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include <iostream>
 #include <fstream>
@@ -89,6 +91,92 @@ std::string detect_wm() {
     return wm_name;
 }
 
+SwaySock::SwaySock() {
+    auto path = getenv("SWAYSOCK");
+    if (!path) {
+        path = getenv("I3SOCK");
+        if (!path) {
+            throw SwayError::EnvNotSet;
+        }
+    }
+    path = strdup(path);
+
+    sock_ = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (sock_ == -1) {
+        free(path);
+        throw SwayError::OpenFailed;
+    }
+    
+    sockaddr_un addr;
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
+    addr.sun_path[sizeof(addr.sun_path) - 1] = 0;
+    if (connect(sock_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1) {
+        free(path);
+        throw SwayError::ConnectFailed;
+    }
+    free(path);
+}
+
+SwaySock::~SwaySock() {
+    close(sock_);
+}
+
+static constexpr char MAGIC[] = { 'i', '3', '-', 'i', 'p', 'c' };
+static constexpr auto MAGIC_SIZE = sizeof(MAGIC);
+static constexpr auto U32_SIZE = sizeof(std::uint32_t);
+static constexpr auto HEADER_SIZE = MAGIC_SIZE + 2 * U32_SIZE;
+static constexpr std::uint32_t RUN_COMMAND    = 0; // see sway-ipc(7)
+static constexpr std::uint32_t GET_OUTPUTS = 3; // see sway-ipc(7)
+
+static inline void make_header_(char* header, std::uint32_t len, std::uint32_t type) {
+    memcpy(header, MAGIC, MAGIC_SIZE);
+    memcpy(header + MAGIC_SIZE, &len, U32_SIZE);
+    memcpy(header + MAGIC_SIZE + U32_SIZE, &type, U32_SIZE);
+}
+
+std::string SwaySock::get_outputs() {
+    char header[HEADER_SIZE];
+    make_header_(header, 0, GET_OUTPUTS);
+    
+    if (write(sock_, header, HEADER_SIZE) == -1) {
+        throw SwayError::SendHeaderFailed;
+    }
+
+    std::size_t total = 0;
+    while (total < HEADER_SIZE) {
+        auto received = recv(sock_, header, HEADER_SIZE - total, 0);
+        if (received < 0) {
+            throw SwayError::RecvHeaderFailed;
+        }
+        total += received;
+    }
+    auto payload_size = *(std::uint32_t*)(header + MAGIC_SIZE);
+    std::string buffer(payload_size + 1, '\0');
+    auto payload = buffer.data();
+    total = 0;
+    while (total < payload_size) {
+        auto received = recv(sock_, payload + total, payload_size - total, 0);
+        if (received < 0) {
+            throw SwayError::RecvBodyFailed;
+        }
+        total += received;
+    }
+    return buffer;    
+}
+
+void SwaySock::run(std::string_view cmd) {
+    char header[HEADER_SIZE];
+    make_header_(header, cmd.size(), RUN_COMMAND);
+
+    if (write(sock_, header, HEADER_SIZE) == -1) {
+        throw SwayError::SendHeaderFailed;
+    }
+    if (write(sock_, cmd.data(), cmd.size()) == -1) {
+        throw SwayError::SendBodyFailed;
+    }
+}
+
 /*
  * Returns x, y, width, hight of focused display
  * */
@@ -96,7 +184,8 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
     Geometry geo = {0, 0, 0, 0};
     if (wm == "sway") {
         try {
-            auto jsonString = get_output("swaymsg -t get_outputs");
+            SwaySock sock;
+            auto jsonString = sock.get_outputs();
             auto jsonObj = string_to_json(jsonString);
             for (auto&& entry : jsonObj) {
                 if (entry.at("focused")) {

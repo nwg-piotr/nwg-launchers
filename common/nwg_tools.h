@@ -48,3 +48,25 @@ Gtk::Image* app_image(const Gtk::IconTheme&, const std::string&);
 Geometry display_geometry(const std::string&, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);
 
 void create_pid_file_or_kill_pid(std::string);
+
+enum class SwayError {
+    ConnectFailed,
+    EnvNotSet,
+    OpenFailed,
+    RecvHeaderFailed,
+    RecvBodyFailed,
+    SendHeaderFailed,
+    SendBodyFailed
+};
+
+struct SwaySock {
+    SwaySock();
+    SwaySock(const SwaySock&) = delete;
+    ~SwaySock();
+
+    void run(std::string_view);
+    std::string get_outputs();
+
+    int sock_;
+    
+};
