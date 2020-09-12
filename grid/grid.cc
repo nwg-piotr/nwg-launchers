@@ -18,6 +18,7 @@
 #include "grid.h"
 
 bool pins = false;              // whether to display pinned
+bool favs = false;              // whether to display favorites
 RGBA background = {0.0, 0.0, 0.0, 0.9};
 std::string wm {""};            // detected or forced window manager name
 
@@ -44,7 +45,6 @@ Options:\n\
 -wm <wmname>     window manager name (if can not be detected)\n";
 
 int main(int argc, char *argv[]) {
-    bool favs (false);              // whether to display favourites
     std::string custom_css_file {"style.css"};
 
     struct timeval tp;
@@ -153,7 +153,6 @@ int main(int argc, char *argv[]) {
             std::cout << cache.size() << " cache entries loaded\n";
         } else {
             std::cout << "No cached favourites found\n";
-            favs = false;   // ignore -f argument from now on
         }
     }
 
@@ -310,6 +309,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    window.set_table(&desktop_entries, &stats);
+
     gettimeofday(&tp, NULL);
     long int boxes_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
@@ -318,9 +319,9 @@ int main(int argc, char *argv[]) {
         if (entry_) {
             auto& entry = *entry_;
             auto& ab = window.emplace_box(std::move(entry.name),
-                                          std::move(entry.exec),
                                           std::move(entry.comment),
-                                          stats[pos]);
+                                          desktop_id,
+                                          pos);
             ab.set_image_position(Gtk::POS_TOP);
             ab.set_image(*images[pos]);
         }
@@ -344,7 +345,5 @@ int main(int argc, char *argv[]) {
     format("\tbs:      ", bs_ms, images_ms);
     format("\tcommons: ", commons_ms, bs_ms);
 
-    app->run(window);
-
-    return 0;
+    return app->run(window);
 }

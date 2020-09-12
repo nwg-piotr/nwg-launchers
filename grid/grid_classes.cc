@@ -22,9 +22,9 @@ int by_name(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     return child_(a).name.compare(child_(b).name);
 }
 int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
-    return child_(a).stats().clicks < child_(b).stats().clicks;
+    auto& toplevel = *dynamic_cast<MainWindow*>(a->get_toplevel());
+    return toplevel.stats_of(child_(a)).clicks < toplevel.stats_of(child_(b)).clicks;
 }
-
 MainWindow::MainWindow()
  : CommonWindow("~nwggrid", "~nwggrid")
 {
@@ -45,6 +45,7 @@ MainWindow::MainWindow()
     setup_grid(apps_grid);
     setup_grid(favs_grid);
     setup_grid(pinned_grid);
+
     apps_grid.set_sort_func(&by_name);
     favs_grid.set_sort_func(&by_clicks);
 
@@ -175,7 +176,8 @@ void MainWindow::filter_view() {
             return str.casefold().find(phrase) != Glib::ustring::npos;
         };
         for (auto* box : apps_boxes) {
-            if (matches(box->name) || matches(box->exec) || matches(box->comment)) {
+            auto& exec = this->exec_of(*box);
+            if (matches(box->name) || matches(box->comment)) { // TODO: match on exec
                 filtered_boxes.push_back(box);
             }
         }
@@ -246,13 +248,14 @@ void MainWindow::toggle_pinned(GridBox& box) {
     // disable prelight
     box.unset_state_flags(Gtk::STATE_FLAG_PRELIGHT);
 
-    auto is_pinned = box.stats().pinned == Stats::Pinned;
-    box.stats().pinned = Stats::PinTag{ !is_pinned };
+    auto& stats = this->stats_of(box);
+    auto is_pinned = stats.pinned == Stats::Pinned;
+    stats.pinned = Stats::PinTag{ !is_pinned };
 
     auto* from_grid = &this->apps_grid;
     auto* from = &this->apps_boxes;
 
-    if (box.stats().favorite) {
+    if (stats.favorite) {
         from_grid = &this->favs_grid;
         from = &this->fav_boxes;
     }
@@ -283,63 +286,82 @@ void MainWindow::toggle_pinned(GridBox& box) {
     }
 }
 
+
 /*
  * Saves pinned cache file
  * */
-bool MainWindow::on_delete_event(GdkEventAny* event) {
-    if (this->pins_changed) {
-        std::ofstream out_file(pinned_file);
-        for (auto pin : this->pinned_boxes) {
-            out_file << pin->exec << '\n';
+void MainWindow::save_cache() {
+    if (pins_changed) {
+        std::ofstream out(pinned_file, std::ios::trunc);
+        for (auto* pin : this->pinned_boxes) {
+            out << *pin->desktop_id << '\n';
         }
     }
+    if (favs) {
+        ns::json favs_cache;
+        // find min positive clicks count
+        decltype(Stats::clicks) min = 10000;
+        for (auto& box : this->all_boxes) {
+            if (auto clicks = stats_of(box).clicks; clicks > 0) {
+                min = std::min(min, clicks);
+            }
+        }
+        // only save positives, substract min from them to keep clicks low, but preserve order
+        for (auto& box : this->all_boxes) {
+            if (auto clicks = stats_of(box).clicks - min + 1; clicks > 0) {
+                favs_cache[*box.desktop_id] = clicks;
+            }
+        }
+        save_json(favs_cache, cache_file);
+    }
+}
+
+bool MainWindow::on_delete_event(GdkEventAny* event) {
+    this -> save_cache();
     return CommonWindow::on_delete_event(event);
 }
 
-bool MainWindow::has_fav_with_exec(const std::string& exec) const {
-    auto pred = [&exec](auto* b) { return exec == b->exec; };
-    return std::find_if(fav_boxes.begin(), fav_boxes.end(), pred) != fav_boxes.end();
+GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::string& id, std::size_t index)
+: name(std::move(name)), comment(std::move(comment)), desktop_id(&id), index(index)
+{
+   if (name.length() > 25) {
+       name.resize(22);
+       name += "...";
+   }
+   this->set_always_show_image(true);
+   this->set_label(this->name);
 }
-
-// This constructor is not needed since C++20
-GridBox::GridBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment, Stats& stats)
- : AppBox(std::move(name), std::move(exec), std::move(comment)), _stats(&stats) { }
+GridBox::~GridBox() { }
 
 bool GridBox::on_button_press_event(GdkEventButton* event) {
+    auto& toplevel = *dynamic_cast<MainWindow*>(this -> get_toplevel());
     if (pins && event->button == 3) {
-        auto toplevel = dynamic_cast<MainWindow*>(this -> get_toplevel());
-        toplevel->toggle_pinned(*this);
+        toplevel.toggle_pinned(*this);
     } else {
-        int clicks = 0;
-        try {
-            clicks = cache[exec];
-            clicks++;
-        } catch(...) {
-            clicks = 1;
-        }
-        cache[exec] = clicks;
         this -> activate();
     }
-    return AppBox::on_button_press_event(event);
+    return Gtk::Button::on_button_press_event(event);
 }
 
 bool GridBox::on_focus_in_event(GdkEventFocus* event) {
     (void) event; // suppress warning
 
-    auto toplevel = dynamic_cast<MainWindow*>(this->get_toplevel());
-    toplevel->set_description(comment);
+    auto& toplevel = *dynamic_cast<MainWindow*>(this->get_toplevel());
+    toplevel.set_description(comment);
     return true;
 }
 
 void GridBox::on_enter() {
-    auto toplevel = dynamic_cast<MainWindow*>(this->get_toplevel());
-    toplevel->set_description(comment);
-    return AppBox::on_enter();
+    auto& toplevel = *dynamic_cast<MainWindow*>(this->get_toplevel());
+    toplevel.set_description(comment);
+    return Gtk::Button::on_enter();
 }
 
 void GridBox::on_activate() {
-    auto cmd = exec + " &";
+    auto& toplevel = *dynamic_cast<MainWindow*>(this->get_toplevel());
+    toplevel.stats_of(*this).clicks++;
+    std::string cmd = toplevel.exec_of(*this);
+    cmd += " &";
     std::system(cmd.data());
-    auto toplevel = dynamic_cast<MainWindow*>(this->get_toplevel());
-    toplevel->close();
+    toplevel.close();
 }

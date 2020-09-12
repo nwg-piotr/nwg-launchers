@@ -23,6 +23,7 @@ namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
 extern bool pins;
+extern bool favs;
 extern std::string wm;
 
 extern int num_col;
@@ -47,22 +48,26 @@ struct Stats {
     Stats(int c, FavTag f, PinTag p): clicks(c), favorite(f), pinned(p) { }
 };
 
-class GridBox : public AppBox {
+class GridBox : public Gtk::Button {
 public:
-    /* name, exec, comment, favorite, pinned */
-    GridBox(Glib::ustring, Glib::ustring, Glib::ustring, Stats&);
+    /* name, comment, desktop-id, index */
+    GridBox(Glib::ustring, Glib::ustring, const std::string& id, std::size_t);
+    ~GridBox();
     bool on_button_press_event(GdkEventButton*) override;
     bool on_focus_in_event(GdkEventFocus*) override;
     void on_enter() override;
     void on_activate() override;
 
-    constexpr Stats& stats() const noexcept { return *_stats; }
-    Stats* _stats;
+    Glib::ustring       name;
+    Glib::ustring       comment;
+    const std::string*  desktop_id;
+    std::size_t         index;
 };
 
 class MainWindow : public CommonWindow {
     public:
         MainWindow();
+        MainWindow(const MainWindow&) = delete;
 
         Gtk::SearchEntry searchbox;              // Search apps
         Gtk::Label description;                  // To display .desktop entry Comment field at the bottom
@@ -82,10 +87,22 @@ class MainWindow : public CommonWindow {
         template <typename ... Args>
         GridBox& emplace_box(Args&& ... args);      // emplace box
 
-        bool has_fav_with_exec(const std::string&) const;
         void build_grids();
         void toggle_pinned(GridBox& box);
         void set_description(const Glib::ustring&);
+        void save_cache();
+
+        // WIP
+        void set_table(std::vector<std::optional<DesktopEntry>>* ds, std::vector<Stats>* ss) {
+            this->entries = ds;
+            this->stats   = ss;
+        }
+        std::string& exec_of(const GridBox& box) {
+            return this->entries->operator[](box.index)->exec;
+        }
+        Stats& stats_of(const GridBox& box) {
+            return this->stats->operator[](box.index);
+        }
     protected:
         //Override default signal handler:
         bool on_key_press_event(GdkEventKey*) override;
@@ -97,8 +114,13 @@ class MainWindow : public CommonWindow {
         std::vector<GridBox*> filtered_boxes {}; // filtered boxes from
         std::vector<GridBox*> fav_boxes {};      // attached to favs_grid
         std::vector<GridBox*> pinned_boxes {};   // attached to pinned_grid
+
+        std::vector<std::optional<DesktopEntry>>* entries;  // note: fields other than `exec`
+        std::vector<Stats>*        stats;    // are moved-from at this point
+
         bool pins_changed = false;
         bool is_filtered = false;
+
 
         void focus_first_box();
         void filter_view();
@@ -109,9 +131,10 @@ template <typename ... Args>
 GridBox& MainWindow::emplace_box(Args&& ... args) {
     auto& ab = this -> all_boxes.emplace_back(std::forward<Args>(args)...);
     auto* boxes = &apps_boxes;
-    if (ab.stats().pinned) {
+    auto& stats = this -> stats_of(ab);
+    if (stats.pinned) {
         boxes = &pinned_boxes;
-    } else if (ab.stats().favorite) {
+    } else if (stats.favorite) {
         boxes = &fav_boxes;
     }
     boxes->push_back(&ab);
