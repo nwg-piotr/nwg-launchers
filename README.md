@@ -9,7 +9,7 @@ to css style sheets.
 It's damned difficult to make all the stuff behave properly on all window managers. My priorities are:
 
 1. it **must work well** on sway;
-2. it **should work as well as possible** on i3, dwm and Openbox.
+2. it **should work as well as possible** on Wayfire, i3, dwm and Openbox.
 
 Feel free to report issues you encounter on other window managers / desktop environments, but they may or may not be resolved.
 
