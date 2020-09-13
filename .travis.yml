@@ -1,0 +1,11 @@
+language: cpp
+
+os:
+  - freebsd # clang/libc++
+
+before_install:
+  - sudo pkg install -y meson pkgconf gtkmm30 nlohmann-json
+
+script:
+  - meson _build
+  - meson compile -C _build
