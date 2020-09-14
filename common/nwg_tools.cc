@@ -161,7 +161,11 @@ Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon)
             pixbuf = Gdk::Pixbuf::create_from_file(icon, image_size, image_size, true);
         }
     } catch (...) {
-        pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
+        try {
+            pixbuf = Gdk::Pixbuf::create_from_file("/usr/share/pixmaps/" + icon, image_size, image_size, true);
+        } catch (...) {
+            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
+        }
     }
     auto image = Gtk::manage(new Gtk::Image(pixbuf));
 
