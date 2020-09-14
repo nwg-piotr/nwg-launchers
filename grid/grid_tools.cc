@@ -156,8 +156,8 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
         std::variant<nop_t, cut_t> tag;
     };
     struct Result {
-        bool   found;
-        size_t index;
+        bool   ok;
+        size_t pos;
     };
     Match matches[] = {
         { "Name="sv,     &entry.name,      nop },
@@ -197,9 +197,11 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
             // See https://wiki.archlinux.org/index.php/desktop_entries#Hide_desktop_entries
             entry.no_display = true;
         }
-        for (auto& [prefix, dest, tag] : matches) {
-            auto [ok, pos] = try_strip_prefix(prefix);
-            if (ok) {
+        for (auto& match : matches) {
+            auto result = try_strip_prefix(match.prefix);
+            auto& dest = match.dest; // it was 2020, clang failed to capture
+            auto  pos  = result.pos; // var from structured binding, so we had to write it by hand
+            if (result.ok) {
                 std::visit(visitor {
                     [dest, pos, &view](nop_t) { *dest = view.substr(pos); },
                     [dest, pos, &view](cut_t) {
@@ -210,7 +212,7 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
                         *dest = view.substr(pos, idx - pos);
                     }
                 },
-                tag);
+                match.tag);
                 break;
             }
         }
