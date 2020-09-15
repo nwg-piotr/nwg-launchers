@@ -176,7 +176,13 @@ Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon)
  * Returns current locale
  * */
 std::string get_locale() {
-    std::string loc = getenv("LANG");
+    // avoid crash when LANG unset at all (regressed by #83 in v0.3.3) #114
+    std::string loc;
+    try {
+      loc = getenv("LANG");
+    } catch (...) {
+      loc = "";
+    }
     if (!loc.empty()) {
         auto idx = loc.find_first_of("_");
         if (idx != std::string::npos) {
