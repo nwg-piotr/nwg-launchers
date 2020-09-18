@@ -56,13 +56,11 @@ std::string get_config_dir(std::string app) {
 std::string detect_wm() {
     /* Actually we only need to check if we're on sway, i3 or other WM,
      * but let's try to find a WM name if possible. If not, let it be just "other" */
-    const char *env_var[3] = {"DESKTOP_SESSION", "SWAYSOCK", "I3SOCK"};
-    char *env_val;
     std::string wm_name{"other"};
 
-    for(int i=0; i<3; i++) {
+    for(auto env : {"DESKTOP_SESSION", "SWAYSOCK", "I3SOCK"}) {
         // get environment values
-        env_val = getenv(env_var[i]);
+        char *env_val = getenv(env);
         if (env_val != NULL) {
             std::string s(env_val);
             if (s.find("sway") != std::string::npos) {
@@ -111,6 +109,22 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
             return geo;
         }
         catch (...) { }
+    } else if (wm == "i3") {
+        try {
+            auto jsonString = get_output("i3-msg -t get_workspaces");
+            auto jsonObj = string_to_json(jsonString);
+            for (auto&& entry : jsonObj) {
+                if (entry.at("focused")) {
+                    auto&& rect = entry.at("rect");
+                    geo.x = rect.at("x");
+                    geo.y = rect.at("y");
+                    geo.width = rect.at("width");
+                    geo.height = rect.at("height");
+                    break;
+                }
+            }
+        }
+        catch (...) { }
     }
 
     // it's going to fail until the window is actually open
@@ -147,7 +161,11 @@ Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon)
             pixbuf = Gdk::Pixbuf::create_from_file(icon, image_size, image_size, true);
         }
     } catch (...) {
-        pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
+        try {
+            pixbuf = Gdk::Pixbuf::create_from_file("/usr/share/pixmaps/" + icon, image_size, image_size, true);
+        } catch (...) {
+            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
+        }
     }
     auto image = Gtk::manage(new Gtk::Image(pixbuf));
 
@@ -158,13 +176,16 @@ Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon)
  * Returns current locale
  * */
 std::string get_locale() {
-    std::string loc = getenv("LANG");
-    if (!loc.empty()) {
-        auto idx = loc.find_first_of("_");
-        if (idx != std::string::npos) {
-            loc.resize(idx);
+    // avoid crash when LANG unset at all (regressed by #83 in v0.3.3) #114
+    if (getenv("LANG") != NULL) {
+        std::string loc = getenv("LANG");
+        if (!loc.empty()) {
+            auto idx = loc.find_first_of("_");
+            if (idx != std::string::npos) {
+                loc.resize(idx);
+            }
+            return loc;
         }
-        return loc;
     }
     return "en";
 }

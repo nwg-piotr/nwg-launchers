@@ -9,7 +9,7 @@ to css style sheets.
 It's damned difficult to make all the stuff behave properly on all window managers. My priorities are:
 
 1. it **must work well** on sway;
-2. it **should work as well as possible** on i3, dwm and Openbox.
+2. it **should work as well as possible** on Wayfire, i3, dwm and Openbox.
 
 Feel free to report issues you encounter on other window managers / desktop environments, but they may or may not be resolved.
 
@@ -169,6 +169,10 @@ Templates use json format. The default one defines an example Exit menu for sway
 ]
 ```
 
+**Wayfire note**
+
+For the Logout button, as in the bar above, you may use [wayland-logout](https://github.com/soreau/wayland-logout) by @soreau.
+
 You may use as many templates as you need, with the `-t` argument. All of them must be placed in the config directory.
 You may use own icon files instead of icon names, like `/path/to/the/file/my_icon.svg`.
 
@@ -239,6 +243,18 @@ In case you use default window borders, an exclusion like this may be necessary:
 
 ```
 for_window [title="~nwg"] border none
+```
+
+## Openbox Note
+
+To start nwgdmenu from a key binding, use the `-run` argument, e.g.:
+
+```xml
+<keybind key="W-D">
+  <action name="Execute">
+    <command>nwgdmenu -run</command>
+  </action>
+</keybind>
 ```
 
 ## Tips & tricks

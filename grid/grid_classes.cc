@@ -25,8 +25,8 @@ int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     auto& toplevel = *dynamic_cast<MainWindow*>(a->get_toplevel());
     return toplevel.stats_of(child_(a)).clicks < toplevel.stats_of(child_(b)).clicks;
 }
-MainWindow::MainWindow()
- : CommonWindow("~nwggrid", "~nwggrid")
+MainWindow::MainWindow(Span<std::string> es, Span<Stats> ss)
+ : CommonWindow("~nwggrid", "~nwggrid"), execs(es), stats(ss)
 {
     searchbox
         .signal_search_changed()
@@ -177,7 +177,8 @@ void MainWindow::filter_view() {
         };
         for (auto* box : apps_boxes) {
             auto& exec = this->exec_of(*box);
-            if (matches(box->name) || matches(box->comment)) { // TODO: match on exec
+            auto exec_matches = exec.find(phrase) != std::string::npos;
+            if (matches(box->name) || exec_matches || matches(box->comment)) {
                 filtered_boxes.push_back(box);
             }
         }

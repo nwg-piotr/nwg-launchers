@@ -26,12 +26,20 @@ extern bool pins;
 extern bool favs;
 extern std::string wm;
 
-extern int num_col;
+extern std::size_t num_col;
 
 extern std::string pinned_file;
 extern std::vector<std::string> pinned;
 extern ns::json cache;
 extern std::string cache_file;
+
+template <typename T>
+struct Span {
+    Span(const Span& s) = default;
+    Span(std::vector<T>& t): _ref(t.data()) { }
+    T& operator [](std::size_t n) { return _ref[n]; }
+    T* _ref;
+};
 
 struct Stats {
     enum FavTag: bool {
@@ -66,7 +74,7 @@ public:
 
 class MainWindow : public CommonWindow {
     public:
-        MainWindow();
+        MainWindow(Span<std::string> entries, Span<Stats> stats);
         MainWindow(const MainWindow&) = delete;
 
         Gtk::SearchEntry searchbox;              // Search apps
@@ -92,16 +100,11 @@ class MainWindow : public CommonWindow {
         void set_description(const Glib::ustring&);
         void save_cache();
 
-        // WIP
-        void set_table(std::vector<std::optional<DesktopEntry>>* ds, std::vector<Stats>* ss) {
-            this->entries = ds;
-            this->stats   = ss;
-        }
         std::string& exec_of(const GridBox& box) {
-            return this->entries->operator[](box.index)->exec;
+            return execs[box.index];
         }
         Stats& stats_of(const GridBox& box) {
-            return this->stats->operator[](box.index);
+            return stats[box.index];
         }
     protected:
         //Override default signal handler:
@@ -109,18 +112,17 @@ class MainWindow : public CommonWindow {
         bool on_delete_event(GdkEventAny*) override;
         bool on_button_press_event(GdkEventButton*) override;
     private:
-        std::list<GridBox> all_boxes {};         // stores all applications buttons
+        std::list<GridBox>    all_boxes {};      // stores all applications buttons
         std::vector<GridBox*> apps_boxes {};     // boxes attached to apps_grid
         std::vector<GridBox*> filtered_boxes {}; // filtered boxes from
         std::vector<GridBox*> fav_boxes {};      // attached to favs_grid
         std::vector<GridBox*> pinned_boxes {};   // attached to pinned_grid
 
-        std::vector<std::optional<DesktopEntry>>* entries;  // note: fields other than `exec`
-        std::vector<Stats>*        stats;    // are moved-from at this point
+        Span<std::string> execs;
+        Span<Stats>       stats;
 
         bool pins_changed = false;
         bool is_filtered = false;
-
 
         void focus_first_box();
         void filter_view();

@@ -19,10 +19,9 @@
 
 bool pins = false;              // whether to display pinned
 bool favs = false;              // whether to display favorites
-RGBA background = {0.0, 0.0, 0.0, 0.9};
 std::string wm {""};            // detected or forced window manager name
-
-int num_col = 6;                // number of grid columns
+std::size_t num_col = 6;        // number of grid columns
+RGBA background = {0.0, 0.0, 0.0, 0.9};
 
 std::string pinned_file {};
 std::vector<std::string> pinned;    // list of commands of pinned icons
@@ -186,9 +185,9 @@ int main(int argc, char *argv[]) {
     }
 
     // This will be read-only, to find n most clicked items (n = number of grid columns)
-    std::vector<CacheEntry> favourites {};
+    std::vector<CacheEntry> favourites;
     if (cache.size() > 0) {
-        auto n = cache.size() >= static_cast<std::size_t>(num_col) ? num_col : cache.size();
+        auto n = std::min(num_col, cache.size());
         favourites = get_favourites(std::move(cache), n); // TODO: compact favs on exit
     }
 
@@ -199,10 +198,12 @@ int main(int argc, char *argv[]) {
     long int commons_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
     /* TODO: Provide meaningful explanation */
-    std::unordered_map<std::string, std::size_t> desktop_ids;
-    std::vector<std::optional<DesktopEntry>>     desktop_entries;
-    std::vector<Stats>                           stats;
-    std::vector<Gtk::Image*>                     images;
+    std::unordered_map<std::string, std::optional<std::size_t>> desktop_ids;
+
+    std::vector<DesktopEntry> desktop_entries;
+    std::vector<std::string>  execs;
+    std::vector<Stats>        stats;
+    std::vector<Gtk::Image*>  images;
 
     auto desktop_id = [](auto& path) {
         return path.string(); // actual desktop_id requires '/' to be replaced with '-'
@@ -224,24 +225,27 @@ int main(int argc, char *argv[]) {
             auto&& rel_path = path.lexically_relative(dir);
             auto&& id = desktop_id(rel_path);
             if (auto result = desktop_ids.find(id); result == desktop_ids.end()) {
-                auto pos = desktop_ids.size();
-                desktop_ids.emplace_hint(result, id, pos);
-                desktop_entries.emplace_back(desktop_entry(path, lang));
-                stats.emplace_back(0, Stats::Common, Stats::Unpinned);
-                images.emplace_back(nullptr);
+                auto& [_id, pos] = *desktop_ids.emplace_hint(result, id, std::nullopt);
+                if (auto entry = desktop_entry(path, lang)) {
+                    pos = execs.size();
+                    execs.emplace_back(entry->exec);
+                    desktop_entries.emplace_back(std::move(*entry));
+                    stats.emplace_back(0, Stats::Common, Stats::Unpinned);
+                    images.emplace_back(nullptr);
+                }
             }
         }
     }
 
     for (auto& pin : pinned) {
-        if (auto result = desktop_ids.find(pin); result != desktop_ids.end()) {
-            stats[result->second].pinned = Stats::Pinned;
+        if (auto result = desktop_ids.find(pin); result != desktop_ids.end() && result->second) {
+            stats[*result->second].pinned = Stats::Pinned;
         }
     }
     for (auto& [fav, clicks] : favourites) {
-        if (auto result = desktop_ids.find(fav); result != desktop_ids.end()) {
-            stats[result->second].clicks   = clicks;
-            stats[result->second].favorite = Stats::Favorite;
+        if (auto result = desktop_ids.find(fav); result != desktop_ids.end() && result->second) {
+            stats[*result->second].clicks   = clicks;
+            stats[*result->second].favorite = Stats::Favorite;
         }
     }
 
@@ -273,7 +277,7 @@ int main(int argc, char *argv[]) {
         std::cout << "Using " << default_css_file << '\n';
     }
 
-    MainWindow window;
+    MainWindow window(execs, stats);
 
     window.show();
 
@@ -292,6 +296,7 @@ int main(int argc, char *argv[]) {
         auto* cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
         std::system(cmd);
         cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
+        std::system(cmd);
     }
 
     if (wm == "sway" || wm == "i3" || wm == "openbox") {
@@ -304,20 +309,15 @@ int main(int argc, char *argv[]) {
 
     // The most expensive part
     for (std::size_t i = 0; i < desktop_entries.size(); i++) {
-        if (desktop_entries[i]) {
-            images[i] = app_image(icon_theme_ref, desktop_entries[i]->icon);
-        }
+        images[i] = app_image(icon_theme_ref, desktop_entries[i].icon);
     }
-
-    window.set_table(&desktop_entries, &stats);
 
     gettimeofday(&tp, NULL);
     long int boxes_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-    for (auto& [desktop_id, pos] : desktop_ids) {
-        auto& entry_ = desktop_entries[pos];
-        if (entry_) {
-            auto& entry = *entry_;
+    for (auto& [desktop_id, pos_] : desktop_ids) {
+        if (auto pos = *pos_; pos_) {
+            auto& entry = desktop_entries[pos];
             auto& ab = window.emplace_box(std::move(entry.name),
                                           std::move(entry.comment),
                                           desktop_id,
