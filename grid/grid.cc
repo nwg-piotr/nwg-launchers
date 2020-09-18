@@ -59,12 +59,8 @@ int main(int argc, char *argv[]) {
         std::cout << HELP_MESSAGE;
         std::exit(0);
     }
-    if (input.cmdOptionExists("-f")){
-        favs = true;
-    }
-    if (input.cmdOptionExists("-p")){
-        pins = true;
-    }
+    favs = input.cmdOptionExists("-f");
+    pins = input.cmdOptionExists("-p");
     auto forced_lang = input.getCmdOption("-l");
     if (!forced_lang.empty()){
         lang = forced_lang;
@@ -278,7 +274,6 @@ int main(int argc, char *argv[]) {
     }
 
     MainWindow window(execs, stats);
-
     window.show();
 
     /* Detect focused display geometry: {x, y, width, height} */
@@ -295,7 +290,7 @@ int main(int argc, char *argv[]) {
     if (wm == "sway") { // TODO: Use sway-ipc
         auto* cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
         std::system(cmd);
-        cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
+        cmd = "swaymsg for_window [title=\"~nwggrid*\"] border none";
         std::system(cmd);
     }
 

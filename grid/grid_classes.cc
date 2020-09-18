@@ -177,8 +177,8 @@ void MainWindow::filter_view() {
         };
         for (auto* box : apps_boxes) {
             auto& exec = this->exec_of(*box);
-            auto exec_matches = exec.find(phrase) != std::string::npos;
-            if (matches(box->name) || exec_matches || matches(box->comment)) {
+            auto matches_exec = exec.find(phrase) != std::string::npos;
+            if (matches(box->name) || matches_exec || matches(box->comment)) {
                 filtered_boxes.push_back(box);
             }
         }
