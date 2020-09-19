@@ -16,43 +16,23 @@
 CacheEntry::CacheEntry(std::string desktop_id, int clicks): desktop_id(std::move(desktop_id)), clicks(clicks) { }
 
 /*
- * Returns cache file path
+ * Returns path to cache directory
  * */
-std::string get_cache_path() {
-    std::string s = "";
-    char* val = getenv("XDG_CACHE_HOME");
-    if (val) {
-        s = val;
+fs::path get_cache_home() {
+    char* home_ = getenv("XDG_CACHE_HOME");
+    fs::path home;
+    if (home_) {
+        home = home_;
     } else {
-        char* val = getenv("HOME");
-        s = val;
-        s += "/.cache";
+        home_ = getenv("HOME");
+        if (!home_) {
+            std::cerr << "ERROR: Neither XDG_CACHE_HOME nor HOME are not defined\n";
+            std::exit(EXIT_FAILURE);
+        }
+        home = home_;
+        home /= ".cache";
     }
-    fs::path dir (s);
-    fs::path file ("nwg-fav-cache");
-    fs::path full_path = dir / file;
-
-    return full_path;
-}
-
-/*
- * Returns pinned cache file path
- * */
-std::string get_pinned_path() {
-    std::string s = "";
-    char* val = getenv("XDG_CACHE_HOME");
-    if (val) {
-        s = val;
-    } else {
-        val = getenv("HOME");
-        s = val;
-        s += "/.cache";
-    }
-    fs::path dir (s);
-    fs::path file ("nwg-pin-cache");
-    fs::path full_path = dir / file;
-
-    return full_path;
+    return home;
 }
 
 /*
@@ -107,23 +87,6 @@ std::vector<std::string> get_app_dirs() {
     }
  
     return result;
-}
-
-/*
- * Returns all .desktop files paths
- * */
-std::vector<std::string> list_entries(const std::vector<std::string>& paths) {
-    std::vector<std::string> desktop_paths;
-    std::error_code ec;
-    for (auto& dir : paths) {
-        // if directory exists
-        if (std::filesystem::is_directory(dir, ec) && !ec) {
-            for (const auto & entry : fs::directory_iterator(dir)) {
-                desktop_paths.emplace_back(entry.path());
-            }
-        }
-    }
-    return desktop_paths;
 }
 
 // desktop_entry helpers
@@ -245,9 +208,7 @@ std::vector<std::string> get_pinned(const std::string& pinned_file) {
         save_string_to_file("", pinned_file);
         return lines;
     }
-    std::string str;
-
-    while (std::getline(in, str)) {
+    for (std::string str; std::getline(in, str);) {
         // add non-empty lines to the vector
         if (!str.empty()) {
             lines.emplace_back(std::move(str));

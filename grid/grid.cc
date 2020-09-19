@@ -136,8 +136,9 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "Locale: " << lang << "\n";
 
+    auto cache_home = get_cache_home();
     if (favs) {
-        cache_file = get_cache_path();
+        cache_file = cache_home / "nwg-fav-cache";
         try {
             cache = get_cache(cache_file);
         }  catch (...) {
@@ -152,7 +153,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (pins) {
-        pinned_file = get_pinned_path();
+        pinned_file = cache_home / "nwg-pin-cache";
         pinned = get_pinned(pinned_file);
         if (pinned.size() > 0) {
           std::cout << pinned.size() << " pinned entries loaded\n";
