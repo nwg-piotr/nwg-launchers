@@ -33,6 +33,7 @@ extern std::vector<std::string> pinned;
 extern ns::json cache;
 extern std::string cache_file;
 
+/* Primitive version of C++20's std::span */
 template <typename T>
 struct Span {
     Span(const Span& s) = default;
@@ -66,10 +67,10 @@ public:
     void on_enter() override;
     void on_activate() override;
 
-    Glib::ustring       name;
-    Glib::ustring       comment;
-    const std::string*  desktop_id;
-    std::size_t         index;
+    Glib::ustring      name;
+    Glib::ustring      comment;
+    const std::string* desktop_id; // ptr to desktop-id, never null
+    std::size_t        index;      // row index
 };
 
 class MainWindow : public CommonWindow {
@@ -113,8 +114,8 @@ class MainWindow : public CommonWindow {
         bool on_button_press_event(GdkEventButton*) override;
     private:
         std::list<GridBox>    all_boxes {};      // stores all applications buttons
-        std::vector<GridBox*> apps_boxes {};     // boxes attached to apps_grid
-        std::vector<GridBox*> filtered_boxes {}; // filtered boxes from
+        std::vector<GridBox*> apps_boxes {};     // all common boxes
+        std::vector<GridBox*> filtered_boxes {}; // common boxes meeting search criteria
         std::vector<GridBox*> fav_boxes {};      // attached to favs_grid
         std::vector<GridBox*> pinned_boxes {};   // attached to pinned_grid
 

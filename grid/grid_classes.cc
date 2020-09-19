@@ -17,6 +17,7 @@
 #include "nwg_tools.h"
 #include "grid.h"
 
+// we only store GridBoxes inside of our FlowBoxes, so dynamic_cast won't fail
 inline auto child_ = [](auto c) -> auto& { return *dynamic_cast<GridBox*>(c->get_child()); };
 int by_name(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     return child_(a).name.compare(child_(b).name);
@@ -147,9 +148,8 @@ inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container) {
         flowbox.set_max_children_per_line(std::min(size, cols));
     }
 };
-/*
- * Populate grid with widgets from container
- * */
+
+/* Populate grid with widgets from container */
 inline auto build_grid = [](auto& grid, auto& container) {
     for (auto child : container) {
         grid.add(*child);
@@ -158,6 +158,7 @@ inline auto build_grid = [](auto& grid, auto& container) {
     refresh_max_children_per_line(grid, container);
 };
 
+/* Called each time `search_entry` changes, rebuilds `apps_grid` according to search criteria */
 void MainWindow::filter_view() {
     auto clean_grid = [](auto& grid) {
         grid.foreach([&grid](auto& child) {
@@ -192,6 +193,7 @@ void MainWindow::filter_view() {
     apps_grid.thaw_child_notify();
 }
 
+/* Sets separators' visibility according to grid status */
 void MainWindow::refresh_separators() {
     auto set_shown = [](auto c, auto& s) { if (c) s.show(); else s.hide(); };
     auto p = !pinned_boxes.empty();
@@ -334,7 +336,7 @@ GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::string& i
 
 bool GridBox::on_button_press_event(GdkEventButton* event) {
     auto& toplevel = *dynamic_cast<MainWindow*>(this -> get_toplevel());
-    if (pins && event->button == 3) {
+    if (pins && event->button == 3) { // right-clicked
         toplevel.toggle_pinned(*this);
     } else {
         this -> activate();
