@@ -264,7 +264,7 @@ int main(int argc, char *argv[]) {
         std::cerr << "ERROR: Failed to load icon theme\n";
     }
     auto& icon_theme_ref = *icon_theme.get();
-    icon_theme_ref.add_resource_path(DATA_DIR_STR "/icon-missing.svg");
+    auto icon_missing = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg");
 
     if (!std::filesystem::is_regular_file(css_file)) {
         css_file = default_css_file;
@@ -298,7 +298,7 @@ int main(int argc, char *argv[]) {
 
     // The most expensive part
     for (std::size_t i = 0; i < desktop_entries.size(); i++) {
-        images[i] = app_image(icon_theme_ref, desktop_entries[i].icon);
+        images[i] = app_image(icon_theme_ref, desktop_entries[i].icon, icon_missing);
     }
 
     gettimeofday(&tp, NULL);

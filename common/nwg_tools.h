@@ -44,7 +44,7 @@ void set_background(const std::string_view);
 
 std::string get_output(const std::string&);
 
-Gtk::Image* app_image(const Gtk::IconTheme&, const std::string&);
+Gtk::Image* app_image(const Gtk::IconTheme&, const std::string&, const Glib::RefPtr<Gdk::Pixbuf>&);
 Geometry display_geometry(const std::string&, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);
 
 void create_pid_file_or_kill_pid(std::string);

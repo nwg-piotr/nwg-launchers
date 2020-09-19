@@ -151,7 +151,11 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
 /*
  * Returns Gtk::Image out of the icon name of file path
  * */
-Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon) {
+Gtk::Image* app_image(
+    const Gtk::IconTheme& icon_theme,
+    const std::string& icon,
+    const Glib::RefPtr<Gdk::Pixbuf>& fallback
+) {
     Glib::RefPtr<Gdk::Pixbuf> pixbuf;
 
     try {
@@ -164,7 +168,7 @@ Gtk::Image* app_image(const Gtk::IconTheme& icon_theme, const std::string& icon)
         try {
             pixbuf = Gdk::Pixbuf::create_from_file("/usr/share/pixmaps/" + icon, image_size, image_size, true);
         } catch (...) {
-            pixbuf = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", image_size, image_size, true);
+            pixbuf = fallback;
         }
     }
     auto image = Gtk::manage(new Gtk::Image(pixbuf));
