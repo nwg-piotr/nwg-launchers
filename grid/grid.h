@@ -60,7 +60,7 @@ class GridBox : public Gtk::Button {
 public:
     /* name, comment, desktop-id, index */
     GridBox(Glib::ustring, Glib::ustring, const std::string& id, std::size_t);
-    ~GridBox();
+    ~GridBox() = default;
     bool on_button_press_event(GdkEventButton*) override;
     bool on_focus_in_event(GdkEventFocus*) override;
     void on_enter() override;

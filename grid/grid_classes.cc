@@ -103,8 +103,7 @@ bool MainWindow::on_button_press_event(GdkEventButton *event) {
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
-    auto key_val = key_event -> keyval;
-    switch (key_val) {
+    switch (key_event->keyval) {
         case GDK_KEY_Escape:
             this->close();
             break;
@@ -301,13 +300,13 @@ void MainWindow::save_cache() {
     if (favs) {
         ns::json favs_cache;
         // find min positive clicks count
-        decltype(Stats::clicks) min = 10000;
+        decltype(Stats::clicks) min = 1000000; // avoid including <limits>
         for (auto& box : this->all_boxes) {
             if (auto clicks = stats_of(box).clicks; clicks > 0) {
                 min = std::min(min, clicks);
             }
         }
-        // only save positives, substract min from them to keep clicks low, but preserve order
+        // only save positives, substract min to keep clicks low, but preserve order
         for (auto& box : this->all_boxes) {
             if (auto clicks = stats_of(box).clicks - min + 1; clicks > 0) {
                 favs_cache[*box.desktop_id] = clicks;
@@ -332,7 +331,6 @@ GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::string& i
    this->set_always_show_image(true);
    this->set_label(this->name);
 }
-GridBox::~GridBox() { }
 
 bool GridBox::on_button_press_event(GdkEventButton* event) {
     auto& toplevel = *dynamic_cast<MainWindow*>(this -> get_toplevel());
