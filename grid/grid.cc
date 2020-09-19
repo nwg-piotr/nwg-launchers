@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
     std::vector<CacheEntry> favourites;
     if (cache.size() > 0) {
         auto n = std::min(num_col, cache.size());
-        favourites = get_favourites(std::move(cache), n); // TODO: compact favs on exit
+        favourites = get_favourites(std::move(cache), n);
     }
 
     /* get all applications dirs */
@@ -194,9 +194,10 @@ int main(int argc, char *argv[]) {
     gettimeofday(&tp, NULL);
     long int commons_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-    /* TODO: Provide meaningful explanation */
+    // Maps desktop-ids to their table indices, nullopt stands for 'hidden'
     std::unordered_map<std::string, std::optional<std::size_t>> desktop_ids;
 
+    // Table, only contains shown entries
     std::vector<DesktopEntry> desktop_entries;
     std::vector<std::string>  execs;
     std::vector<Stats>        stats;
@@ -221,10 +222,9 @@ int main(int argc, char *argv[]) {
             auto& path = entry.path();
             auto&& rel_path = path.lexically_relative(dir);
             auto&& id = desktop_id(rel_path);
-            if (auto result = desktop_ids.find(id); result == desktop_ids.end()) {
-                auto& [_id, pos] = *desktop_ids.emplace_hint(result, id, std::nullopt);
+            if (auto [at, inserted] = desktop_ids.try_emplace(id, std::nullopt); inserted) {
                 if (auto entry = desktop_entry(path, lang)) {
-                    pos = execs.size();
+                    at->second = execs.size(); // set index
                     execs.emplace_back(entry->exec);
                     desktop_entries.emplace_back(std::move(*entry));
                     stats.emplace_back(0, Stats::Common, Stats::Unpinned);
@@ -266,26 +266,19 @@ int main(int argc, char *argv[]) {
     auto& icon_theme_ref = *icon_theme.get();
     icon_theme_ref.add_resource_path(DATA_DIR_STR "/icon-missing.svg");
 
-    if (std::filesystem::is_regular_file(css_file)) {
-        provider->load_from_path(css_file);
-        std::cout << "Using " << css_file << '\n';
-    } else {
-        provider->load_from_path(default_css_file);
-        std::cout << "Using " << default_css_file << '\n';
+    if (!std::filesystem::is_regular_file(css_file)) {
+        css_file = default_css_file;
     }
+    provider->load_from_path(css_file);
+    std::cout << "Using " << css_file << '\n';
 
     MainWindow window(execs, stats);
     window.show();
 
-    /* Detect focused display geometry: {x, y, width, height} */
-    auto geometry = display_geometry(wm, display, window.get_window());
-    std::cout << "Focused display: " << geometry.x << ", " << geometry.y << ", " << geometry.width << ", "
-    << geometry.height << '\n';
-
-    int x = geometry.x;
-    int y = geometry.y;
-    int w = geometry.width;
-    int h = geometry.height;
+    /* Detect focused display geometry: {x, y, w, h} */
+    auto [x, y, w, h] = display_geometry(wm, display, window.get_window());
+    std::cout << "Focused display: " << x << ", " << y << ", " << w << ", "
+    << h << '\n';
 
     /* turn off borders, enable floating on sway */
     if (wm == "sway") { // TODO: Use sway-ipc
