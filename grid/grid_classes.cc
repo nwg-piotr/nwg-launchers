@@ -22,13 +22,15 @@ inline auto child_ = [](auto c) -> auto& { return *dynamic_cast<GridBox*>(c->get
 int by_name(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     return child_(a).name.compare(child_(b).name);
 }
+// return -1 if a < b, 0 if a == b, 1 if a > b
+inline auto cmp_ = [](auto a, auto b) { return int(a > b) - int(a < b); };
 int by_position(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     auto& toplevel = *dynamic_cast<MainWindow*>(a->get_toplevel());
-    return toplevel.stats_of(child_(a)).position > toplevel.stats_of(child_(b)).position;
+    return cmp_(toplevel.stats_of(child_(a)).position, toplevel.stats_of(child_(b)).position);
 }
 int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     auto& toplevel = *dynamic_cast<MainWindow*>(a->get_toplevel());
-    return toplevel.stats_of(child_(a)).clicks < toplevel.stats_of(child_(b)).clicks;
+    return cmp_(toplevel.stats_of(child_(a)).clicks, toplevel.stats_of(child_(b)).clicks);
 }
 MainWindow::MainWindow(Span<std::string> es, Span<Stats> ss)
  : CommonWindow("~nwggrid", "~nwggrid"), execs(es), stats(ss)
