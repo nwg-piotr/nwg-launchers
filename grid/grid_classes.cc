@@ -22,6 +22,10 @@ inline auto child_ = [](auto c) -> auto& { return *dynamic_cast<GridBox*>(c->get
 int by_name(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     return child_(a).name.compare(child_(b).name);
 }
+int by_position(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
+    auto& toplevel = *dynamic_cast<MainWindow*>(a->get_toplevel());
+    return toplevel.stats_of(child_(a)).position > toplevel.stats_of(child_(b)).position;
+}
 int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     auto& toplevel = *dynamic_cast<MainWindow*>(a->get_toplevel());
     return toplevel.stats_of(child_(a)).clicks < toplevel.stats_of(child_(b)).clicks;
@@ -47,6 +51,7 @@ MainWindow::MainWindow(Span<std::string> es, Span<Stats> ss)
     setup_grid(favs_grid);
     setup_grid(pinned_grid);
 
+    pinned_grid.set_sort_func(&by_position);
     apps_grid.set_sort_func(&by_name);
     favs_grid.set_sort_func(&by_clicks);
 
@@ -217,6 +222,8 @@ void MainWindow::build_grids() {
     build_grid(this->favs_grid, this->fav_boxes);
     build_grid(this->apps_grid, this->apps_boxes);
 
+    this -> monotonic_index = this->pinned_boxes.size();
+
     this -> pinned_grid.show_all_children();
     this -> favs_grid.show_all_children();
     this -> apps_grid.show_all_children();
@@ -253,6 +260,11 @@ void MainWindow::toggle_pinned(GridBox& box) {
     auto& stats = this->stats_of(box);
     auto is_pinned = stats.pinned == Stats::Pinned;
     stats.pinned = Stats::PinTag{ !is_pinned };
+    
+    // monotonic index increases each time an entry is pinned
+    // ensuring it will appear last
+    stats.position = this->monotonic_index * !is_pinned;
+    this->monotonic_index += !is_pinned;
 
     auto* from_grid = &this->apps_grid;
     auto* from = &this->apps_boxes;

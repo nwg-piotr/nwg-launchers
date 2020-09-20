@@ -52,9 +52,11 @@ struct Stats {
         Pinned = 1,
     };
     int    clicks;
+    int    position;
     FavTag favorite;
     PinTag pinned;
-    Stats(int c, FavTag f, PinTag p): clicks(c), favorite(f), pinned(p) { }
+    Stats(int c, int i, FavTag f, PinTag p)
+      : clicks(c), position(i), favorite(f), pinned(p) { }
 };
 
 class GridBox : public Gtk::Button {
@@ -122,6 +124,7 @@ class MainWindow : public CommonWindow {
         Span<std::string> execs;
         Span<Stats>       stats;
 
+        int  monotonic_index;       // to keep pins in order, see grid_classes.cc comment
         bool pins_changed = false;
         bool is_filtered = false;
 

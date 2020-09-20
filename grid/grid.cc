@@ -227,16 +227,19 @@ int main(int argc, char *argv[]) {
                     at->second = execs.size(); // set index
                     execs.emplace_back(entry->exec);
                     desktop_entries.emplace_back(std::move(*entry));
-                    stats.emplace_back(0, Stats::Common, Stats::Unpinned);
+                    stats.emplace_back(0, 0, Stats::Common, Stats::Unpinned);
                     images.emplace_back(nullptr);
                 }
             }
         }
     }
 
+    int pin_index = 0; // preserve pins order
     for (auto& pin : pinned) {
         if (auto result = desktop_ids.find(pin); result != desktop_ids.end() && result->second) {
             stats[*result->second].pinned = Stats::Pinned;
+            stats[*result->second].position = pin_index;
+            pin_index++;
         }
     }
     for (auto& [fav, clicks] : favourites) {
