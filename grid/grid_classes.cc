@@ -308,6 +308,9 @@ void MainWindow::toggle_pinned(GridBox& box) {
  * */
 void MainWindow::save_cache() {
     if (pins_changed) {
+        std::sort(pinned_boxes.begin(), pinned_boxes.end(), [this](auto* a, auto* b) {
+            return this->stats_of(*a).position < this->stats_of(*b).position;
+        });
         std::ofstream out(pinned_file, std::ios::trunc);
         for (auto* pin : this->pinned_boxes) {
             out << *pin->desktop_id << '\n';
