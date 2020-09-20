@@ -326,9 +326,9 @@ bool MainWindow::on_delete_event(GdkEventAny* event) {
 GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::string& id, std::size_t index)
 : name(std::move(name)), comment(std::move(comment)), desktop_id(&id), index(index)
 {
-   if (name.length() > 25) {
-       name.resize(22);
-       name += "...";
+   if (this->name.length() > 25) {
+       this->name.resize(22);
+       this->name += "...";
    }
    this->set_always_show_image(true);
    this->set_label(this->name);
