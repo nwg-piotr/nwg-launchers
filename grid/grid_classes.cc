@@ -239,10 +239,17 @@ void MainWindow::build_grids() {
 }
 
 void MainWindow::focus_first_box() {
-    std::array containers{ &filtered_boxes, &pinned_boxes, &fav_boxes, &apps_boxes };
-    for (auto container : containers) {
-        if (container->size() > 0) {
-            container->front()->grab_focus();
+    // flowbox -> flowboxchild -> gridbox
+    if (is_filtered) {
+        if (auto child = apps_grid.get_child_at_index(0)) {
+            child->get_child()->grab_focus();
+            return;
+        }
+    }
+    std::array grids { &pinned_grid,  &favs_grid, &apps_grid };
+    for (auto grid : grids) {
+        if (auto child = grid->get_child_at_index(0)) {
+            child->get_child()->grab_focus();
             return;
         }
     }
