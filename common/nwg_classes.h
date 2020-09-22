@@ -76,10 +76,6 @@ struct DesktopEntry {
     std::string icon;
     std::string comment;
     std::string mime_type;
-    // We need this field to mask unwanted .desktop entries by their copies in ./local/share/applications
-    // with the `NoDisplay=true` line added.
-    // See https://wiki.archlinux.org/index.php/desktop_entries#Hide_desktop_entries
-    bool no_display {false};
 };
 
 struct RGBA {

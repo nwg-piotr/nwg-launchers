@@ -200,6 +200,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     auto& icon_theme_ref = *icon_theme.get();
+    auto icon_missing = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg");
 
     if (std::filesystem::is_regular_file(css_file)) {
         provider->load_from_path(css_file);
@@ -234,7 +235,7 @@ int main(int argc, char *argv[]) {
 
     /* Create buttons */
     for (auto& entry : bar_entries) {
-        Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
+        Gtk::Image* image = app_image(icon_theme_ref, entry.icon, icon_missing);
         auto& ab = window.boxes.emplace_back(std::move(entry.name),
                                              std::move(entry.exec),
                                              std::move(entry.icon));

@@ -13,46 +13,26 @@
 #include "nwg_tools.h"
 #include "grid.h"
 
-CacheEntry::CacheEntry(std::string exec, int clicks): exec(std::move(exec)), clicks(clicks) { }
+CacheEntry::CacheEntry(std::string desktop_id, int clicks): desktop_id(std::move(desktop_id)), clicks(clicks) { }
 
 /*
- * Returns cache file path
+ * Returns path to cache directory
  * */
-std::string get_cache_path() {
-    std::string s = "";
-    char* val = getenv("XDG_CACHE_HOME");
-    if (val) {
-        s = val;
+fs::path get_cache_home() {
+    char* home_ = getenv("XDG_CACHE_HOME");
+    fs::path home;
+    if (home_) {
+        home = home_;
     } else {
-        char* val = getenv("HOME");
-        s = val;
-        s += "/.cache";
+        home_ = getenv("HOME");
+        if (!home_) {
+            std::cerr << "ERROR: Neither XDG_CACHE_HOME nor HOME are not defined\n";
+            std::exit(EXIT_FAILURE);
+        }
+        home = home_;
+        home /= ".cache";
     }
-    fs::path dir (s);
-    fs::path file ("nwg-fav-cache");
-    fs::path full_path = dir / file;
-
-    return full_path;
-}
-
-/*
- * Returns pinned cache file path
- * */
-std::string get_pinned_path() {
-    std::string s = "";
-    char* val = getenv("XDG_CACHE_HOME");
-    if (val) {
-        s = val;
-    } else {
-        val = getenv("HOME");
-        s = val;
-        s += "/.cache";
-    }
-    fs::path dir (s);
-    fs::path file ("nwg-pin-cache");
-    fs::path full_path = dir / file;
-
-    return full_path;
+    return home;
 }
 
 /*
@@ -107,23 +87,6 @@ std::vector<std::string> get_app_dirs() {
     }
  
     return result;
-}
-
-/*
- * Returns all .desktop files paths
- * */
-std::vector<std::string> list_entries(const std::vector<std::string>& paths) {
-    std::vector<std::string> desktop_paths;
-    std::error_code ec;
-    for (auto& dir : paths) {
-        // if directory exists
-        if (std::filesystem::is_directory(dir, ec) && !ec) {
-            for (const auto & entry : fs::directory_iterator(dir)) {
-                desktop_paths.emplace_back(entry.path());
-            }
-        }
-    }
-    return desktop_paths;
 }
 
 // desktop_entry helpers
@@ -185,6 +148,9 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
         }
         auto view = std::string_view{str};
         auto view_len = std::size(view);
+        if (view == nodisplay) {
+            return std::nullopt;
+        }
         auto try_strip_prefix = [&view, view_len](auto& prefix) {
             auto len = std::min(view_len, std::size(prefix));
             return Result {
@@ -192,19 +158,11 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
                 len
             };
         };
-        if (view == nodisplay) {
-            // @Siborgium: return std::nullopt won't do the job, as we DO NEED this object.
-            // See https://wiki.archlinux.org/index.php/desktop_entries#Hide_desktop_entries
-            entry.no_display = true;
-        }
-        for (auto& match : matches) {
-            auto result = try_strip_prefix(match.prefix);
-            auto& dest = match.dest; // it was 2020, clang failed to capture
-            auto  pos  = result.pos; // var from structured binding, so we had to write it by hand
-            if (result.ok) {
+        for (auto& [prefix, dest, tag] : matches) {
+            if (auto [ok, pos] = try_strip_prefix(prefix); ok) {
                 std::visit(visitor {
-                    [dest, pos, &view](nop_t) { *dest = view.substr(pos); },
-                    [dest, pos, &view](cut_t) {
+                    [dest=dest, pos=pos, &view](nop_t) { *dest = view.substr(pos); },
+                    [dest=dest, pos=pos, &view](cut_t) {
                         auto idx = view.find(" %", pos);
                         if (idx == std::string_view::npos) {
                             idx = std::size(view);
@@ -212,7 +170,7 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
                         *dest = view.substr(pos, idx - pos);
                     }
                 },
-                match.tag);
+                tag);
                 break;
             }
         }
@@ -223,6 +181,9 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
     }
     if (!comment_ln.empty()) {
         entry.comment = std::move(comment_ln);
+    }
+    if (entry.name.empty() || entry.exec.empty()) {
+        return std::nullopt;
     }
     return entry;
 }
@@ -247,9 +208,7 @@ std::vector<std::string> get_pinned(const std::string& pinned_file) {
         save_string_to_file("", pinned_file);
         return lines;
     }
-    std::string str;
-
-    while (std::getline(in, str)) {
+    for (std::string str; std::getline(in, str);) {
         // add non-empty lines to the vector
         if (!str.empty()) {
             lines.emplace_back(std::move(str));

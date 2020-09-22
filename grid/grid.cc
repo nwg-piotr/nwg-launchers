@@ -18,10 +18,10 @@
 #include "grid.h"
 
 bool pins = false;              // whether to display pinned
-RGBA background = {0.0, 0.0, 0.0, 0.9};
+bool favs = false;              // whether to display favorites
 std::string wm {""};            // detected or forced window manager name
-
-int num_col = 6;                // number of grid columns
+std::size_t num_col = 6;        // number of grid columns
+RGBA background = {0.0, 0.0, 0.0, 0.9};
 
 std::string pinned_file {};
 std::vector<std::string> pinned;    // list of commands of pinned icons
@@ -44,7 +44,6 @@ Options:\n\
 -wm <wmname>     window manager name (if can not be detected)\n";
 
 int main(int argc, char *argv[]) {
-    bool favs (false);              // whether to display favourites
     std::string custom_css_file {"style.css"};
 
     struct timeval tp;
@@ -60,12 +59,8 @@ int main(int argc, char *argv[]) {
         std::cout << HELP_MESSAGE;
         std::exit(0);
     }
-    if (input.cmdOptionExists("-f")){
-        favs = true;
-    }
-    if (input.cmdOptionExists("-p")){
-        pins = true;
-    }
+    favs = input.cmdOptionExists("-f");
+    pins = input.cmdOptionExists("-p");
     auto forced_lang = input.getCmdOption("-l");
     if (!forced_lang.empty()){
         lang = forced_lang;
@@ -129,8 +124,21 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    /* get current WM name if not forced */
+    if (wm.empty()) {
+        wm = detect_wm();
+    }
+    std::cout << "WM: " << wm << "\n";
+
+    /* get lang if not yet forced */
+    if (lang.empty()) {
+        lang = get_locale();
+    }
+    std::cout << "Locale: " << lang << "\n";
+
+    auto cache_home = get_cache_home();
     if (favs) {
-        cache_file = get_cache_path();
+        cache_file = cache_home / "nwg-fav-cache";
         try {
             cache = get_cache(cache_file);
         }  catch (...) {
@@ -141,12 +149,11 @@ int main(int argc, char *argv[]) {
             std::cout << cache.size() << " cache entries loaded\n";
         } else {
             std::cout << "No cached favourites found\n";
-            favs = false;   // ignore -f argument from now on
         }
     }
 
     if (pins) {
-        pinned_file = get_pinned_path();
+        pinned_file = cache_home / "nwg-pin-cache";
         pinned = get_pinned(pinned_file);
         if (pinned.size() > 0) {
           std::cout << pinned.size() << " pinned entries loaded\n";
@@ -175,66 +182,75 @@ int main(int argc, char *argv[]) {
     }
 
     // This will be read-only, to find n most clicked items (n = number of grid columns)
-    std::vector<CacheEntry> favourites {};
+    std::vector<CacheEntry> favourites;
     if (cache.size() > 0) {
-        auto n = cache.size() >= static_cast<std::size_t>(num_col) ? num_col : cache.size();
+        auto n = std::min(num_col, cache.size());
         favourites = get_favourites(std::move(cache), n);
     }
 
-    /* get current WM name if not forced */
-    if (wm.empty()) {
-        wm = detect_wm();
-    }
-    std::cout << "WM: " << wm << "\n";
-
-    /* get lang if not yet forced */
-    if (lang.empty()) {
-        lang = get_locale();
-    }
-    std::cout << "Locale: " << lang << "\n";
-
     /* get all applications dirs */
-    auto app_dirs = get_app_dirs();
+    auto dirs = get_app_dirs();
 
-    /* get a list of paths to all *.desktop entries */
-    auto entries = list_entries(app_dirs);
-    std::cout << entries.size() << " .desktop entries found, ";
+    gettimeofday(&tp, NULL);
+    long int commons_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-    /* create the vector of DesktopEntry structs */
-    std::vector<DesktopEntry> desktop_entries {};
-    std::size_t hidden = 0;
-    for (auto& entry_ : entries) {
-        // string path -> DesktopEntry
-        auto maybe_entry = desktop_entry(std::move(entry_), lang);
-        // We need hidden desktop entries!
-        //if (!maybe_entry) {
-        //    hidden++;
-        //     continue; // the entry is NoDisplay, discard it and continue
-        //}
-        auto& entry = *maybe_entry;
-        if (entry.no_display) {
-            hidden++;
-        }
+    // Maps desktop-ids to their table indices, nullopt stands for 'hidden'
+    std::unordered_map<std::string, std::optional<std::size_t>> desktop_ids;
 
-        // only add if 'name' and 'exec' not empty
-        if (!entry.name.empty() && !entry.exec.empty()) {
-            // avoid adding duplicates
-            bool found = false;
-            for (auto& e: desktop_entries) {
-                // Checking the mime_type field should resolve #89
-                if (entry.name == e.name && entry.exec == e.exec && entry.mime_type == e.mime_type) {
-                    found = true;
+    // Table, only contains shown entries
+    std::vector<DesktopEntry> desktop_entries;
+    std::vector<std::string>  execs;
+    std::vector<Stats>        stats;
+    std::vector<Gtk::Image*>  images;
+
+    auto desktop_id = [](auto& path) {
+        return path.string(); // actual desktop_id requires '/' to be replaced with '-'
+    };
+
+    for (auto& dir : dirs) {
+        std::error_code ec;
+        auto dir_iter = fs::directory_iterator(dir, ec);
+        for (auto& entry : dir_iter) {
+            if (ec) {
+                std::cerr << ec.message() << '\n';
+                ec.clear();
+                continue;
+            }
+            if (!entry.is_regular_file()) {
+                continue;
+            }
+            auto& path = entry.path();
+            auto&& rel_path = path.lexically_relative(dir);
+            auto&& id = desktop_id(rel_path);
+            if (auto [at, inserted] = desktop_ids.try_emplace(id, std::nullopt); inserted) {
+                if (auto entry = desktop_entry(path, lang)) {
+                    at->second = execs.size(); // set index
+                    execs.emplace_back(entry->exec);
+                    desktop_entries.emplace_back(std::move(*entry));
+                    stats.emplace_back(0, 0, Stats::Common, Stats::Unpinned);
+                    images.emplace_back(nullptr);
                 }
             }
-            if (!found) {
-                desktop_entries.emplace_back(std::move(entry));
-            }
         }
     }
-    std::cout << desktop_entries.size() << " unique, " << hidden << " hidden by NoDisplay=true\n";
 
-    /* sort above by the 'name' field */
-    std::sort(desktop_entries.begin(), desktop_entries.end(), [](auto& a, auto& b) { return a.name < b.name; });
+    int pin_index = 0; // preserve pins order
+    for (auto& pin : pinned) {
+        if (auto result = desktop_ids.find(pin); result != desktop_ids.end() && result->second) {
+            stats[*result->second].pinned = Stats::Pinned;
+            stats[*result->second].position = pin_index;
+            pin_index++;
+        }
+    }
+    for (auto& [fav, clicks] : favourites) {
+        if (auto result = desktop_ids.find(fav); result != desktop_ids.end() && result->second) {
+            stats[*result->second].clicks   = clicks;
+            stats[*result->second].favorite = Stats::Favorite;
+        }
+    }
+
+    gettimeofday(&tp, NULL);
+    long int bs_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
     auto app = Gtk::Application::create();
 
@@ -251,32 +267,24 @@ int main(int argc, char *argv[]) {
         std::cerr << "ERROR: Failed to load icon theme\n";
     }
     auto& icon_theme_ref = *icon_theme.get();
-    icon_theme_ref.add_resource_path(DATA_DIR_STR "/icon-missing.svg");
+    auto icon_missing = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg");
 
-    if (std::filesystem::is_regular_file(css_file)) {
-        provider->load_from_path(css_file);
-        std::cout << "Using " << css_file << '\n';
-    } else {
-        provider->load_from_path(default_css_file);
-        std::cout << "Using " << default_css_file << '\n';
+    if (!std::filesystem::is_regular_file(css_file)) {
+        css_file = default_css_file;
     }
+    provider->load_from_path(css_file);
+    std::cout << "Using " << css_file << '\n';
 
-    MainWindow window;
-
+    MainWindow window(execs, stats);
     window.show();
 
-    /* Detect focused display geometry: {x, y, width, height} */
-    auto geometry = display_geometry(wm, display, window.get_window());
-    std::cout << "Focused display: " << geometry.x << ", " << geometry.y << ", " << geometry.width << ", "
-    << geometry.height << '\n';
-
-    int x = geometry.x;
-    int y = geometry.y;
-    int w = geometry.width;
-    int h = geometry.height;
+    /* Detect focused display geometry: {x, y, w, h} */
+    auto [x, y, w, h] = display_geometry(wm, display, window.get_window());
+    std::cout << "Focused display: " << x << ", " << y << ", " << w << ", "
+    << h << '\n';
 
     /* turn off borders, enable floating on sway */
-    if (wm == "sway") {
+    if (wm == "sway") { // TODO: Use sway-ipc
         auto* cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
         std::system(cmd);
         cmd = "swaymsg for_window [title=\"~nwggrid*\"] border none";
@@ -288,78 +296,46 @@ int main(int argc, char *argv[]) {
         window.move(x, y);
     }
 
-    /* Create buttons for pinned entries */
-    for (auto& pin : pinned) {
-        auto find = [&pin](auto& container) {
-            return std::find_if(container.begin(), container.end(), [&pin](auto& e) {
-                return pin == e.exec;
-            });
-        };
-        auto iter = find(desktop_entries);
-        if (iter != desktop_entries.end()) {
-            auto& entry = *iter;
-            auto found = find(favourites) != favourites.end();
-            // 0 -> Common
-            // 1 -> Favorite
-            auto fav_tag = GridBox::FavTag{ found };
+    gettimeofday(&tp, NULL);
+    long int images_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+
+    // The most expensive part
+    for (std::size_t i = 0; i < desktop_entries.size(); i++) {
+        images[i] = app_image(icon_theme_ref, desktop_entries[i].icon, icon_missing);
+    }
+
+    gettimeofday(&tp, NULL);
+    long int boxes_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+
+    for (auto& [desktop_id, pos_] : desktop_ids) {
+        if (auto pos = *pos_; pos_) {
+            auto& entry = desktop_entries[pos];
             auto& ab = window.emplace_box(std::move(entry.name),
-                                          std::move(entry.exec),
                                           std::move(entry.comment),
-                                          fav_tag,
-                                          GridBox::Pinned);
-            Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
+                                          desktop_id,
+                                          pos);
             ab.set_image_position(Gtk::POS_TOP);
-            ab.set_image(*image);
+            ab.set_image(*images[pos]);
         }
     }
-
-    /* Create buttons for favourites */
-    for (auto& entry : favourites) {
-        for (auto& de : desktop_entries) {
-            if (entry.exec == de.exec) {
-                auto already_added = window.has_fav_with_exec(entry.exec);
-                if (already_added) {
-                    continue;
-                }
-
-                auto& ab = window.emplace_box(std::move(de.name),
-                                              std::move(de.exec),
-                                              std::move(de.comment),
-                                              GridBox::Favorite,
-                                              GridBox::Unpinned);
-
-                Gtk::Image* image = app_image(icon_theme_ref, de.icon);
-                ab.set_image_position(Gtk::POS_TOP);
-                ab.set_image(*image);
-            }
-        }
-    }
-
-    /* Create buttons for the rest of entries */
-    for (auto& entry : desktop_entries) {
-        // if it's empty, it was probably moved from during the previous steps
-        // there should be some better way, but it works
-        if (!entry.exec.empty() && !entry.no_display) {
-             auto& ab = window.emplace_box(std::move(entry.name),
-                                           std::move(entry.exec),
-                                           std::move(entry.comment),
-                                           GridBox::Common,
-                                           GridBox::Unpinned);
-             Gtk::Image* image = app_image(icon_theme_ref, entry.icon);
-             ab.set_image_position(Gtk::POS_TOP);
-             ab.set_image(*image);
-        }
-    }
-
+    
+    gettimeofday(&tp, NULL);
+    long int grids_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
     window.build_grids();
 
     gettimeofday(&tp, NULL);
     long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-    std::cout << "Time: " << end_ms - start_ms << "ms\n";
+    auto format = [&cout=std::cout](auto&& title, auto from, auto to) {
+        cout << title << to - from << "ms\n";
+    };
+    format("Total: ", start_ms, end_ms);
+    format("\tgrids:   ", grids_ms, end_ms);
+    format("\tboxes:   ", boxes_ms, grids_ms);
+    format("\timages:  ", images_ms, boxes_ms);
+    format("\tbs:      ", bs_ms, images_ms);
+    format("\tcommons: ", commons_ms, bs_ms);
 
-    app->run(window);
-
-    return 0;
+    return app->run(window);
 }
