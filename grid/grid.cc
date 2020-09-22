@@ -308,7 +308,8 @@ int main(int argc, char *argv[]) {
     long int boxes_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
     for (auto& [desktop_id, pos_] : desktop_ids) {
-        if (auto pos = *pos_; pos_) {
+        if (pos_) {
+            auto pos = *pos_;
             auto& entry = desktop_entries[pos];
             auto& ab = window.emplace_box(std::move(entry.name),
                                           std::move(entry.comment),
