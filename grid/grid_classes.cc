@@ -30,7 +30,7 @@ int by_position(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
 }
 int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     auto& toplevel = *dynamic_cast<MainWindow*>(a->get_toplevel());
-    return cmp_(toplevel.stats_of(child_(a)).clicks, toplevel.stats_of(child_(b)).clicks);
+    return -cmp_(toplevel.stats_of(child_(a)).clicks, toplevel.stats_of(child_(b)).clicks);
 }
 MainWindow::MainWindow(Span<std::string> es, Span<Stats> ss)
  : CommonWindow("~nwggrid", "~nwggrid"), execs(es), stats(ss)
