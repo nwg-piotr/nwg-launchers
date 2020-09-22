@@ -29,7 +29,7 @@ ns::json cache;
 std::string cache_file {};
 
 const char* const HELP_MESSAGE =
-"GTK application grid: nwggrid " VERSION_STR " (c) Piotr Miller 2020 & Contributors \n\n\
+"GTK application grid: nwggrid " VERSION_STR " (c) 2020 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
 \
 Options:\n\
 -h               show this help message and exit\n\
@@ -318,7 +318,7 @@ int main(int argc, char *argv[]) {
             ab.set_image(*images[pos]);
         }
     }
-    
+
     gettimeofday(&tp, NULL);
     long int grids_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
