@@ -91,6 +91,11 @@ std::string detect_wm() {
     return wm_name;
 }
 
+/*
+ * Connects to Sway socket, loading socket info from $SWAYSOCK or $I3SOCK
+ * Throws SwayError
+ * - sway --get-socketpath is not supported (yet?)
+ * */
 SwaySock::SwaySock() {
     auto path = getenv("SWAYSOCK");
     if (!path) {
@@ -135,6 +140,10 @@ static inline void make_header_(char* header, std::uint32_t len, std::uint32_t t
     memcpy(header + MAGIC_SIZE + U32_SIZE, &type, U32_SIZE);
 }
 
+/*
+ * Returns `swaymsg -t get_outputs`
+ * Throws `SwayError`
+ * */
 std::string SwaySock::get_outputs() {
     char header[HEADER_SIZE];
     make_header_(header, 0, GET_OUTPUTS);
@@ -165,6 +174,10 @@ std::string SwaySock::get_outputs() {
     return buffer;    
 }
 
+/*
+ * Asks Sway to run `cmd`
+ * Throws `SwayError`
+ * */
 void SwaySock::run(std::string_view cmd) {
     char header[HEADER_SIZE];
     make_header_(header, cmd.size(), RUN_COMMAND);
