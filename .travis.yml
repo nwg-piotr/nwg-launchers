@@ -1,9 +1,16 @@
 language: cpp
+dist: focal
 
 os:
+  - linux   # gcc/libstdc++
   - freebsd # clang/libc++
 
 before_install:
+  - |
+    if [ "$TRAVIS_OS_NAME" = linux ]; then
+      sudo apt-get install -y python3-pip python3-setuptools ninja-build libgtkmm-3.0-dev nlohmann-json3-dev
+      sudo pip3 install meson
+    fi
   - |
     if [ "$TRAVIS_OS_NAME" = freebsd ]; then
       sudo pkg install -y meson pkgconf gtkmm30 nlohmann-json
