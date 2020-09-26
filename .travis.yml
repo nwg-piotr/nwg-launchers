@@ -4,7 +4,10 @@ os:
   - freebsd # clang/libc++
 
 before_install:
-  - sudo pkg install -y meson pkgconf gtkmm30 nlohmann-json
+  - |
+    if [ "$TRAVIS_OS_NAME" = freebsd ]; then
+      sudo pkg install -y meson pkgconf gtkmm30 nlohmann-json
+    fi
 
 script:
   - meson _build
