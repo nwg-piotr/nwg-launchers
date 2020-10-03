@@ -79,7 +79,7 @@ AppBox::AppBox() {
     this -> set_always_show_image(true);
 }
 
-AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment) {
+AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment) : Gtk::Button(name, true) {
     this -> name = name;
     if (name.length() > 25) {
         name = name.substr(0, 22) + "...";
@@ -87,7 +87,6 @@ AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment) {
     this -> exec = std::move(exec);
     this -> comment = std::move(comment);
     this -> set_always_show_image(true);
-    this -> set_label(name);
 }
 
 AppBox::~AppBox() {

@@ -169,6 +169,23 @@ Templates use json format. The default one defines an example Exit menu for sway
 ]
 ```
 
+To set a keyboard shortcut (using Alt+KEY) for an entry, you can add an underscore before the letter you want to use. Example to set `s` as the shortcut:
+```
+[
+...
+  {
+    "name": "Lock _screen",
+    "exec": "swaylock -f -c 000000",
+    "icon": "system-lock-screen"
+  }
+...
+]
+```
+
+**Note for underscore ("_")**
+
+If you want to use an underscore in the name, you have to double it ("__").
+
 **Wayfire note**
 
 For the Logout button, as in the bar above, you may use [wayland-logout](https://github.com/soreau/wayland-logout) by @soreau.
