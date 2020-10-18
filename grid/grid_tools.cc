@@ -50,7 +50,7 @@ std::vector<std::string> get_app_dirs() {
     };
 
     std::string home = getenv("HOME");
-    
+
     auto xdg_data_home = getenv("XDG_DATA_HOME");
     if (xdg_data_home) {
         auto dirs = split_string(xdg_data_home, ":");
@@ -64,7 +64,7 @@ std::vector<std::string> get_app_dirs() {
             append(s, ".local/share/applications");
         }
     }
-    
+
     const char* xdg_data_dirs = getenv("XDG_DATA_DIRS");
     if (!xdg_data_dirs) {
         xdg_data_dirs = "/usr/local/share/:/usr/share/";
@@ -85,7 +85,7 @@ std::vector<std::string> get_app_dirs() {
             result.emplace_back(fp_dir);
         }
     }
- 
+
     return result;
 }
 

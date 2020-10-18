@@ -217,8 +217,8 @@ void save_string_to_file(const std::string& s, const std::string& filename) {
 /*
  * Splits string into vector of strings by delimiter
  * */
-std::vector<std::string_view> split_string(std::string_view str, std::string_view delimiter) {
-    std::vector<std::string_view> result;
+std::vector<std::string> split_string(std::string_view str, std::string_view delimiter) {
+    std::vector<std::string> result;
     std::size_t current, previous = 0;
     current = str.find_first_of(delimiter);
     while (current != std::string_view::npos) {

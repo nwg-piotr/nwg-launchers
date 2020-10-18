@@ -35,6 +35,7 @@ Options:\n\
 -h               show this help message and exit\n\
 -f               display favourites (most used entries)\n\
 -p               display pinned entries \n\
+-d               look for .desktop files in custom paths (-d '/my/path1 /my/path2'); '~/' not supported \n\
 -o <opacity>     default (black) background opacity (0.0 - 1.0, default 0.9)\n\
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
 -n <col>         number of grid columns (default: 6)\n\
@@ -103,6 +104,8 @@ int main(int argc, char *argv[]) {
             std::cerr << "\nERROR: Invalid opacity value\n\n";
         }
     }
+
+    auto special_dirs = input.getCmdOption("-d");
 
     std::string_view bcg = input.getCmdOption("-b");
     if (!bcg.empty()) {
@@ -188,8 +191,14 @@ int main(int argc, char *argv[]) {
         favourites = get_favourites(std::move(cache), n);
     }
 
-    /* get all applications dirs */
-    auto dirs = get_app_dirs();
+    std::vector<std::string> dirs{""};
+    if (special_dirs.empty()) {
+        // get all applications dirs
+        dirs = get_app_dirs();
+    } else {
+        // use special dirs specified with -d argument (feature request #122)
+        dirs = split_string(special_dirs, " ");
+    }
 
     gettimeofday(&tp, NULL);
     long int commons_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
