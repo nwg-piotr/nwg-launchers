@@ -9,6 +9,7 @@
 
 #include <sys/time.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include <charconv>
 
@@ -198,6 +199,18 @@ int main(int argc, char *argv[]) {
     } else {
         // use special dirs specified with -d argument (feature request #122)
         dirs = split_string(special_dirs, ":");
+        std::cout << "\nUsing custom .desktop files path(s):\n";
+        struct stat statbuf;
+        for (auto& dir : dirs) {
+            if (stat(dir.c_str(), &statbuf) != -1) {
+                if (S_ISDIR(statbuf.st_mode)) {
+                  std::cout << "'" << dir << "' [OK]\n";
+                }
+            } else {
+                std::cout << "'" << dir << "' [INVALID]\n";
+            }
+        }
+        std::cout << "\n";
     }
 
     gettimeofday(&tp, NULL);
