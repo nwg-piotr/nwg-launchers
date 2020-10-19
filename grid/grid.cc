@@ -33,8 +33,8 @@ const char* const HELP_MESSAGE =
 \
 Options:\n\
 -h               show this help message and exit\n\
--f               display favourites (most used entries)\n\
--p               display pinned entries \n\
+-f               display favourites (most used entries); does not work with -d\n\
+-p               display pinned entries; does not work with -d \n\
 -d               look for .desktop files in custom paths (-d '/my/path1 /my/path2'); '~/' not supported \n\
 -o <opacity>     default (black) background opacity (0.0 - 1.0, default 0.9)\n\
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
@@ -60,8 +60,8 @@ int main(int argc, char *argv[]) {
         std::cout << HELP_MESSAGE;
         std::exit(0);
     }
-    favs = input.cmdOptionExists("-f");
-    pins = input.cmdOptionExists("-p");
+    favs = input.cmdOptionExists("-f") && !input.cmdOptionExists("-d");
+    pins = input.cmdOptionExists("-p") && !input.cmdOptionExists("-d");
     auto forced_lang = input.getCmdOption("-l");
     if (!forced_lang.empty()){
         lang = forced_lang;
