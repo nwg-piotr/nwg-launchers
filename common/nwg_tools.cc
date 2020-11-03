@@ -88,16 +88,19 @@ std::string detect_wm() {
 }
 
 /*
- * Detect installed terminal emulator
- *
+ * Detect installed terminal emulator, save the command to txt file.
+ * If none found, 'xterm' is our fallback value.
  * */
  std::string get_term(std::string config_dir) {
     std::string t{"xterm"};
     std::string term_file = config_dir + "/term";
     if (std::ifstream(term_file)) {
+        // File exists: read command from the file, skip checks
         t = read_file_to_string(term_file);
         t.erase(remove(t.begin(), t.end(), '\n'), t.end());
     } else {
+        // We'll only look for terminals that return 0 exit code from the '<terminal> -v' command.
+        // First one found will be saved to the ''~/.config/nwg-launchers/nwggrid/term' file.
         std::string checks [] = {
             "alacritty -V",
             "kitty -v",
