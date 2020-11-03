@@ -103,6 +103,7 @@ std::string detect_wm() {
         std::string terms [] = {
             "alacritty",
             "kitty",
+            "urxvt",
             "lxterminal",
             "sakura",
             "st",
