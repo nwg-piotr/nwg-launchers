@@ -98,23 +98,25 @@ std::string detect_wm() {
         t = read_file_to_string(term_file);
         t.erase(remove(t.begin(), t.end(), '\n'), t.end());
     } else {
-        // We'll only look for terminals that return 0 exit code from the '<terminal> -v' command.
-        // First one found will be saved to the '~/.config/nwg-launchers/nwggrid/term' file.
+        // We'll look for the first terminal available and save its name to '~/.config/nwg-launchers/nwggrid/term'.
         // User may change the file content (terminal name) to their liking.
-        std::string checks [] = {
-            "alacritty -V",
-            "kitty -v",
-            "lxterminal -v",
-            "xfce4-terminal -V",
-            "termite -v",
-            "terminator -v"
+        std::string terms [] = {
+            "alacritty",
+            "kitty",
+            "lxterminal",
+            "sakura",
+            "st",
+            "termite",
+            "terminator",
+            "xfce4-terminal",
+            "gnome-terminal"
         };
-        for (auto&& check : checks) {
-            check = check + " &>/dev/null";
+        for (auto&& term : terms) {
+            std::string check = "command -v " + term + " &>/dev/null";
             const char *command = check.c_str();
             int status = std::system(command);
             if (status == 0) {
-                t = split_string(check, " ")[0];
+                t = term;
                 std::string cmd = "echo " + t + " > " + term_file;
                 const char *c = cmd.c_str();
                 std::system(c);
