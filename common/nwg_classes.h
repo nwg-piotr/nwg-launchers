@@ -76,6 +76,7 @@ struct DesktopEntry {
     std::string icon;
     std::string comment;
     std::string mime_type;
+    bool terminal;
 };
 
 struct RGBA {

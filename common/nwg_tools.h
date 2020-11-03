@@ -31,6 +31,8 @@ std::string get_config_dir(std::string);
 
 std::string detect_wm(void);
 
+std::string get_term(std::string);
+
 std::string get_locale(void);
 
 std::string read_file_to_string(const std::string&);
