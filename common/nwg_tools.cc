@@ -88,8 +88,7 @@ std::string detect_wm() {
 }
 
 /*
- * Detect installed terminal emulator, save the command to txt file.
- * If none found, 'xterm' is our fallback value.
+ * Detect installed terminal emulator, save the command to txt file for further use.
  * */
  std::string get_term(std::string config_dir) {
     std::string t{"xterm"};
@@ -100,7 +99,8 @@ std::string detect_wm() {
         t.erase(remove(t.begin(), t.end(), '\n'), t.end());
     } else {
         // We'll only look for terminals that return 0 exit code from the '<terminal> -v' command.
-        // First one found will be saved to the ''~/.config/nwg-launchers/nwggrid/term' file.
+        // First one found will be saved to the '~/.config/nwg-launchers/nwggrid/term' file.
+        // User may change the file content (terminal name) to their liking.
         std::string checks [] = {
             "alacritty -V",
             "kitty -v",
@@ -122,6 +122,8 @@ std::string detect_wm() {
                 break;
             }
         }
+        // In case we've found nothing, 'xterm' will be saved to the '~/.config/nwg-launchers/nwggrid/term' file,
+        // regardless of whether it is installed or not. User may still edit the file.
         if (!std::ifstream(term_file)) {
             std::cout << "No known terminal found. Saving \'xterm\' to \'" << term_file << "\'.\n";
             std::string cmd = "echo " + t + " > " + term_file;
