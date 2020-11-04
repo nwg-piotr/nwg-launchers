@@ -82,12 +82,13 @@ This only works with the `-p` argument:
 
 ```
 $ nwggrid -h
-GTK application grid: nwggrid 0.3.1 (c) Piotr Miller 2020 & Contributors
+GTK application grid: nwggrid 0.4.1 (c) 2020 Piotr Miller, Sergey Smirnykh & Contributors
 
 Options:
 -h               show this help message and exit
--f               display favourites (most used entries)
--p               display pinned entries
+-f               display favourites (most used entries); does not work with -d
+-p               display pinned entries; does not work with -d
+-d               look for .desktop files in custom paths (-d '/my/path1:/my/another path:/third/path')
 -o <opacity>     default (black) background opacity (0.0 - 1.0, default 0.9)
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)
 -n <col>         number of grid columns (default: 6)
@@ -96,6 +97,15 @@ Options:
 -l <ln>          force use of <ln> language
 -wm <wmname>     window manager name (if can not be detected)
 ```
+
+### Terminal applications
+
+`.desktop` files with the `Terminal=true` line should be started in a terminal emulator. There's no common method
+to determine which terminal to use. The `nwggrid` command since v0.4.1 at the first run will look for installed
+terminals in the following order: alacritty, kitty, urxvt, lxterminal, sakura, st, termite, terminator, xfce4-terminal,
+gnome-terminal. The name of the first one found will be saved to the `~/.config/nwg-launchers/nwggrid/term` file.
+If none of above is found, the fallback `xterm` value will be saved, regardless of whether xterm is installed or not.
+You may edit the `term` file to use another terminal.
 
 ### Custom background
 
@@ -139,8 +149,8 @@ the opacity, as well default, as defined with the -o <opacity> argument.
 
 ### Customization
 
-On first run the program creates the `nwg-launchers/nwgbar` folder in your .config directory. You'll find a sample template `bar.json`
-and the `style.css` files inside.
+On first run the program creates the `nwg-launchers/nwgbar` folder in your .config directory. You'll find a sample
+template `bar.json` and the `style.css` files inside.
 
 Templates use json format. The default one defines an example Exit menu for sway window manager on Arch Linux:
 
@@ -169,7 +179,9 @@ Templates use json format. The default one defines an example Exit menu for sway
 ]
 ```
 
-To set a keyboard shortcut (using Alt+KEY) for an entry, you can add an underscore before the letter you want to use. Example to set `s` as the shortcut:
+To set a keyboard shortcut (using Alt+KEY) for an entry, you can add an underscore before the letter you want to use.
+Example to set `s` as the shortcut:
+
 ```
 [
 ...
