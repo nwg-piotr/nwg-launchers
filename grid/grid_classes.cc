@@ -86,7 +86,7 @@ MainWindow::MainWindow(Span<std::string> es, Span<Stats> ss)
     inner_vbox.set_halign(Gtk::ALIGN_CENTER);
     inner_vbox.pack_start(pinned_hbox, Gtk::PACK_SHRINK, 5);
     inner_vbox.pack_start(separator1, false, true, 0);
-    
+
     favs_hbox.pack_start(favs_grid, true, false, 0);
     inner_vbox.pack_start(favs_hbox, false, false, 5);
     inner_vbox.pack_start(separator, false, true, 0);
@@ -98,7 +98,7 @@ MainWindow::MainWindow(Span<std::string> es, Span<Stats> ss)
     scrolled_window.show_all_children();
 
     outer_vbox.pack_start(description, Gtk::PACK_SHRINK);
-    
+
     this -> add(outer_vbox);
     this -> show_all_children();
 }
@@ -136,7 +136,7 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
                 // so we make sure to drop the selection
                 this -> searchbox.select_region(0, 0);
                 this -> searchbox.set_position(-1);
-            
+
             }
     }
     // Delegate handling to the base class
@@ -269,7 +269,7 @@ void MainWindow::toggle_pinned(GridBox& box) {
     auto& stats = this->stats_of(box);
     auto is_pinned = stats.pinned == Stats::Pinned;
     stats.pinned = Stats::PinTag{ !is_pinned };
-    
+
     // monotonic index increases each time an entry is pinned
     // ensuring it will appear last
     stats.position = this->monotonic_index * !is_pinned;
@@ -294,7 +294,7 @@ void MainWindow::toggle_pinned(GridBox& box) {
     to->push_back(&box);
     refresh_max_children_per_line(*from_grid, *from);
     refresh_max_children_per_line(*to_grid, *to);
-    
+
     // get_parent is important
     // FlowBox { ... FlowBoxChild { box } ... }
     // box is not child to FlowBox
@@ -348,14 +348,16 @@ bool MainWindow::on_delete_event(GdkEventAny* event) {
 }
 
 GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::string& id, std::size_t index)
-: name(std::move(name)), comment(std::move(comment)), desktop_id(&id), index(index)
-{
-   if (this->name.length() > 25) {
-       this->name.resize(22);
-       this->name += "...";
-   }
-   this->set_always_show_image(true);
-   this->set_label(this->name);
+: name(std::move(name)), comment(std::move(comment)), desktop_id(&id), index(index) {
+    // As we sort dynamically by actual names, we need to avoid shortening them, or long names will remain unsorted.
+    // See the issue: https://github.com/nwg-piotr/nwg-launchers/issues/128
+    std::string display_name = this->name;
+    if (display_name.length() > 25) {
+       display_name.resize(22);
+       display_name += "...";
+    }
+    this->set_always_show_image(true);
+    this->set_label(display_name);
 }
 
 bool GridBox::on_button_press_event(GdkEventButton* event) {
@@ -387,6 +389,9 @@ void GridBox::on_activate() {
     toplevel.stats_of(*this).clicks++;
     std::string cmd = toplevel.exec_of(*this);
     cmd += " &";
+    if (cmd.find(term) == 0) {
+        std::cout << "Running: \'" << cmd << "\'\n";
+    }
     std::system(cmd.data());
     toplevel.close();
 }

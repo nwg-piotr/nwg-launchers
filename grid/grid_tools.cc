@@ -142,6 +142,7 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
     }
     // Repeat until the next section
     constexpr auto nodisplay = "NoDisplay=true"sv;
+    constexpr auto terminal = "Terminal=true"sv;
     while (std::getline(file, str)) {
         if (str[0] == '[') { // new section begins, break
             break;
@@ -150,6 +151,9 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
         auto view_len = std::size(view);
         if (view == nodisplay) {
             return std::nullopt;
+        }
+        if (view == terminal) {
+            entry.terminal = true;
         }
         auto try_strip_prefix = [&view, view_len](auto& prefix) {
             auto len = std::min(view_len, std::size(prefix));
@@ -184,6 +188,9 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
     }
     if (entry.name.empty() || entry.exec.empty()) {
         return std::nullopt;
+    }
+    if (entry.terminal) {
+        entry.exec = term + " -e " + entry.exec;
     }
     return entry;
 }

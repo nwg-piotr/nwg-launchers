@@ -32,6 +32,7 @@ extern std::string pinned_file;
 extern std::vector<std::string> pinned;
 extern ns::json cache;
 extern std::string cache_file;
+extern std::string term;
 
 /* Primitive version of C++20's std::span */
 template <typename T>

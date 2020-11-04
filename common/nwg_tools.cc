@@ -88,6 +88,56 @@ std::string detect_wm() {
 }
 
 /*
+ * Detect installed terminal emulator, save the command to txt file for further use.
+ * */
+ std::string get_term(std::string config_dir) {
+    std::string t{"xterm"};
+    std::string term_file = config_dir + "/term";
+    if (std::ifstream(term_file)) {
+        // File exists: read command from the file, skip checks
+        t = read_file_to_string(term_file);
+        t.erase(remove(t.begin(), t.end(), '\n'), t.end());
+    } else {
+        // We'll look for the first terminal available and save its name to '~/.config/nwg-launchers/nwggrid/term'.
+        // User may change the file content (terminal name) to their liking.
+        std::string terms [] = {
+            "alacritty",
+            "kitty",
+            "urxvt",
+            "lxterminal",
+            "sakura",
+            "st",
+            "termite",
+            "terminator",
+            "xfce4-terminal",
+            "gnome-terminal"
+        };
+        for (auto&& term : terms) {
+            std::string check = "command -v " + term + " &>/dev/null";
+            const char *command = check.c_str();
+            int status = std::system(command);
+            if (status == 0) {
+                t = term;
+                std::string cmd = "echo " + t + " > " + term_file;
+                const char *c = cmd.c_str();
+                std::system(c);
+                std::cout << "Saving \'" << t << "\' to \'" << term_file << "\' - edit to use another terminal.\n";
+                break;
+            }
+        }
+        // In case we've found nothing, 'xterm' will be saved to the '~/.config/nwg-launchers/nwggrid/term' file,
+        // regardless of whether it is installed or not. User may still edit the file.
+        if (!std::ifstream(term_file)) {
+            std::cout << "No known terminal found. Saving \'xterm\' to \'" << term_file << "\'.\n";
+            std::string cmd = "echo " + t + " > " + term_file;
+            const char *c = cmd.c_str();
+            std::system(c);
+        }
+    }
+    return t;
+ }
+
+/*
  * Returns x, y, width, hight of focused display
  * */
 Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> display, Glib::RefPtr<Gdk::Window> window) {
@@ -309,7 +359,6 @@ std::string get_output(const std::string& cmd) {
     }
     return result;
 }
-
 
 /*
  * Remove pid_file created by create_pid_file_or_kill_pid.

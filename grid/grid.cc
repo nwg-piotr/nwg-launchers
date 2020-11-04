@@ -21,6 +21,7 @@
 bool pins = false;              // whether to display pinned
 bool favs = false;              // whether to display favorites
 std::string wm {""};            // detected or forced window manager name
+std::string term {""};
 std::size_t num_col = 6;        // number of grid columns
 RGBA background = {0.0, 0.0, 0.0, 0.9};
 
@@ -171,6 +172,8 @@ int main(int argc, char *argv[]) {
         std::cout << "Config dir not found, creating...\n";
         fs::create_directories(config_dir);
     }
+
+    term = get_term(config_dir);
 
     // default and custom style sheet
     std::string default_css_file = config_dir + "/style.css";
