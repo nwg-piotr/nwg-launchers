@@ -101,6 +101,7 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
     using namespace std::literals::string_view_literals;
 
     DesktopEntry entry;
+    entry.terminal = false;
 
     std::ifstream file(path);
     std::string str;
