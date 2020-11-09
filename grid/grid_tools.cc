@@ -191,7 +191,7 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
         return std::nullopt;
     }
     if (entry.terminal) {
-        entry.exec = term + " -e " + entry.exec;
+        entry.exec = term + " " + entry.exec;
     }
     return entry;
 }
