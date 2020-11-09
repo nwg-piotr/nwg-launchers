@@ -101,29 +101,32 @@ std::string detect_wm() {
         // We'll look for the first terminal available and save its name to '~/.config/nwg-launchers/nwggrid/term'.
         // User may change the file content (terminal name) to their liking.
         std::string terms [] = {
-            "alacritty",
-            "kitty",
-            "urxvt",
-            "lxterminal",
-            "sakura",
-            "st",
-            "termite",
-            "terminator",
-            "xfce4-terminal",
-            "gnome-terminal"
+            "alacritty -e",
+            "kitty -e",
+            "urxvt -e",
+            "lxterminal -e",
+            "sakura -e",
+            "st -e",
+            "termite -e",
+            "terminator -e",
+            "xfce4-terminal -e",
+            "gnome-terminal -e"
         };
         for (auto&& term : terms) {
-            std::string check = "command -v " + term + " > /dev/null 2>&1";
-            const char *command = check.c_str();
-            int status = std::system(command);
-            if (status == 0) {
-                t = term;
-                std::string cmd = "echo " + t + " > " + term_file;
-                const char *c = cmd.c_str();
-                std::system(c);
-                std::cout << "Saving \'" << t << "\' to \'" << term_file << "\' - edit to use another terminal.\n";
-                break;
-            }
+                std::istringstream iss(term);
+                std::vector<std::string> tarr((std::istream_iterator<std::string>(iss)),
+                                              std::istream_iterator<std::string>());
+                std::string check = "command -v " + tarr[0] + " > /dev/null 2>&1";
+                const char *command = check.c_str();
+                int status = std::system(command);
+                if (status == 0) {
+                        t = term;
+                        std::string cmd = "echo " + t + " > " + term_file;
+                        const char *c = cmd.c_str();
+                        std::system(c);
+                        std::cout << "Saving \'" << t << "\' to \'" << term_file << "\' - edit to use another terminal.\n";
+                        break;
+                }
         }
         // In case we've found nothing, 'xterm' will be saved to the '~/.config/nwg-launchers/nwggrid/term' file,
         // regardless of whether it is installed or not. User may still edit the file.
