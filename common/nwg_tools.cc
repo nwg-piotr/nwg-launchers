@@ -113,7 +113,7 @@ std::string detect_wm() {
             "gnome-terminal"
         };
         for (auto&& term : terms) {
-            std::string check = "command -v " + term + " &>/dev/null";
+            std::string check = "command -v " + term + " > /dev/null 2>&1";
             const char *command = check.c_str();
             int status = std::system(command);
             if (status == 0) {
