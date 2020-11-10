@@ -91,18 +91,31 @@ std::string detect_wm() {
  * Detect installed terminal emulator, save the command to txt file for further use.
  * */
  std::string get_term(std::string config_dir) {
-    std::string t{"xterm"};
+    std::string t{"xterm -e"};
     std::string term_file = config_dir + "/term";
-    if (std::ifstream(term_file)) {
-        // File exists: read command from the file, skip checks
+    std::string terminal_file = config_dir + "/terminal";
+
+    // Update from term to terminal
+    if (std::ifstream(term_file) && ! std::ifstream(terminal_file)) {
         t = read_file_to_string(term_file);
+        t.erase(remove(t.begin(), t.end(), '\n'), t.end());
+        t += " -e";
+        std::ofstream of;
+        of.open( terminal_file );
+        of << t << std::endl;
+        of.close();
+    }
+
+    if (std::ifstream(terminal_file)) {
+        // File exists: read command from the file, skip checks
+        t = read_file_to_string(terminal_file);
         t.erase(remove(t.begin(), t.end(), '\n'), t.end());
     } else {
         // We'll look for the first terminal available and save its name to '~/.config/nwg-launchers/nwggrid/term'.
         // User may change the file content (terminal name) to their liking.
         std::string terms [] = {
             "alacritty -e",
-	    "foot",
+            "foot",
             "kitty -e",
             "urxvt -e",
             "lxterminal -e",
@@ -114,28 +127,30 @@ std::string detect_wm() {
             "gnome-terminal -e"
         };
         for (auto&& term : terms) {
-	    std::istringstream iss(term);
-	    std::vector<std::string> tarr((std::istream_iterator<std::string>(iss)),
-					  std::istream_iterator<std::string>());
-	    std::string check = "command -v " + tarr[0] + " > /dev/null 2>&1";
-	    const char *command = check.c_str();
-	    int status = std::system(command);
-	    if (status == 0) {
-		t = term;
-		std::string cmd = "echo " + t + " > " + term_file;
-		const char *c = cmd.c_str();
-		std::system(c);
-		std::cout << "Saving \'" << t << "\' to \'" << term_file << "\' - edit to use another terminal.\n";
-		break;
-	    }
+            std::istringstream iss(term);
+            std::vector<std::string> tarr((std::istream_iterator<std::string>(iss)),
+                                          std::istream_iterator<std::string>());
+            std::string check = "command -v " + tarr[0] + " > /dev/null 2>&1";
+            const char *command = check.c_str();
+            int status = std::system(command);
+            if (status == 0) {
+                t = term;
+                std::ofstream of;
+                of.open( terminal_file );
+                of << t << std::endl;
+                of.close();
+                std::cout << "Saving \'" << t << "\' to \'" << terminal_file << "\' - edit to use another terminal.\n";
+                break;
+            }
         }
         // In case we've found nothing, 'xterm' will be saved to the '~/.config/nwg-launchers/nwggrid/term' file,
         // regardless of whether it is installed or not. User may still edit the file.
         if (!std::ifstream(term_file)) {
-            std::cout << "No known terminal found. Saving \'xterm\' to \'" << term_file << "\'.\n";
-            std::string cmd = "echo " + t + " > " + term_file;
-            const char *c = cmd.c_str();
-            std::system(c);
+            std::cout << "No known terminal found. Saving \'xterm\' to \'" << terminal_file << "\'.\n";
+            std::ofstream of;
+            of.open( terminal_file );
+            of << t << std::endl;
+            of.close();
         }
     }
     return t;
