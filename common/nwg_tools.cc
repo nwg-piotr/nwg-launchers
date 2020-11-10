@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 
 #include "nwgconfig.h"
 #include "nwg_tools.h"
@@ -104,6 +105,7 @@ std::string detect_wm() {
         of.open( terminal_file );
         of << t << std::endl;
         of.close();
+        std::filesystem::remove( term_file );
     }
 
     if (std::ifstream(terminal_file)) {
