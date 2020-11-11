@@ -113,7 +113,7 @@ std::string detect_wm() {
         t = read_file_to_string(terminal_file);
         t.erase(remove(t.begin(), t.end(), '\n'), t.end());
     } else {
-        // We'll look for the first terminal available and save its name to '~/.config/nwg-launchers/nwggrid/term'.
+        // We'll look for the first terminal available and save its name to '~/.config/nwg-launchers/nwggrid/terminal'.
         // User may change the file content (terminal name) to their liking.
         std::string terms [] = {
             "alacritty -e",
@@ -145,12 +145,12 @@ std::string detect_wm() {
                 break;
             }
         }
-        // In case we've found nothing, 'xterm' will be saved to the '~/.config/nwg-launchers/nwggrid/term' file,
+        // In case we've found nothing, 'xterm' will be saved to the '~/.config/nwg-launchers/nwggrid/terminal' file,
         // regardless of whether it is installed or not. User may still edit the file.
         if (!std::ifstream(term_file)) {
             std::cout << "No known terminal found. Saving \'xterm\' to \'" << terminal_file << "\'.\n";
             std::ofstream of;
-            of.open( terminal_file );
+            of.open(terminal_file
             of << t << std::endl;
             of.close();
         }
