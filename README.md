@@ -105,10 +105,12 @@ Options:
 
 `.desktop` files with the `Terminal=true` line should be started in a terminal emulator. There's no common method
 to determine which terminal to use. The `nwggrid` command since v0.4.1 at the first run will look for installed
-terminals in the following order: alacritty, kitty, urxvt, lxterminal, sakura, st, termite, terminator, xfce4-terminal,
+terminals in the following order: alacritty, kitty, urxvt, foot(1), lxterminal, sakura, st, termite, terminator, xfce4-terminal,
 gnome-terminal. The name of the first one found will be saved to the `~/.config/nwg-launchers/nwggrid/terminal` file.
 If none of above is found, the fallback `xterm` value will be saved, regardless of whether xterm is installed or not.
 You may edit the `term` file to use another terminal.
+
+_(1) foot 1.5.3 does not seem to behave well on Arch Linux_
 
 ### Custom background
 
