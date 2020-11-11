@@ -117,9 +117,9 @@ std::string detect_wm() {
         // User may change the file content (terminal name) to their liking.
         std::string terms [] = {
             "alacritty -e",
-            "foot",
             "kitty -e",
             "urxvt -e",
+            "foot",
             "lxterminal -e",
             "sakura -e",
             "st -e",
