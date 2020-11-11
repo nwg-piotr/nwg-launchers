@@ -1,4 +1,7 @@
 # nwg-launchers
+
+[![Build Status](https://travis-ci.com/nwg-piotr/nwg-launchers.svg?branch=master)](https://travis-ci.com/nwg-piotr/nwg-launchers)
+
 As it's never too late to learn something new, I decided to try and code my
 [sgtk-menu](https://github.com/nwg-piotr/sgtk-menu) set of launchers, written in python, from scratch in C++.
 By the way I'm trying to simplify their usage, by reducing the number of arguments. Whatever possible, is being moved
