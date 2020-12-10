@@ -13,6 +13,10 @@
 
 #include <charconv>
 
+#ifdef HAVE_GTK_LAYER_SHELL
+#include <gtk-layer-shell/gtk-layer-shell.h>
+#endif
+
 #include "nwg_tools.h"
 #include "nwg_classes.h"
 #include "on_event.h"
@@ -301,24 +305,45 @@ int main(int argc, char *argv[]) {
     std::cout << "Using " << css_file << '\n';
 
     MainWindow window(execs, stats);
+
+    bool layer_shell = false;
+#ifdef HAVE_GTK_LAYER_SHELL
+    if (gtk_layer_is_supported()) {
+        auto gtk_win = window.gobj();
+        gtk_layer_init_for_window(gtk_win);
+        for (auto anchor : { GTK_LAYER_SHELL_EDGE_LEFT, GTK_LAYER_SHELL_EDGE_RIGHT,
+                GTK_LAYER_SHELL_EDGE_TOP, GTK_LAYER_SHELL_EDGE_BOTTOM }) {
+            gtk_layer_set_anchor(gtk_win, anchor, TRUE);
+            gtk_layer_set_margin(gtk_win, anchor, 0);
+        }
+        gtk_layer_set_layer(gtk_win, GTK_LAYER_SHELL_LAYER_TOP);
+        gtk_layer_set_keyboard_interactivity(gtk_win, TRUE);
+        gtk_layer_set_namespace(gtk_win, "nwggrid");
+        gtk_layer_set_exclusive_zone(gtk_win, -1);
+        layer_shell = true;
+    }
+#endif
+
     window.show();
 
-    /* Detect focused display geometry: {x, y, w, h} */
-    auto [x, y, w, h] = display_geometry(wm, display, window.get_window());
-    std::cout << "Focused display: " << x << ", " << y << ", " << w << ", "
-    << h << '\n';
+    if (!layer_shell) {
+        /* Detect focused display geometry: {x, y, w, h} */
+        auto [x, y, w, h] = display_geometry(wm, display, window.get_window());
+        std::cout << "Focused display: " << x << ", " << y << ", " << w << ", "
+        << h << '\n';
 
-    /* turn off borders, enable floating on sway */
-    if (wm == "sway") { // TODO: Use sway-ipc
-        auto* cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
-        std::system(cmd);
-        cmd = "swaymsg for_window [title=\"~nwggrid*\"] border none";
-        std::system(cmd);
-    }
+        /* turn off borders, enable floating on sway */
+        if (wm == "sway") { // TODO: Use sway-ipc
+            auto* cmd = "swaymsg for_window [title=\"~nwggrid*\"] floating enable";
+            std::system(cmd);
+            cmd = "swaymsg for_window [title=\"~nwggrid*\"] border none";
+            std::system(cmd);
+        }
 
-    if (wm == "sway" || wm == "i3" || wm == "openbox") {
-        window.resize(w, h);
-        window.move(x, y);
+        if (wm == "sway" || wm == "i3" || wm == "openbox") {
+            window.resize(w, h);
+            window.move(x, y);
+        }
     }
 
     gettimeofday(&tp, NULL);
