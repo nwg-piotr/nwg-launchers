@@ -8,6 +8,7 @@
  * */
 
 #include <sys/time.h>
+#include <unistd.h>
 
 #include <charconv>
 
@@ -73,7 +74,7 @@ int main(int argc, char *argv[]) {
     }
 
     // We will build dmenu out of commands found in $PATH if nothing has been passed by stdin
-    dmenu_run = isatty(fileno(stdin)) == 1;
+    dmenu_run = isatty(STDIN_FILENO) == 1;
 
     if (input.cmdOptionExists("-run")){
         dmenu_run = true;
