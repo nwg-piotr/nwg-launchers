@@ -129,26 +129,13 @@ SwaySock::~SwaySock() {
     }
 }
 
-static constexpr char MAGIC[] = { 'i', '3', '-', 'i', 'p', 'c' };
-static constexpr auto MAGIC_SIZE = sizeof(MAGIC);
-// magic + body length (u32) + type (u32)
-static constexpr auto HEADER_SIZE = MAGIC_SIZE + 2 * sizeof(std::uint32_t);
-static constexpr std::uint32_t RUN_COMMAND = 0; // see sway-ipc(7)
-static constexpr std::uint32_t GET_OUTPUTS = 3; // see sway-ipc(7)
-
-static inline void make_header_(char* header, std::uint32_t len, std::uint32_t type) {
-    memcpy(header, MAGIC, MAGIC_SIZE);
-    memcpy(header + MAGIC_SIZE, &len, sizeof(decltype(len)));
-    memcpy(header + MAGIC_SIZE + sizeof(decltype(type)), &type, sizeof(decltype(type)));
-}
-
 /*
  * Returns `swaymsg -t get_outputs`
  * Throws `SwayError`
  * */
 std::string SwaySock::get_outputs() {
     char header[HEADER_SIZE];
-    make_header_(header, 0, GET_OUTPUTS);
+    make_header_(header, 0, Commands::GetOutputs);
     
     if (write(sock_, header, HEADER_SIZE) == -1) {
         throw SwayError::SendHeaderFailed;
@@ -182,7 +169,7 @@ std::string SwaySock::get_outputs() {
  * */
 void SwaySock::run(std::string_view cmd) {
     char header[HEADER_SIZE];
-    make_header_(header, cmd.size(), RUN_COMMAND);
+    make_header_(header, cmd.size(), Commands::Run);
     if (write(sock_, header, HEADER_SIZE) == -1) {
         throw SwayError::SendHeaderFailed;
     }
