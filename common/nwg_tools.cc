@@ -93,71 +93,81 @@ std::string detect_wm() {
 /*
  * Detect installed terminal emulator, save the command to txt file for further use.
  * */
-std::string get_term(std::string config_dir) {
-    std::string t{"xterm -e"};
-    std::string term_file = config_dir + "/term";
-    std::string terminal_file = config_dir + "/terminal";
+std::string get_term(std::string_view config_dir) {
+    using namespace std::string_view_literals;
+    auto concat = [](auto&& ... xs) { std::string r; ((r += xs), ...); return r; };
+    
+    auto term_file = concat(config_dir, "/term"sv);
+    auto terminal_file = concat(config_dir, "/terminal"sv);
 
-    // Update from term to terminal
-    if (std::ifstream(term_file) && ! std::ifstream(terminal_file)) {
-        t = read_file_to_string(term_file);
-        t.erase(remove(t.begin(), t.end(), '\n'), t.end());
-        t += " -e";
-        std::ofstream of;
-        of.open( terminal_file );
-        of << t << std::endl;
-        of.close();
-        std::filesystem::remove( term_file );
+    std::error_code ec;
+    auto term_file_exists = std::filesystem::is_regular_file(term_file, ec) && !ec;
+    ec.clear();
+    auto terminal_file_exists = std::filesystem::is_regular_file(terminal_file, ec) && !ec;
+    
+    if (term_file_exists) {
+        if (!terminal_file_exists) {
+            std::filesystem::rename(term_file, terminal_file);
+            terminal_file_exists = true;
+        } else {
+            std::filesystem::remove(term_file);
+        }
     }
-
-    if (std::ifstream(terminal_file)) {
-        // File exists: read command from the file, skip checks
-        t = read_file_to_string(terminal_file);
-        t.erase(remove(t.begin(), t.end(), '\n'), t.end());
-    } else {
-        // We'll look for the first terminal available and save its name to '~/.config/nwg-launchers/nwggrid/terminal'.
-        // User may change the file content (terminal name) to their liking.
-        std::string terms [] = {
-            "alacritty -e",
-            "kitty -e",
-            "urxvt -e",
-            "foot",
-            "lxterminal -e",
-            "sakura -e",
-            "st -e",
-            "termite -e",
-            "terminator -e",
-            "xfce4-terminal -e",
-            "gnome-terminal -e"
-        };
-        for (auto&& term : terms) {
-            std::istringstream iss(term);
-            std::vector<std::string> tarr((std::istream_iterator<std::string>(iss)),
-                                          std::istream_iterator<std::string>());
-            std::string check = "command -v " + tarr[0] + " > /dev/null 2>&1";
-            const char *command = check.c_str();
-            int status = std::system(command);
-            if (status == 0) {
-                t = term;
-                std::ofstream of;
-                of.open( terminal_file );
-                of << t << std::endl;
-                of.close();
-                std::cout << "Saving \'" << t << "\' to \'" << terminal_file << "\' - edit to use another terminal.\n";
-                break;
+    
+    std::string term;
+    auto check_env_vars = [&]() {
+        // TODO: TERMINAL is usually just term name, we don't know if it supports '-e'
+        constexpr std::array known_term_vars { /*"TERMINAL",*/ "TERMCMD"};
+        for (auto var: known_term_vars) {
+            if (auto e = getenv(var)) {
+                term = e;
+                return 0;
             }
         }
-        // In case we've found nothing, 'xterm' will be saved to the '~/.config/nwg-launchers/nwggrid/term' file,
-        // regardless of whether it is installed or not. User may still edit the file.
-        if (!std::ifstream(term_file)) {
-            std::cout << "No known terminal found. Saving \'xterm\' to \'" << terminal_file << "\'.\n";
-            std::ofstream of;
-            of.open(terminal_file);
-            of << t << std::endl;
-            of.close();
+        return -1;
+    };
+    auto check_terms = [&]() {
+        constexpr std::array term_flags { " -e"sv, ""sv };
+        constexpr std::array terms {
+            std::pair{ "alacritty"sv, 0 },
+            std::pair{ "kitty"sv, 0 },
+            std::pair{ "urxvt"sv, 0 },
+            std::pair{ "lxterminal"sv, 0 },
+            std::pair{ "sakura"sv, 0 },
+            std::pair{ "st"sv, 0 },
+            std::pair{ "termite"sv, 0 },
+            std::pair{ "terminator"sv, 0 },
+            std::pair{ "xfce4-terminal"sv, 0 },
+            std::pair{ "gnome-terminal"sv, 0 },
+            std::pair{ "foot"sv, 1 }
+        };
+        for (auto&& [term_, flag_]: terms) {
+            // TODO: use exec/similar from glib to avoid spawning shells
+            auto command = concat("command -v "sv, term, " > /dev/null 2>&1"sv);
+            if (std::system(command.data()) == 0) {
+                term = concat(term_, term_flags[flag_]);
+                return 0;
+            }
+        }
+        return -1;
+    };
+    
+    bool needs_save = true;
+    if (check_env_vars()) {
+        if (terminal_file_exists) {
+            term = read_file_to_string(terminal_file);
+            // do NOT append ' -e' as it breaks non-standard terminals
+            term.erase(remove(term.begin(), term.end(), '\n'), term.end());
+            needs_save = false;
+        } else if (check_terms()) {
+            // nothing worked, fallback to xterm
+            term = "xterm -e"sv;
         }
     }
-    return t;
+    if (needs_save) {
+        save_string_to_file(term, terminal_file);
+    }
+    return term;
 }
  
 /*
