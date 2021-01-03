@@ -201,7 +201,6 @@ int main(int argc, char *argv[]) {
     if (wm == "sway") {
         SwaySock sock;
         sock.run("for_window [title=\"~nwgdmenu*\"] floating enable,border none");
-        sock.run("for_window [title=\"~nwgdmenu*\"] border none");
     }
 
     Gtk::Main kit(argc, argv);
