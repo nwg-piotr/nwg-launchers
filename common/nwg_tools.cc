@@ -212,16 +212,15 @@ std::string SwaySock::get_outputs() {
  * Throws `SwayError::Recv{Header,Body}Failed`
  */
 std::string SwaySock::recv_response_() {
-    char header[HEADER_SIZE];
     std::size_t total = 0;
     while (total < HEADER_SIZE) {
-        auto received = recv(sock_, header, HEADER_SIZE - total, 0);
+        auto received = recv(sock_, header.data(), HEADER_SIZE - total, 0);
         if (received < 0) {
             throw SwayError::RecvHeaderFailed;
         }
         total += received;
     }
-    auto payload_size = *(std::uint32_t*)(header + MAGIC_SIZE);
+    auto payload_size = *reinterpret_cast<std::uint32_t*>(header.data() + MAGIC_SIZE);
     std::string buffer(payload_size + 1, '\0');
     auto payload = buffer.data();
     total = 0;
@@ -232,7 +231,7 @@ std::string SwaySock::recv_response_() {
         }
         total += received;
     }
-    return buffer;    
+    return buffer;   
 }
 
 /*
