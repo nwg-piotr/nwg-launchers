@@ -134,13 +134,16 @@ SwaySock::~SwaySock() {
  * Throws `SwayError`
  * */
 std::string SwaySock::get_outputs() {
-    char header[HEADER_SIZE];
-    make_header_(header, 0, Commands::GetOutputs);
-    
-    if (write(sock_, header, HEADER_SIZE) == -1) {
-        throw SwayError::SendHeaderFailed;
-    }
+    send_header_(0, Commands::GetOutputs);
+    return recv_response_();
+}
 
+/*
+ * Returns output of previously issued command
+ * Throws `SwayError::Recv{Header,Body}Failed`
+ */
+std::string SwaySock::recv_response_() {
+    char header[HEADER_SIZE];
     std::size_t total = 0;
     while (total < HEADER_SIZE) {
         auto received = recv(sock_, header, HEADER_SIZE - total, 0);
@@ -165,18 +168,28 @@ std::string SwaySock::get_outputs() {
 
 /*
  * Asks Sway to run `cmd`
- * Throws `SwayError`
+ * Throws `SwayError::Send{Header,Body}Failed`
  * */
 void SwaySock::run(std::string_view cmd) {
-    char header[HEADER_SIZE];
-    make_header_(header, cmd.size(), Commands::Run);
-    if (write(sock_, header, HEADER_SIZE) == -1) {
+    send_header_(cmd.size(), Commands::Run);
+    send_body_(cmd);
+    // should we recv the response?
+    // suppress warning
+    (void)recv_response_();
+}
+
+void SwaySock::send_header_(std::uint32_t message_len, Commands command) {
+    memcpy(header.data(), MAGIC.data(), MAGIC_SIZE);
+    memcpy(header.data() + MAGIC_SIZE, &message_len, sizeof(message_len));
+    memcpy(header.data() + MAGIC_SIZE + sizeof(message_len), &command, sizeof(command));
+    if (write(sock_, header.data(), HEADER_SIZE) == -1) {
         throw SwayError::SendHeaderFailed;
     }
+}
+void SwaySock::send_body_(std::string_view cmd) {
     if (write(sock_, cmd.data(), cmd.size()) == -1) {
         throw SwayError::SendBodyFailed;
     }
-    // should we recv the response?
 }
 
 /*
