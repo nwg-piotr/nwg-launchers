@@ -50,3 +50,40 @@ Gtk::Image* app_image(const Gtk::IconTheme&, const std::string&, const Glib::Ref
 Geometry display_geometry(const std::string&, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);
 
 void create_pid_file_or_kill_pid(std::string);
+
+enum class SwayError {
+    ConnectFailed,
+    EnvNotSet,
+    OpenFailed,
+    RecvHeaderFailed,
+    RecvBodyFailed,
+    SendHeaderFailed,
+    SendBodyFailed
+};
+
+struct SwaySock {
+    SwaySock();
+    SwaySock(const SwaySock&) = delete;
+    ~SwaySock();
+    // pass the command to sway via socket
+    void run(std::string_view);
+    // swaymsg -t get_outputs
+    std::string get_outputs();
+    
+    // see sway-ipc (7)
+    enum class Commands: std::uint32_t {
+        Run = 0,
+        GetOutputs = 3
+    };
+    static constexpr std::array MAGIC { 'i', '3', '-', 'i', 'p', 'c' };
+    static constexpr auto MAGIC_SIZE = MAGIC.size();
+    // magic + body length (u32) + type (u32)
+    static constexpr auto HEADER_SIZE = MAGIC_SIZE + 2 * sizeof(std::uint32_t);
+    
+    int                           sock_;
+    std::array<char, HEADER_SIZE> header;
+
+    void send_header_(std::uint32_t, Commands);
+    void send_body_(std::string_view);
+    std::string recv_response_();
+};

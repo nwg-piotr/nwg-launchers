@@ -13,6 +13,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include <iostream>
 #include <fstream>
@@ -91,7 +93,7 @@ std::string detect_wm() {
 /*
  * Detect installed terminal emulator, save the command to txt file for further use.
  * */
- std::string get_term(std::string config_dir) {
+std::string get_term(std::string config_dir) {
     std::string t{"xterm -e"};
     std::string term_file = config_dir + "/term";
     std::string terminal_file = config_dir + "/terminal";
@@ -156,7 +158,107 @@ std::string detect_wm() {
         }
     }
     return t;
- }
+}
+ 
+/*
+ * Connects to Sway socket, loading socket info from $SWAYSOCK or $I3SOCK
+ * Throws SwayError
+ * - sway --get-socketpath is not supported (yet?)
+ * */
+SwaySock::SwaySock() {
+    auto path = getenv("SWAYSOCK");
+    if (!path) {
+        path = getenv("I3SOCK");
+        if (!path) {
+            throw SwayError::EnvNotSet;
+        }
+    }
+    path = strdup(path);
+
+    sock_ = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (sock_ == -1) {
+        free(path);
+        throw SwayError::OpenFailed;
+    }
+    
+    sockaddr_un addr;
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
+    addr.sun_path[sizeof(addr.sun_path) - 1] = 0;
+    if (connect(sock_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1) {
+        free(path);
+        throw SwayError::ConnectFailed;
+    }
+    free(path);
+}
+
+SwaySock::~SwaySock() {
+    if (close(sock_)) {
+        std::cerr << "ERROR: Unable to close socket\n";
+    }
+}
+
+/*
+ * Returns `swaymsg -t get_outputs`
+ * Throws `SwayError`
+ * */
+std::string SwaySock::get_outputs() {
+    send_header_(0, Commands::GetOutputs);
+    return recv_response_();
+}
+
+/*
+ * Returns output of previously issued command
+ * Throws `SwayError::Recv{Header,Body}Failed`
+ */
+std::string SwaySock::recv_response_() {
+    std::size_t total = 0;
+    while (total < HEADER_SIZE) {
+        auto received = recv(sock_, header.data(), HEADER_SIZE - total, 0);
+        if (received < 0) {
+            throw SwayError::RecvHeaderFailed;
+        }
+        total += received;
+    }
+    auto payload_size = *reinterpret_cast<std::uint32_t*>(header.data() + MAGIC_SIZE);
+    std::string buffer(payload_size + 1, '\0');
+    auto payload = buffer.data();
+    total = 0;
+    while (total < payload_size) {
+        auto received = recv(sock_, payload + total, payload_size - total, 0);
+        if (received < 0) {
+            throw SwayError::RecvBodyFailed;
+        }
+        total += received;
+    }
+    return buffer;   
+}
+
+/*
+ * Asks Sway to run `cmd`
+ * Throws `SwayError::Send{Header,Body}Failed`
+ * */
+void SwaySock::run(std::string_view cmd) {
+    send_header_(cmd.size(), Commands::Run);
+    send_body_(cmd);
+    // should we recv the response?
+    // suppress warning
+    (void)recv_response_();
+}
+
+void SwaySock::send_header_(std::uint32_t message_len, Commands command) {
+    memcpy(header.data(), MAGIC.data(), MAGIC_SIZE);
+    memcpy(header.data() + MAGIC_SIZE, &message_len, sizeof(message_len));
+    memcpy(header.data() + MAGIC_SIZE + sizeof(message_len), &command, sizeof(command));
+    if (write(sock_, header.data(), HEADER_SIZE) == -1) {
+        throw SwayError::SendHeaderFailed;
+    }
+}
+void SwaySock::send_body_(std::string_view cmd) {
+    if (write(sock_, cmd.data(), cmd.size()) == -1) {
+        throw SwayError::SendBodyFailed;
+    }
+}
 
 /*
  * Returns x, y, width, hight of focused display
@@ -165,7 +267,8 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
     Geometry geo = {0, 0, 0, 0};
     if (wm == "sway") {
         try {
-            auto jsonString = get_output("swaymsg -t get_outputs");
+            SwaySock sock;
+            auto jsonString = sock.get_outputs();
             auto jsonObj = string_to_json(jsonString);
             for (auto&& entry : jsonObj) {
                 if (entry.at("focused")) {
