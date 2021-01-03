@@ -69,9 +69,7 @@ struct SwaySock {
     void run(std::string_view);
     // swaymsg -t get_outputs
     std::string get_outputs();
-
-    int sock_;
-
+    
     // see sway-ipc (7)
     enum class Commands: std::uint32_t {
         Run = 0,
@@ -81,12 +79,11 @@ struct SwaySock {
     static constexpr auto MAGIC_SIZE = MAGIC.size();
     // magic + body length (u32) + type (u32)
     static constexpr auto HEADER_SIZE = MAGIC_SIZE + 2 * sizeof(std::uint32_t);
-    static inline auto make_header_ = [](char* header, std::uint32_t len, auto type) {
-        constexpr auto type_ = sizeof(type);
-        constexpr auto len_ = sizeof(len);
-        static_assert(type_ == sizeof(std::uint32_t));
-        memcpy(header, MAGIC.data(), MAGIC_SIZE);
-        memcpy(header + MAGIC_SIZE, &len, len_);
-        memcpy(header + MAGIC_SIZE + len_, &type, type_);
-    };
+    
+    int                           sock_;
+    std::array<char, HEADER_SIZE> header;
+
+    void send_header_(std::uint32_t, Commands);
+    void send_body_(std::string_view);
+    std::string recv_response_();
 };
