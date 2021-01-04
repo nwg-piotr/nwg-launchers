@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
         fs::create_directories(config_dir);
     }
 
-    term = get_term(config_dir);
+    term = get_term(config_dir.native());
 
     // default and custom style sheet
     auto default_css_file = config_dir / "style.css";
@@ -175,12 +175,8 @@ int main(int argc, char *argv[]) {
         favourites = get_favourites(std::move(cache), n);
     }
 
-    auto special_dirs = input.getCmdOption("-d");
-    std::vector<std::string> dirs;
-    if (special_dirs.empty()) {
-        // get all applications dirs
-        dirs = get_app_dirs();
-    } else {
+    std::vector<std::filesystem::path> dirs;
+    if (auto special_dirs = input.getCmdOption("-d"); !special_dirs.empty()) {
         using namespace std::string_view_literals;
         // use special dirs specified with -d argument (feature request #122)
         auto dirs_ = split_string(special_dirs, ":");
@@ -194,6 +190,9 @@ int main(int argc, char *argv[]) {
                 dirs.emplace_back(dir);
             }
         }
+    } else {
+        // get all applications dirs
+        dirs = get_app_dirs();
     }
 
     gettimeofday(&tp, NULL);
