@@ -35,7 +35,7 @@ std::string get_settings_path() {
 std::vector<std::string> list_commands() {
     std::vector<std::string> command_paths;
 
-    if (std::string command_dirs = getenv("PATH"); !command_dirs.empty()) {
+    if (auto command_dirs = getenv("PATH"); command_dirs) {
         auto paths = split_string(command_dirs, ":");
         std::error_code ec;
         for (auto& dir : paths) {

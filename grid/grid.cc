@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
     if (favs) {
         cache_file = cache_home / "nwg-fav-cache";
         try {
-            cache = get_cache(cache_file);
+            cache = json_from_file(cache_file);
         }  catch (...) {
             std::cout << "Cache file not found, creating...\n";
             save_json(cache, cache_file);

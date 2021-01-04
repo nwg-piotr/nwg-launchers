@@ -52,6 +52,26 @@ std::filesystem::path get_config_dir(std::string_view app) {
 }
 
 /*
+ * Returns path to cache directory
+ * */
+std::filesystem::path get_cache_home() {
+    char* home_ = getenv("XDG_CACHE_HOME");
+    std::filesystem::path home;
+    if (home_) {
+        home = home_;
+    } else {
+        home_ = getenv("HOME");
+        if (!home_) {
+            std::cerr << "ERROR: Neither XDG_CACHE_HOME nor HOME are not defined\n";
+            std::exit(EXIT_FAILURE);
+        }
+        home = home_;
+        home /= ".cache";
+    }
+    return home;
+}
+
+/*
  * Returns window manager name
  * */
 std::string detect_wm() {
@@ -61,18 +81,17 @@ std::string detect_wm() {
 
     for(auto env : {"DESKTOP_SESSION", "SWAYSOCK", "I3SOCK"}) {
         // get environment values
-        char *env_val = getenv(env);
-        if (env_val != NULL) {
-            std::string s(env_val);
-            if (s.find("sway") != std::string::npos) {
+        if (auto env_val = getenv(env)) {
+            std::string_view s = env_val;
+            if (s.find("sway") != s.npos) {
                 wm_name = "sway";
                 break;
-            } else if (s.find("i3") != std::string::npos) {
+            } else if (s.find("i3") != s.npos) {
                 wm_name = "i3";
                 break;
             } else {
                 // is the value a full path or just a name?
-                if (s.find("/") == std::string::npos) {
+                if (s.find('/') == s.npos) {
                     // full value is the name
                     wm_name = s;
                     break;
@@ -413,6 +432,15 @@ std::string_view take_last_by(std::string_view str, std::string_view delimiter) 
         return str.substr(pos + 1);
     }
     return str;
+}
+
+/*
+ * Reads json from file
+ * */
+ns::json json_from_file(const std::filesystem::path& path) {
+    ns::json json;
+    std::ifstream{path} >> json;
+    return json;
 }
 
 /*

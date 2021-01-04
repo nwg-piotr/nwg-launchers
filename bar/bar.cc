@@ -137,12 +137,12 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    ns::json bar_json {};
+    ns::json bar_json;
     try {
-        bar_json = get_bar_json(std::move(custom_bar_file));
+        bar_json = json_from_file(custom_bar_file);
     }  catch (...) {
-        std::cerr << "\nERROR: Template file not found, using default\n";
-        bar_json = get_bar_json(default_bar_file);
+        std::cerr << "ERROR: Template file not found, using default\n";
+        bar_json = json_from_file(default_bar_file);
     }
     std::cout << bar_json.size() << " bar entries loaded\n";
 

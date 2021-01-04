@@ -65,8 +65,6 @@ class AppBox : public Gtk::Button {
         Glib::ustring name;
         Glib::ustring exec;
         Glib::ustring comment;
-        
-        RGBA background_color;
 
         virtual ~AppBox();
 };
