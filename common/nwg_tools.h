@@ -34,7 +34,6 @@ std::filesystem::path get_config_dir(std::string_view);
 std::string detect_wm(void);
 
 std::string get_term(std::string_view);
-
 std::string get_locale(void);
 
 std::string read_file_to_string(const std::filesystem::path&);
@@ -72,10 +71,12 @@ struct SwaySock {
     void run(std::string_view);
     // swaymsg -t get_outputs
     std::string get_outputs();
+    std::string get_workspaces();
     
     // see sway-ipc (7)
     enum class Commands: std::uint32_t {
         Run = 0,
+        GetWorkspaces = 1,
         GetOutputs = 3
     };
     static constexpr std::array MAGIC { 'i', '3', '-', 'i', 'p', 'c' };

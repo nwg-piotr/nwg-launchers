@@ -235,6 +235,15 @@ std::string SwaySock::get_outputs() {
 }
 
 /*
+ * Returns `swaymsg -t get_workspaces`
+ * Throws `SwayError`
+ * */
+std::string SwaySock::get_workspaces() {
+    send_header_(0, Commands::GetWorkspaces);
+    return recv_response_();
+}
+
+/*
  * Returns output of previously issued command
  * Throws `SwayError::Recv{Header,Body}Failed`
  */
@@ -292,10 +301,11 @@ void SwaySock::send_body_(std::string_view cmd) {
  * */
 Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> display, Glib::RefPtr<Gdk::Window> window) {
     Geometry geo = {0, 0, 0, 0};
-    if (wm == "sway") {
+    if (wm == "sway" || wm == "i3") {
         try {
+            // TODO: Maybe there is a way to make it more uniform?
             SwaySock sock;
-            auto jsonString = sock.get_outputs();
+            auto jsonString = wm == "sway" ? sock.get_outputs() : sock.get_workspaces();
             auto jsonObj = string_to_json(jsonString);
             for (auto&& entry : jsonObj) {
                 if (entry.at("focused")) {
@@ -308,22 +318,6 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
                 }
             }
             return geo;
-        }
-        catch (...) { }
-    } else if (wm == "i3") { // TODO: shouldn't sway also work with i3?
-        try {
-            auto jsonString = get_output("i3-msg -t get_workspaces");
-            auto jsonObj = string_to_json(jsonString);
-            for (auto&& entry : jsonObj) {
-                if (entry.at("focused")) {
-                    auto&& rect = entry.at("rect");
-                    geo.x = rect.at("x");
-                    geo.y = rect.at("y");
-                    geo.width = rect.at("width");
-                    geo.height = rect.at("height");
-                    break;
-                }
-            }
         }
         catch (...) { }
     }

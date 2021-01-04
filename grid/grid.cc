@@ -26,7 +26,6 @@ std::size_t num_col = 6;        // number of grid columns
 
 std::filesystem::path pinned_file;
 std::filesystem::path cache_file;
-std::vector<std::string> pinned;    // list of commands of pinned icons
 
 const char* const HELP_MESSAGE =
 "GTK application grid: nwggrid " VERSION_STR " (c) 2020 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
@@ -132,13 +131,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    std::vector<std::string> pinned;
     if (pins) {
         pinned_file = cache_home / "nwg-pin-cache";
         pinned = get_pinned(pinned_file);
         if (pinned.size() > 0) {
-          std::cout << pinned.size() << " pinned entries loaded\n";
+            std::cout << pinned.size() << " pinned entries loaded\n";
         } else {
-          std::cout << "No pinned entries found\n";
+            std::cout << "No pinned entries found\n";
         }
     }
 

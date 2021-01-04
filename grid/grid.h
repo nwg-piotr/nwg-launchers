@@ -30,7 +30,6 @@ extern std::size_t num_col;
 
 extern std::filesystem::path cache_file;
 extern std::filesystem::path pinned_file;
-extern std::vector<std::string> pinned;
 extern std::string term;
 
 /* Primitive version of C++20's std::span */
