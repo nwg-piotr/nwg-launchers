@@ -10,15 +10,6 @@
 #include "bar.h"
 
 /*
- * Returns json object out of a template file
- * */
-ns::json get_bar_json(const std::string& custom_bar) {
-    std::string bar_string = read_file_to_string(custom_bar);
-
-    return string_to_json(bar_string);
-}
-
-/*
  * Returns a vector of BarEntry data structs
  * */
 std::vector<BarEntry> get_bar_entries(ns::json&& bar_json) {

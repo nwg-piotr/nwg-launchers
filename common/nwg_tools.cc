@@ -32,25 +32,43 @@ static std::string pid_file{};
 /*
  * Returns config dir
  * */
-std::string get_config_dir(std::string app) {
-    std::string s;
-    char *val = getenv("XDG_CONFIG_HOME");
-
-    if (val) {
-        s = val;
-        s += "/nwg-launchers/";
-    } else {
+std::filesystem::path get_config_dir(std::string_view app) {
+    std::filesystem::path path;
+    char* val = getenv("XDG_CONFIG_HOME");
+    if (!val) {
         val = getenv("HOME");
         if (!val) {
-            std::cerr << "Couldn't find config directory, HOME not set!";
-            std::exit(1);
+            std::cerr << "ERROR: Couldn't find config directory, $HOME not set!";
+            std::exit(EXIT_FAILURE);
         }
-        s = val;
-        s += "/.config/nwg-launchers/";
+        path = val;
+        path /= ".config";
+    } else {
+        path = val;
     }
+    path /= "nwg-launchers";
+    path /= app;
+    return path;
+}
 
-    s += app;
-    return s;
+/*
+ * Returns path to cache directory
+ * */
+std::filesystem::path get_cache_home() {
+    char* home_ = getenv("XDG_CACHE_HOME");
+    std::filesystem::path home;
+    if (home_) {
+        home = home_;
+    } else {
+        home_ = getenv("HOME");
+        if (!home_) {
+            std::cerr << "ERROR: Neither XDG_CACHE_HOME nor HOME are not defined\n";
+            std::exit(EXIT_FAILURE);
+        }
+        home = home_;
+        home /= ".cache";
+    }
+    return home;
 }
 
 /*
@@ -63,18 +81,17 @@ std::string detect_wm() {
 
     for(auto env : {"DESKTOP_SESSION", "SWAYSOCK", "I3SOCK"}) {
         // get environment values
-        char *env_val = getenv(env);
-        if (env_val != NULL) {
-            std::string s(env_val);
-            if (s.find("sway") != std::string::npos) {
+        if (auto env_val = getenv(env)) {
+            std::string_view s = env_val;
+            if (s.find("sway") != s.npos) {
                 wm_name = "sway";
                 break;
-            } else if (s.find("i3") != std::string::npos) {
+            } else if (s.find("i3") != s.npos) {
                 wm_name = "i3";
                 break;
             } else {
                 // is the value a full path or just a name?
-                if (s.find("/") == std::string::npos) {
+                if (s.find('/') == s.npos) {
                     // full value is the name
                     wm_name = s;
                     break;
@@ -293,7 +310,7 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
             return geo;
         }
         catch (...) { }
-    } else if (wm == "i3") {
+    } else if (wm == "i3") { // TODO: shouldn't sway also work with i3?
         try {
             auto jsonString = get_output("i3-msg -t get_workspaces");
             auto jsonObj = string_to_json(jsonString);
@@ -364,24 +381,25 @@ Gtk::Image* app_image(
  * Returns current locale
  * */
 std::string get_locale() {
+    std::string locale = "en";
     // avoid crash when LANG unset at all (regressed by #83 in v0.3.3) #114
-    if (getenv("LANG") != NULL) {
-        std::string loc = getenv("LANG");
+    if (auto env = getenv("LANG")) {
+        std::string_view loc = env;
         if (!loc.empty()) {
-            auto idx = loc.find_first_of("_");
-            if (idx != std::string::npos) {
-                loc.resize(idx);
+            auto idx = loc.find_first_of('_');
+            if (idx != loc.npos) {
+                loc.remove_suffix(loc.size() - idx);
             }
-            return loc;
+            locale = loc;
         }
     }
-    return "en";
+    return locale;
 }
 
 /*
  * Returns file content as a string
  * */
-std::string read_file_to_string(const std::string& filename) {
+std::string read_file_to_string(const std::filesystem::path& filename) {
     std::ifstream input(filename);
     std::stringstream sstr;
 
@@ -393,7 +411,7 @@ std::string read_file_to_string(const std::string& filename) {
 /*
  * Saves a string to a file
  * */
-void save_string_to_file(const std::string& s, const std::string& filename) {
+void save_string_to_file(std::string_view s, const std::filesystem::path& filename) {
     std::ofstream file(filename);
     file << s;
 }
@@ -401,11 +419,11 @@ void save_string_to_file(const std::string& s, const std::string& filename) {
 /*
  * Splits string into vector of strings by delimiter
  * */
-std::vector<std::string> split_string(std::string_view str, std::string_view delimiter) {
-    std::vector<std::string> result;
+std::vector<std::string_view> split_string(std::string_view str, std::string_view delimiter) {
+    std::vector<std::string_view> result;
     std::size_t current, previous = 0;
     current = str.find_first_of(delimiter);
-    while (current != std::string_view::npos) {
+    while (current != str.npos) {
         result.emplace_back(str.substr(previous, current - previous));
         previous = current + 1;
         current = str.find_first_of(delimiter, previous);
@@ -420,34 +438,41 @@ std::vector<std::string> split_string(std::string_view str, std::string_view del
  * */
 std::string_view take_last_by(std::string_view str, std::string_view delimiter) {
     auto pos = str.find_last_of(delimiter);
-    if (pos != std::string_view::npos) {
+    if (pos != str.npos) {
         return str.substr(pos + 1);
     }
     return str;
 }
 
 /*
+ * Reads json from file
+ * */
+ns::json json_from_file(const std::filesystem::path& path) {
+    ns::json json;
+    std::ifstream{path} >> json;
+    return json;
+}
+
+/*
  * Converts json string into a json object
  * */
-ns::json string_to_json(const std::string& jsonString) {
-    ns::json jsonObj;
-    std::stringstream(jsonString) >> jsonObj;
-
-    return jsonObj;
+ns::json string_to_json(std::string_view jsonString) {
+    return ns::json::parse(jsonString.begin(), jsonString.end());
 }
 
 /*
  * Saves json into file
  * */
-void save_json(const ns::json& json_obj, const std::string& filename) {
+void save_json(const ns::json& json_obj, const std::filesystem::path& filename) {
     std::ofstream o(filename);
     o << std::setw(2) << json_obj << std::endl;
 }
 
 /*
  * Sets RGBA background according to hex strings
-* */
-void set_background(std::string_view string) {
+ * Note: if `string` is #RRGGBB, alpha will not be changed
+ * */
+void decode_color(std::string_view string, RGBA& color) {
     std::string hex_string {"0x"};
     unsigned long int rgba;
     std::stringstream ss;
@@ -460,14 +485,14 @@ void set_background(std::string_view string) {
         ss << std::hex << hex_string;
         ss >> rgba;
         if (hex_string.size() == 8) {
-            background.red = ((rgba >> 16) & 0xff) / 255.0;
-            background.green = ((rgba >> 8) & 0xff) / 255.0;
-            background.blue = ((rgba) & 0xff) / 255.0;
+            color.red = ((rgba >> 16) & 0xff) / 255.0;
+            color.green = ((rgba >> 8) & 0xff) / 255.0;
+            color.blue = ((rgba) & 0xff) / 255.0;
         } else if (hex_string.size() == 10) {
-            background.red = ((rgba >> 24) & 0xff) / 255.0;
-            background.green = ((rgba >> 16) & 0xff) / 255.0;
-            background.blue = ((rgba >> 8) & 0xff) / 255.0;
-            background.alpha = ((rgba) & 0xff) / 255.0;
+            color.red = ((rgba >> 24) & 0xff) / 255.0;
+            color.green = ((rgba >> 16) & 0xff) / 255.0;
+            color.blue = ((rgba >> 8) & 0xff) / 255.0;
+            color.alpha = ((rgba) & 0xff) / 255.0;
         } else {
             std::cerr << "ERROR: invalid color value. Should be RRGGBB or RRGGBBAA\n";
         }

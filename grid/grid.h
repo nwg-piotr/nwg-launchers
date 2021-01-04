@@ -157,9 +157,7 @@ struct CacheEntry {
 /*
  * Function declarations
  * */
-fs::path                    get_cache_home();
-ns::json                    get_cache(const std::string&);
 std::vector<std::string>    get_app_dirs(void);
-std::vector<std::string>    get_pinned(const std::string&);
+std::vector<std::string>    get_pinned(const std::filesystem::path& pinned_file);
 std::vector<CacheEntry>     get_favourites(ns::json&&, int);
 std::optional<DesktopEntry> desktop_entry(std::string&&, const std::string&);
