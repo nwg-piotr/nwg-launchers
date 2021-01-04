@@ -11,11 +11,11 @@
 
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdlib.h>
 #include <signal.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -498,19 +498,22 @@ std::string get_output(const std::string& cmd) {
  * Remove pid_file created by create_pid_file_or_kill_pid.
  * This function will be run before exiting.
  * */
-static void clean_pid_file(void) {
+static void clean_pid_file() {
     unlink(pid_file.c_str());
 }
 
 /*
  * Signal handler to exit normally with SIGTERM
  * */
+// Put string in global scope to be sure no dynamic allocation will happen
+static const std::string exit_sigterm_msg = "Received SIGTERM, exiting...\n";
 static void exit_normal(int sig) {
+    // We have to use only async-signal-safe functions here
     if (sig == SIGTERM) {
-        std::cerr << "Received SIGTERM, exiting...\n";
+        write(STDERR_FILENO, exit_sigterm_msg.c_str(), exit_sigterm_msg.length());
     }
 
-    std::exit(1);
+    std::quick_exit(1);
 }
 
 /*
@@ -525,14 +528,12 @@ static void exit_normal(int sig) {
  * of the launchers closes the currently running one.
  * */
 void create_pid_file_or_kill_pid(std::string cmd) {
-    std::string myuid = std::to_string(getuid());
-
     char *runtime_dir_tmp = getenv("XDG_RUNTIME_DIR");
     std::string runtime_dir;
     if (runtime_dir_tmp) {
         runtime_dir = runtime_dir_tmp;
     } else {
-        runtime_dir = "/var/run/user/" + myuid;
+        runtime_dir = "/var/run/user/" + std::to_string(getuid());
     }
 
     pid_file = runtime_dir + "/" + cmd + ".pid";
@@ -555,11 +556,14 @@ void create_pid_file_or_kill_pid(std::string cmd) {
         }
     }
 
-    std::string mypid = std::to_string(getpid());
+    auto mypid = std::to_string(getpid());
     save_string_to_file(mypid, pid_file);
 
-    // register function to clean pid file
-    atexit(clean_pid_file);
+    // register function to clean pid file - will be used if it exits normally
+    std::atexit(clean_pid_file);
+    // also register for quick_exit, since it isn't safe to call std::exit
+    // inside a signal handler
+    std::at_quick_exit(clean_pid_file);
     // register signal handler for SIGTERM
     struct sigaction act {};
     act.sa_handler = exit_normal;
