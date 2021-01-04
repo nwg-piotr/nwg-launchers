@@ -312,7 +312,8 @@ int main(int argc, char *argv[]) {
     /* turn off borders, enable floating on sway */
     if (wm == "sway") {
         SwaySock sock;
-        sock.run("for_window [title=~nwggrid*] floating enable,border none");
+        sock.run("for_window [title=~nwggrid*] floating enable");
+        sock.run("for_window [title=~nwggrid*] border none");
     }
 
     if (wm == "sway" || wm == "i3" || wm == "openbox") {
