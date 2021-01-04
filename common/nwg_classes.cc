@@ -14,6 +14,7 @@
 #include <iostream>
 
 #include "nwg_classes.h"
+#include "nwg_tools.h"
 
 InputParser::InputParser (int argc, char **argv) {
     tokens.reserve(argc - 1);
@@ -35,6 +36,22 @@ bool InputParser::cmdOptionExists(std::string_view option) const {
         != this->tokens.end();
 }
 
+RGBA InputParser::get_background_color(double default_opacity) const {
+    RGBA color{ 0.0, 0.0, 0.0, default_opacity };
+    if (auto opacity_str = getCmdOption("-o"); !opacity_str.empty()) {
+        auto opacity = std::stod(std::string{opacity_str});
+        if (opacity >= 0.0 && opacity <= 1.0) {
+            color.alpha = opacity;
+        } else {
+            std::cerr << "ERROR: Opacity must be in range 0.0 to 1.0\n";
+        }
+    }
+    if (auto color_str = getCmdOption("-b"); !color_str.empty()) {
+        decode_color(color_str, color);
+    }
+    return color;
+}
+
 CommonWindow::CommonWindow(const Glib::ustring& title, const Glib::ustring& role) {
     set_title(title);
     set_role(role);
@@ -48,10 +65,11 @@ CommonWindow::~CommonWindow() { }
 
 bool CommonWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     cr->save();
+    auto [r, g, b, a] = this->background_color;
     if (_SUPPORTS_ALPHA) {
-        cr->set_source_rgba(background.red, background.green, background.blue, background.alpha);
+        cr->set_source_rgba(r, g, b, a);
     } else {
-        cr->set_source_rgb(background.red, background.green, background.blue);
+        cr->set_source_rgb(r, g, b);
     }
     cr->set_operator(Cairo::OPERATOR_SOURCE);
     cr->paint();
@@ -73,6 +91,10 @@ void CommonWindow::check_screen() {
     }
     _SUPPORTS_ALPHA = (bool)visual;
     gtk_widget_set_visual(GTK_WIDGET(gobj()), visual->gobj());
+}
+
+void CommonWindow::set_background_color(RGBA color) {
+    this->background_color = color;
 }
 
 AppBox::AppBox() {

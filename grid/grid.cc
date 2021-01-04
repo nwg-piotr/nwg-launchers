@@ -23,7 +23,6 @@ bool favs = false;              // whether to display favorites
 std::string wm {""};            // detected or forced window manager name
 std::string term {""};
 std::size_t num_col = 6;        // number of grid columns
-RGBA background = {0.0, 0.0, 0.0, 0.9};
 
 std::string pinned_file {};
 std::vector<std::string> pinned;    // list of commands of pinned icons
@@ -93,26 +92,7 @@ int main(int argc, char *argv[]) {
         wm = wm_name;
     }
 
-    auto opa = input.getCmdOption("-o");
-    if (!opa.empty()) {
-        try {
-            auto o = std::stod(std::string{opa});
-            if (o >= 0.0 && o <= 1.0) {
-                background.alpha = o;
-            } else {
-                std::cerr << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
-            }
-        } catch(...) {
-            std::cerr << "\nERROR: Invalid opacity value\n\n";
-        }
-    }
-
-    auto special_dirs = input.getCmdOption("-d");
-
-    std::string_view bcg = input.getCmdOption("-b");
-    if (!bcg.empty()) {
-        set_background(bcg);
-    }
+    auto background_color = input.get_background_color(0.9);
 
     auto i_size = input.getCmdOption("-s");
     if (!i_size.empty()){
@@ -145,7 +125,7 @@ int main(int argc, char *argv[]) {
     if (favs) {
         cache_file = cache_home / "nwg-fav-cache";
         try {
-            cache = get_cache(cache_file);
+            cache = json_from_file(cache_file);
         }  catch (...) {
             std::cout << "Cache file not found, creating...\n";
             save_json(cache, cache_file);
@@ -167,7 +147,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    std::string config_dir = get_config_dir("nwggrid");
+    auto config_dir = get_config_dir("nwggrid");
     if (!fs::is_directory(config_dir)) {
         std::cout << "Config dir not found, creating...\n";
         fs::create_directories(config_dir);
@@ -176,15 +156,15 @@ int main(int argc, char *argv[]) {
     term = get_term(config_dir);
 
     // default and custom style sheet
-    std::string default_css_file = config_dir + "/style.css";
+    auto default_css_file = config_dir / "style.css";
     // css file to be used
-    std::string css_file = config_dir + "/" + custom_css_file;
+    auto css_file = config_dir / custom_css_file;
     // copy default file if not found
     if (!fs::exists(default_css_file)) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwggrid/style.css", default_css_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cerr << "Failed copying default style.css\n";
+            std::cerr << "ERROR: Failed copying default style.css\n";
         }
     }
 
@@ -195,25 +175,25 @@ int main(int argc, char *argv[]) {
         favourites = get_favourites(std::move(cache), n);
     }
 
-    std::vector<std::string> dirs{""};
+    auto special_dirs = input.getCmdOption("-d");
+    std::vector<std::string> dirs;
     if (special_dirs.empty()) {
         // get all applications dirs
         dirs = get_app_dirs();
     } else {
+        using namespace std::string_view_literals;
         // use special dirs specified with -d argument (feature request #122)
-        dirs = split_string(special_dirs, ":");
+        auto dirs_ = split_string(special_dirs, ":");
         std::cout << "\nUsing custom .desktop files path(s):\n";
-        struct stat statbuf;
-        for (auto& dir : dirs) {
-            if (stat(dir.c_str(), &statbuf) != -1) {
-                if (S_ISDIR(statbuf.st_mode)) {
-                  std::cout << "'" << dir << "' [OK]\n";
-                }
-            } else {
-                std::cout << "'" << dir << "' [INVALID]\n";
+        std::array status { "' [INVALID]\n"sv, "' [OK]\n"sv };
+        for (auto && dir: dirs_) {
+            std::error_code ec;
+            auto is_dir = std::filesystem::is_directory(dir, ec) && !ec;
+            std::cout << '\'' << dir << status[is_dir];
+            if (is_dir) {
+                dirs.emplace_back(dir);
             }
         }
-        std::cout << "\n";
     }
 
     gettimeofday(&tp, NULL);
@@ -302,6 +282,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Using " << css_file << '\n';
 
     MainWindow window(execs, stats);
+    window.set_background_color(background_color);
     window.show();
 
     /* Detect focused display geometry: {x, y, w, h} */

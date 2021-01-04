@@ -17,6 +17,13 @@
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
 
+struct RGBA {
+    double red;
+    double green;
+    double blue;
+    double alpha;
+};
+
 /*
  * Argument parser
  * Credits for this cool class go to iain at https://stackoverflow.com/a/868894
@@ -28,7 +35,7 @@ class InputParser{
         std::string_view getCmdOption(std::string_view) const;
         /// @author iain
         bool cmdOptionExists(std::string_view) const;
-
+        RGBA get_background_color(double default_opacity) const;
     private:
         std::vector <std::string_view> tokens;
 };
@@ -39,10 +46,12 @@ class CommonWindow : public Gtk::Window {
         virtual ~CommonWindow();
 
         void check_screen();
+        void set_background_color(RGBA color);
     protected:
         bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr) override;
         void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) override;
     private:
+        RGBA background_color;
         bool _SUPPORTS_ALPHA;
 };
 
@@ -78,11 +87,3 @@ struct DesktopEntry {
     std::string mime_type;
     bool terminal;
 };
-
-struct RGBA {
-    double red;
-    double green;
-    double blue;
-    double alpha;
-};
-extern RGBA background;

@@ -16,26 +16,6 @@
 CacheEntry::CacheEntry(std::string desktop_id, int clicks): desktop_id(std::move(desktop_id)), clicks(clicks) { }
 
 /*
- * Returns path to cache directory
- * */
-fs::path get_cache_home() {
-    char* home_ = getenv("XDG_CACHE_HOME");
-    fs::path home;
-    if (home_) {
-        home = home_;
-    } else {
-        home_ = getenv("HOME");
-        if (!home_) {
-            std::cerr << "ERROR: Neither XDG_CACHE_HOME nor HOME are not defined\n";
-            std::exit(EXIT_FAILURE);
-        }
-        home = home_;
-        home /= ".cache";
-    }
-    return home;
-}
-
-/*
  * Returns locations of .desktop files
  * */
 std::vector<std::string> get_app_dirs() {
@@ -49,7 +29,10 @@ std::vector<std::string> get_app_dirs() {
         str.append(suf);
     };
 
-    std::string home = getenv("HOME");
+    std::string home;
+    if (auto home_ = getenv("HOME")) {
+        home = home_;
+    }
 
     auto xdg_data_home = getenv("XDG_DATA_HOME");
     if (xdg_data_home) {
@@ -197,18 +180,9 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
 }
 
 /*
- * Returns json object out of the cache file
- * */
-ns::json get_cache(const std::string& cache_file) {
-    std::string cache_string = read_file_to_string(cache_file);
-
-    return string_to_json(cache_string);
-}
-
-/*
  * Returns vector of strings out of the pinned cache file content
  * */
-std::vector<std::string> get_pinned(const std::string& pinned_file) {
+std::vector<std::string> get_pinned(const std::filesystem::path& pinned_file) {
     std::vector<std::string> lines;
     std::ifstream in(pinned_file);
     if(!in) {
