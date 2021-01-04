@@ -45,7 +45,7 @@ Options:\n\
 -wm <wmname>     window manager name (if can not be detected)\n";
 
 int main(int argc, char *argv[]) {
-    std::string custom_css_file {"style.css"};
+    std::filesystem::path custom_css_file{ "style.css" };
 
     struct timeval tp;
     gettimeofday(&tp, NULL);
@@ -62,12 +62,14 @@ int main(int argc, char *argv[]) {
     }
     favs = input.cmdOptionExists("-f") && !input.cmdOptionExists("-d");
     pins = input.cmdOptionExists("-p") && !input.cmdOptionExists("-d");
-    auto forced_lang = input.getCmdOption("-l");
-    if (!forced_lang.empty()){
+    if (auto forced_lang = input.getCmdOption("-l"); !forced_lang.empty()){
         lang = forced_lang;
+    } else {
+        lang = get_locale();
     }
-    auto cols = input.getCmdOption("-n");
-    if (!cols.empty()) {
+    std::cout << "Locale: " << lang << "\n";
+    
+    if (auto cols = input.getCmdOption("-n"); !cols.empty()) {
         int n_c;
         auto [p, ec] = std::from_chars(cols.data(), cols.data() + cols.size(), n_c);
         if (ec == std::errc()) {
@@ -81,15 +83,16 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    auto css_name = input.getCmdOption("-c");
-    if (!css_name.empty()){
+    if (auto css_name = input.getCmdOption("-c"); !css_name.empty()){
         custom_css_file = css_name;
     }
-
-    auto wm_name = input.getCmdOption("-wm");
-    if (!wm_name.empty()){
+    
+    if (auto wm_name = input.getCmdOption("-wm"); !wm_name.empty()){
         wm = wm_name;
+    } else {
+        wm = detect_wm();
     }
+    std::cout << "WM: " << wm << "\n";
 
     auto background_color = input.get_background_color(0.9);
 
@@ -108,20 +111,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* get current WM name if not forced */
-    if (wm.empty()) {
-        wm = detect_wm();
-    }
-    std::cout << "WM: " << wm << "\n";
-
-    /* get lang if not yet forced */
-    if (lang.empty()) {
-        lang = get_locale();
-    }
-    std::cout << "Locale: " << lang << "\n";
 
     auto cache_home = get_cache_home();
-    
     // This will be read-only, to find n most clicked items (n = number of grid columns)
     std::vector<CacheEntry> favourites;
     if (favs) {
