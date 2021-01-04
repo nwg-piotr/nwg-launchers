@@ -28,10 +28,9 @@ extern std::string wm;
 
 extern std::size_t num_col;
 
-extern std::string pinned_file;
+extern std::filesystem::path cache_file;
+extern std::filesystem::path pinned_file;
 extern std::vector<std::string> pinned;
-extern ns::json cache;
-extern std::string cache_file;
 extern std::string term;
 
 /* Primitive version of C++20's std::span */

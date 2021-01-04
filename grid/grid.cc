@@ -24,10 +24,9 @@ std::string wm {""};            // detected or forced window manager name
 std::string term {""};
 std::size_t num_col = 6;        // number of grid columns
 
-std::string pinned_file {};
+std::filesystem::path pinned_file;
+std::filesystem::path cache_file;
 std::vector<std::string> pinned;    // list of commands of pinned icons
-ns::json cache;
-std::string cache_file {};
 
 const char* const HELP_MESSAGE =
 "GTK application grid: nwggrid " VERSION_STR " (c) 2020 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
@@ -122,18 +121,23 @@ int main(int argc, char *argv[]) {
     std::cout << "Locale: " << lang << "\n";
 
     auto cache_home = get_cache_home();
+    
+    // This will be read-only, to find n most clicked items (n = number of grid columns)
+    std::vector<CacheEntry> favourites;
     if (favs) {
         cache_file = cache_home / "nwg-fav-cache";
         try {
-            cache = json_from_file(cache_file);
+            auto cache = json_from_file(cache_file);
+            if (cache.size() > 0) {
+                std::cout << cache.size() << " cache entries loaded\n";
+            } else {
+                std::cout << "No cache entries loaded\n";
+            }
+            auto n = std::min(num_col, cache.size());
+            favourites = get_favourites(std::move(cache), n);
         }  catch (...) {
-            std::cout << "Cache file not found, creating...\n";
-            save_json(cache, cache_file);
-        }
-        if (cache.size() > 0) {
-            std::cout << cache.size() << " cache entries loaded\n";
-        } else {
-            std::cout << "No cached favourites found\n";
+            // TODO: only save cache if favs were changed
+            std::cerr << "Failed to read cache file '" << cache_file << "'\n";
         }
     }
 
@@ -166,13 +170,6 @@ int main(int argc, char *argv[]) {
         } catch (...) {
             std::cerr << "ERROR: Failed copying default style.css\n";
         }
-    }
-
-    // This will be read-only, to find n most clicked items (n = number of grid columns)
-    std::vector<CacheEntry> favourites;
-    if (cache.size() > 0) {
-        auto n = std::min(num_col, cache.size());
-        favourites = get_favourites(std::move(cache), n);
     }
 
     std::vector<std::filesystem::path> dirs;
