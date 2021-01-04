@@ -16,7 +16,6 @@
 #include "on_event.h"
 #include "bar.h"
 
-RGBA background = {0.0, 0.0, 0.0, 0.9};
 std::string wm {""};            // detected or forced window manager name
 const char* const HELP_MESSAGE =
 "GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
@@ -88,24 +87,7 @@ int main(int argc, char *argv[]) {
         wm = wm_name;
     }
 
-    auto opa = input.getCmdOption("-o");
-    if (!opa.empty()){
-        try {
-            auto o = std::stod(std::string{opa});
-            if (o >= 0.0 && o <= 1.0) {
-                background.alpha = o;
-            } else {
-                std::cerr << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
-            }
-        } catch (...) {
-            std::cerr << "\nERROR: Invalid opacity value\n\n";
-        }
-    }
-
-    std::string_view bcg = input.getCmdOption("-b");
-    if (!bcg.empty()) {
-        set_background(bcg);
-    }
+    auto background_color = input.get_background_color(0.9);
 
     auto i_size = input.getCmdOption("-s");
     if (!i_size.empty()) {
@@ -124,16 +106,16 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    std::string config_dir = get_config_dir("nwgbar");
+    auto config_dir = get_config_dir("nwgbar");
     if (!fs::is_directory(config_dir)) {
         std::cout << "Config dir not found, creating...\n";
         fs::create_directories(config_dir);
     }
 
     // default and custom style sheet
-    std::string default_css_file = config_dir + "/style.css";
+    auto default_css_file = config_dir / "style.css";
     // css file to be used
-    std::string css_file = config_dir + "/" + custom_css_file;
+    auto css_file = config_dir / custom_css_file;
     // copy default file if not found
     if (!fs::exists(default_css_file)) {
         try {
@@ -144,8 +126,8 @@ int main(int argc, char *argv[]) {
     }
 
     // default or custom template
-    std::string default_bar_file = config_dir + "/bar.json";
-    std::string custom_bar_file = config_dir + "/" + definition_file;
+    auto default_bar_file = config_dir / "bar.json";
+    auto custom_bar_file = config_dir / definition_file;
     // copy default anyway if not found
     if (!fs::exists(default_bar_file)) {
         try {
@@ -209,6 +191,7 @@ int main(int argc, char *argv[]) {
     }
 
     MainWindow window;
+    window.set_background_color(background_color);
     window.show();
 
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));

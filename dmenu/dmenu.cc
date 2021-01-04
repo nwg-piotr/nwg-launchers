@@ -115,24 +115,7 @@ int main(int argc, char *argv[]) {
         wm = wm_name;
     }
 
-    auto opa = input.getCmdOption("-o");
-    if (!opa.empty()){
-        try {
-            auto o = std::stod(std::string{opa});
-            if (o >= 0.0 && o <= 1.0) {
-                background.alpha = o;
-            } else {
-                std::cerr << "\nERROR: Opacity must be in range 0.0 to 1.0\n\n";
-            }
-        } catch (...) {
-            std::cerr << "\nERROR: Invalid opacity value\n\n";
-        }
-    }
-
-    std::string_view bcg = input.getCmdOption("-b");
-    if (!bcg.empty()) {
-        set_background(bcg);
-    }
+    auto background_color = input.get_background_color(0.3);
 
     auto rw = input.getCmdOption("-r");
     if (!rw.empty()){
@@ -151,16 +134,16 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    std::string config_dir = get_config_dir("nwgdmenu");
+    auto config_dir = get_config_dir("nwgdmenu");
     if (!fs::is_directory(config_dir)) {
         std::cout << "Config dir not found, creating...\n";
         fs::create_directories(config_dir);
     }
 
     // default and custom style sheet
-    std::string default_css_file = config_dir + "/style.css";
+    auto default_css_file = config_dir / "style.css";
     // css file to be used
-    std::string css_file = config_dir + "/" + custom_css_file;
+    auto css_file = config_dir / custom_css_file;
     // copy default file if not found
     if (!fs::exists(default_css_file)) {
         try {
@@ -223,6 +206,7 @@ int main(int argc, char *argv[]) {
     }
 
     MainWindow window;
+    window.set_background_color(background_color);
     // For openbox and similar we'll need the window x, y coordinates
     window.show();
 
