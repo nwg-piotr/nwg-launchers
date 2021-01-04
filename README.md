@@ -4,8 +4,7 @@
 
 As it's never too late to learn something new, I decided to try and code my
 [sgtk-menu](https://github.com/nwg-piotr/sgtk-menu) set of launchers, written in python, from scratch in C++.
-By the way I'm trying to simplify their usage, by reducing the number of arguments. Whatever possible, is being moved
-to css style sheets.
+It went not bad, thanks to the help from Contributors - more experienced C++ developers.
 
 ![demo-gif](http://nwg.pl/Lychee/uploads/big/0b284762e075ee04df1d0a378ce5e20a.gif)
 
@@ -130,7 +129,7 @@ This command creates a horizontal or vertical button bar, out of a template file
 
 ```
 $ nwgbar -h
-GTK button bar: nwgbar 0.3.1 (c) Piotr Miller & Contributors 2020
+GTK button bar: nwgbar 0.4.1 (c) Piotr Miller & Contributors 2020
 
 Options:
 -h               show this help message and exit
@@ -226,7 +225,7 @@ This program provides 2 commands:
 
 ```
 $ nwgdmenu -h
-GTK dynamic menu: nwgdmenu 0.3.1 (c) Piotr Miller & Contributors 2020
+GTK dynamic menu: nwgdmenu 0.4.1 (c) Piotr Miller & Contributors 2020
 
 <input> | nwgdmenu - displays newline-separated stdin input as a GTK menu
 nwgdmenu - creates a GTK menu out of commands found in $PATH
