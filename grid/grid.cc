@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
         fs::create_directories(config_dir);
     }
 
-    term = get_term(config_dir);
+    term = get_term(config_dir.native());
 
     // default and custom style sheet
     auto default_css_file = config_dir / "style.css";
