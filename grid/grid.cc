@@ -13,6 +13,10 @@
 
 #include <charconv>
 
+#ifdef HAVE_GTK_LAYER_SHELL
+#include <gtk-layer-shell/gtk-layer-shell.h>
+#endif
+
 #include "nwg_tools.h"
 #include "nwg_classes.h"
 #include "on_event.h"
@@ -42,6 +46,46 @@ Options:\n\
 -c <name>        css file name (default: style.css)\n\
 -l <ln>          force use of <ln> language\n\
 -wm <wmname>     window manager name (if can not be detected)\n";
+
+struct WindowPositioner {
+    std::string wm;
+    
+    void position(const Glib::RefPtr<Gdk::Display>& display, Gtk::Window& window) {
+        auto [x, y, w, h] = display_geometry(wm, display, window.get_window());
+#ifdef HAVE_GTK_LAYER_SHELL
+        if (gtk_layer_is_supported()) {
+            window.resize(w, h);
+            auto gtk_win = window.gobj();
+            gtk_layer_init_for_window(gtk_win);
+            std::array edges {
+                GTK_LAYER_SHELL_EDGE_LEFT,
+                GTK_LAYER_SHELL_EDGE_RIGHT,
+                GTK_LAYER_SHELL_EDGE_TOP,
+                GTK_LAYER_SHELL_EDGE_BOTTOM
+            };
+            for (auto edge: edges) {
+                gtk_layer_set_anchor(gtk_win, edge, true);
+                gtk_layer_set_margin(gtk_win, edge, 0);
+            }
+            gtk_layer_set_layer(gtk_win, GTK_LAYER_SHELL_LAYER_TOP);
+            gtk_layer_set_keyboard_interactivity(gtk_win, true);
+            gtk_layer_set_namespace(gtk_win, "nwggrid");
+            gtk_layer_set_exclusive_zone(gtk_win, -1);
+            return;
+        }
+#endif
+        std::cout << "Focused display: " << x << ", " << y << ", " << w << ", " << h << '\n';
+        if (wm == "sway") {
+            SwaySock sock;
+            sock.run("for_window [title=~nwggrid*] floating enable");
+            sock.run("for_window [title=~nwggrid*] border none");
+        }
+        if (wm == "sway" || wm == "i3" || wm == "openbox") {
+            window.resize(w, h);
+            window.move(x, y);
+        }
+    }
+};
 
 int main(int argc, char *argv[]) {
     std::filesystem::path custom_css_file{ "style.css" };
@@ -270,24 +314,11 @@ int main(int argc, char *argv[]) {
 
     MainWindow window(execs, stats);
     window.set_background_color(background_color);
+        
+    WindowPositioner positioner{ wm };
+    positioner.position(display, window);
+    
     window.show();
-
-    /* Detect focused display geometry: {x, y, w, h} */
-    auto [x, y, w, h] = display_geometry(wm, display, window.get_window());
-    std::cout << "Focused display: " << x << ", " << y << ", " << w << ", "
-    << h << '\n';
-
-    /* turn off borders, enable floating on sway */
-    if (wm == "sway") {
-        SwaySock sock;
-        sock.run("for_window [title=~nwggrid*] floating enable");
-        sock.run("for_window [title=~nwggrid*] border none");
-    }
-
-    if (wm == "sway" || wm == "i3" || wm == "openbox") {
-        window.resize(w, h);
-        window.move(x, y);
-    }
 
     gettimeofday(&tp, NULL);
     long int images_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;

@@ -19,6 +19,11 @@ endif
 gtkmm = dependency('gtkmm-3.0', required: true)
 json = dependency('nlohmann_json', required: false)
 
+gtk_layer_shell = dependency('gtk-layer-shell-0', version: ['>= 0.5.0'], required: get_option('layer-shell'))
+if gtk_layer_shell.found()
+    add_project_arguments('-DHAVE_GTK_LAYER_SHELL', language: 'cpp')
+endif
+
 # If nlohmann-json is not installed on the system
 # we download the repository and use the single header file they have
 json_header_dir = []
