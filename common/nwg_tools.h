@@ -49,7 +49,7 @@ void decode_color(std::string_view, RGBA& color);
 std::string get_output(const std::string&);
 
 Gtk::Image* app_image(const Gtk::IconTheme&, const std::string&, const Glib::RefPtr<Gdk::Pixbuf>&);
-Geometry display_geometry(const std::string&, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);
+Geometry display_geometry(std::string_view, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);
 
 void create_pid_file_or_kill_pid(std::string);
 

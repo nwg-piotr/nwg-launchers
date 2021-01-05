@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 
 #include <charconv>
+#include <variant>
 
 #ifdef HAVE_GTK_LAYER_SHELL
 #include <gtk-layer-shell/gtk-layer-shell.h>
@@ -47,43 +48,65 @@ Options:\n\
 -l <ln>          force use of <ln> language\n\
 -wm <wmname>     window manager name (if can not be detected)\n";
 
-struct WindowPositioner {
-    std::string wm;
-    
-    void position(const Glib::RefPtr<Gdk::Display>& display, Gtk::Window& window) {
-        auto [x, y, w, h] = display_geometry(wm, display, window.get_window());
+struct GenericShell {
+    GenericShell(Geometry geo): geo{geo} { }
+    Geometry geo;
+    void adjust_window(Gtk::Window& window) {
+        auto [x, y, w, h] = geo;
+        window.resize(w, h);
+        window.move(x, y);
+    }
+};
+struct SwayShell: GenericShell {
+    SwayShell(Geometry geo): GenericShell{geo} { }
+    SwaySock sock_;
+    void adjust_window(Gtk::Window& window) {
+        sock_.run("for_window [title=~nwggrid*] floating enable");
+        sock_.run("for_window [title=~nwggrid*] border none");
+        return GenericShell::adjust_window(window);
+    }
+};
+
+#ifdef HAVE_GTK_LAYER_SHELL
+struct LayerShell: GenericShell {
+    LayerShell(Geometry geo): GenericShell{geo} { }
+    void adjust_window(Gtk::Window& window) {
+        window.resize(geo.width, geo.height);
+        auto gtk_win = window.gobj();
+        gtk_layer_init_for_window(gtk_win);
+        std::array edges {
+            GTK_LAYER_SHELL_EDGE_LEFT,
+            GTK_LAYER_SHELL_EDGE_RIGHT,
+            GTK_LAYER_SHELL_EDGE_TOP,
+            GTK_LAYER_SHELL_EDGE_BOTTOM
+        };
+        for (auto edge: edges) {
+            gtk_layer_set_anchor(gtk_win, edge, true);
+            gtk_layer_set_margin(gtk_win, edge, 0);
+        }
+        gtk_layer_set_layer(gtk_win, GTK_LAYER_SHELL_LAYER_TOP);
+        gtk_layer_set_keyboard_interactivity(gtk_win, true);
+        gtk_layer_set_namespace(gtk_win, "nwggrid");
+        gtk_layer_set_exclusive_zone(gtk_win, -1);
+    }
+};
+#endif
+
+struct Platform {
+    Platform(std::string_view wm, Geometry geo): shell{GenericShell{geo}} {
 #ifdef HAVE_GTK_LAYER_SHELL
         if (gtk_layer_is_supported()) {
-            window.resize(w, h);
-            auto gtk_win = window.gobj();
-            gtk_layer_init_for_window(gtk_win);
-            std::array edges {
-                GTK_LAYER_SHELL_EDGE_LEFT,
-                GTK_LAYER_SHELL_EDGE_RIGHT,
-                GTK_LAYER_SHELL_EDGE_TOP,
-                GTK_LAYER_SHELL_EDGE_BOTTOM
-            };
-            for (auto edge: edges) {
-                gtk_layer_set_anchor(gtk_win, edge, true);
-                gtk_layer_set_margin(gtk_win, edge, 0);
-            }
-            gtk_layer_set_layer(gtk_win, GTK_LAYER_SHELL_LAYER_TOP);
-            gtk_layer_set_keyboard_interactivity(gtk_win, true);
-            gtk_layer_set_namespace(gtk_win, "nwggrid");
-            gtk_layer_set_exclusive_zone(gtk_win, -1);
+            shell.emplace<LayerShell>(geo);
             return;
         }
 #endif
-        std::cout << "Focused display: " << x << ", " << y << ", " << w << ", " << h << '\n';
-        if (wm == "sway") {
-            SwaySock sock;
-            sock.run("for_window [title=~nwggrid*] floating enable");
-            sock.run("for_window [title=~nwggrid*] border none");
+        if (wm == "sway" || wm == "i3") {
+            shell.emplace<SwayShell>(geo);
         }
-        if (wm == "sway" || wm == "i3" || wm == "openbox") {
-            window.resize(w, h);
-            window.move(x, y);
-        }
+    }
+    std::variant<LayerShell, SwayShell, GenericShell> shell;
+    void adjust_window(Gtk::Window& window) {
+        std::visit([&](auto& shell){ shell.adjust_window(window); }, shell);
     }
 };
 
@@ -314,9 +337,10 @@ int main(int argc, char *argv[]) {
 
     MainWindow window(execs, stats);
     window.set_background_color(background_color);
-        
-    WindowPositioner positioner{ wm };
-    positioner.position(display, window);
+    
+    auto geo = display_geometry(wm, display, window.get_window());
+    Platform platform{ wm, geo };
+    platform.adjust_window(window);
     
     window.show();
 

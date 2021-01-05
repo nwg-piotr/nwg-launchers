@@ -299,7 +299,7 @@ void SwaySock::send_body_(std::string_view cmd) {
 /*
  * Returns x, y, width, hight of focused display
  * */
-Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> display, Glib::RefPtr<Gdk::Window> window) {
+Geometry display_geometry(std::string_view wm, Glib::RefPtr<Gdk::Display> display, Glib::RefPtr<Gdk::Window> window) {
     Geometry geo = {0, 0, 0, 0};
     if (wm == "sway" || wm == "i3") {
         try {
