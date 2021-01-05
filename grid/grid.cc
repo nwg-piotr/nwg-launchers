@@ -49,16 +49,28 @@ Options:\n\
 -wm <wmname>     window manager name (if can not be detected)\n";
 
 struct GenericShell {
-    GenericShell(Geometry geo): geo{geo} { }
-    Geometry geo;
+    GenericShell() { }
+    Geometry geometry(Gtk::Window& window) {
+        Geometry geo;
+        auto display = window.get_display();
+        if (auto monitor = display->get_monitor_at_window(window.get_window())) {
+            Gdk::Rectangle rect;
+            monitor->get_geometry(rect);
+            geo.x = rect.get_x();
+            geo.y = rect.get_y();
+            geo.width = rect.get_width();
+            geo.height = rect.get_height();
+        }
+        return geo;
+    }
     void adjust_window(Gtk::Window& window) {
-        auto [x, y, w, h] = geo;
+        auto [x, y, w, h] = geometry(window);
         window.resize(w, h);
         window.move(x, y);
     }
 };
 struct SwayShell: GenericShell {
-    SwayShell(Geometry geo): GenericShell{geo} { }
+    SwayShell() = default;
     SwaySock sock_;
     void adjust_window(Gtk::Window& window) {
         sock_.run("for_window [title=~nwggrid*] floating enable");
@@ -69,9 +81,8 @@ struct SwayShell: GenericShell {
 
 #ifdef HAVE_GTK_LAYER_SHELL
 struct LayerShell: GenericShell {
-    LayerShell(Geometry geo): GenericShell{geo} { }
+    LayerShell() = default;
     void adjust_window(Gtk::Window& window) {
-        window.resize(geo.width, geo.height);
         auto gtk_win = window.gobj();
         gtk_layer_init_for_window(gtk_win);
         std::array edges {
@@ -88,20 +99,23 @@ struct LayerShell: GenericShell {
         gtk_layer_set_keyboard_interactivity(gtk_win, true);
         gtk_layer_set_namespace(gtk_win, "nwggrid");
         gtk_layer_set_exclusive_zone(gtk_win, -1);
+        
+        auto [x, y, w, h] = geometry(window);
+        window.resize(w, h);
     }
 };
 #endif
 
 struct Platform {
-    Platform(std::string_view wm, Geometry geo): shell{GenericShell{geo}} {
+    Platform(std::string_view wm): shell{GenericShell{}} {
 #ifdef HAVE_GTK_LAYER_SHELL
         if (gtk_layer_is_supported()) {
-            shell.emplace<LayerShell>(geo);
+            shell.emplace<LayerShell>();
             return;
         }
 #endif
         if (wm == "sway" || wm == "i3") {
-            shell.emplace<SwayShell>(geo);
+            shell.emplace<SwayShell>();
         }
     }
     std::variant<LayerShell, SwayShell, GenericShell> shell;
@@ -338,8 +352,7 @@ int main(int argc, char *argv[]) {
     MainWindow window(execs, stats);
     window.set_background_color(background_color);
     
-    auto geo = display_geometry(wm, display, window.get_window());
-    Platform platform{ wm, geo };
+    Platform platform{ wm };
     platform.adjust_window(window);
     
     window.show();
