@@ -102,7 +102,7 @@ bool DMenu::on_key_press_event(GdkEventKey* key_event) {
             this -> searchbox.set_text(this -> search_phrase);
             this -> filter_view();
             return true;
-        } else if (key_event -> keyval == GDK_KEY_Return) {
+        } else if (this -> get_children().size() == 2 && key_event -> keyval == GDK_KEY_Return) {
             // Workaround to launch the single item which has been selected programmatically
             this -> get_children()[1] -> activate();
             return true;
