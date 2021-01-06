@@ -49,7 +49,6 @@ Options:\n\
 -wm <wmname>     window manager name (if can not be detected)\n";
 
 struct GenericShell {
-    GenericShell() { }
     Geometry geometry(Gtk::Window& window) {
         Geometry geo;
         auto display = window.get_display();
@@ -63,28 +62,43 @@ struct GenericShell {
         }
         return geo;
     }
-    void adjust_window(Gtk::Window& window) {
+    void show(Gtk::Window& window) {
+        window.show();
+        window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
+        window.fullscreen();
+    }
+};
+
+struct SwayShell: GenericShell {
+    SwayShell(Gtk::Window& window) {
+        window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
+        window.set_decorated(false);
+    }
+    SwaySock sock_;
+    void show(Gtk::Window& window) {
+        // We can not go fullscreen() here:
+        // On sway the window would become opaque - we don't want it
+        // On i3 all windows below will be hidden - we don't want it as well
+        sock_.run("for_window [title=~nwggrid*] floating enable");
+        sock_.run("for_window [title=~nwggrid*] border none");
+        window.show();
+        // works just fine on Sway/i3 as far as I could test
+        // thus, no need to use ipc (I hope)
         auto [x, y, w, h] = geometry(window);
         window.resize(w, h);
         window.move(x, y);
     }
 };
-struct SwayShell: GenericShell {
-    SwayShell() = default;
-    SwaySock sock_;
-    void adjust_window(Gtk::Window& window) {
-        sock_.run("for_window [title=~nwggrid*] floating enable");
-        sock_.run("for_window [title=~nwggrid*] border none");
-        return GenericShell::adjust_window(window);
-    }
-};
 
-#ifdef HAVE_GTK_LAYER_SHELL
 struct LayerShell: GenericShell {
-    LayerShell() = default;
-    void adjust_window(Gtk::Window& window) {
+#ifdef HAVE_GTK_LAYER_SHELL
+    LayerShell(Gtk::Window& window) {
+        // this has to be called before the window is realized
+        gtk_layer_init_for_window(window.gobj());
+    }
+    void show(Gtk::Window& window) {
+        window.show();
         auto gtk_win = window.gobj();
-        gtk_layer_init_for_window(gtk_win);
         std::array edges {
             GTK_LAYER_SHELL_EDGE_LEFT,
             GTK_LAYER_SHELL_EDGE_RIGHT,
@@ -98,29 +112,26 @@ struct LayerShell: GenericShell {
         gtk_layer_set_layer(gtk_win, GTK_LAYER_SHELL_LAYER_TOP);
         gtk_layer_set_keyboard_interactivity(gtk_win, true);
         gtk_layer_set_namespace(gtk_win, "nwggrid");
-        gtk_layer_set_exclusive_zone(gtk_win, -1);
-        
-        auto [x, y, w, h] = geometry(window);
-        window.resize(w, h);
+        gtk_layer_set_exclusive_zone(gtk_win, -1);        
     }
-};
 #endif
+};
 
 struct Platform {
-    Platform(std::string_view wm): shell{GenericShell{}} {
+    Platform(Gtk::Window& window, std::string_view wm): shell{GenericShell{}} {
 #ifdef HAVE_GTK_LAYER_SHELL
         if (gtk_layer_is_supported()) {
-            shell.emplace<LayerShell>();
+            shell.emplace<LayerShell>(window);
             return;
         }
 #endif
         if (wm == "sway" || wm == "i3") {
-            shell.emplace<SwayShell>();
+            shell.emplace<SwayShell>(window);
         }
     }
     std::variant<LayerShell, SwayShell, GenericShell> shell;
-    void adjust_window(Gtk::Window& window) {
-        std::visit([&](auto& shell){ shell.adjust_window(window); }, shell);
+    void show(Gtk::Window& window) {
+        std::visit([&](auto& shell){ shell.show(window); }, shell);
     }
 };
 
@@ -351,11 +362,8 @@ int main(int argc, char *argv[]) {
 
     MainWindow window(execs, stats);
     window.set_background_color(background_color);
-    
-    Platform platform{ wm };
-    platform.adjust_window(window);
-    
-    window.show();
+    Platform platform{ window, wm };
+    platform.show(window);
 
     gettimeofday(&tp, NULL);
     long int images_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;

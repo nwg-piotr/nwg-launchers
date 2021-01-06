@@ -64,15 +64,6 @@ MainWindow::MainWindow(Span<std::string> es, Span<Stats> ss)
     separator1.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
     separator1.set_name("separator");
     add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
-    // We can not go fullscreen() here:
-    // On sway the window would become opaque - we don't want it
-    // On i3 all windows below will be hidden - we don't want it as well
-    if (wm != "sway" && wm != "i3") {
-        fullscreen();
-    } else {
-        set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
-        set_decorated(false);
-    }
     outer_vbox.set_spacing(15);
     hbox_header.pack_start(searchbox, Gtk::PACK_EXPAND_PADDING, 0);
     outer_vbox.pack_start(hbox_header, Gtk::PACK_SHRINK, 0);
