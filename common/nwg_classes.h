@@ -13,9 +13,14 @@
 
 #include <string>
 #include <vector>
+#include <variant>
 
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
+
+#ifdef HAVE_GTK_LAYER_SHELL
+#include <gtk-layer-shell/gtk-layer-shell.h>
+#endif
 
 struct RGBA {
     double red;
@@ -87,3 +92,134 @@ struct DesktopEntry {
     std::string mime_type;
     bool terminal;
 };
+
+enum class SwayError {
+    ConnectFailed,
+    EnvNotSet,
+    OpenFailed,
+    RecvHeaderFailed,
+    RecvBodyFailed,
+    SendHeaderFailed,
+    SendBodyFailed
+};
+
+struct SwaySock {
+    SwaySock();
+    SwaySock(const SwaySock&) = delete;
+    ~SwaySock();
+    // pass the command to sway via socket
+    void run(std::string_view);
+    // swaymsg -t get_outputs
+    std::string get_outputs();
+    std::string get_workspaces();
+    
+    // see sway-ipc (7)
+    enum class Commands: std::uint32_t {
+        Run = 0,
+        GetWorkspaces = 1,
+        GetOutputs = 3
+    };
+    static constexpr std::array MAGIC { 'i', '3', '-', 'i', 'p', 'c' };
+    static constexpr auto MAGIC_SIZE = MAGIC.size();
+    // magic + body length (u32) + type (u32)
+    static constexpr auto HEADER_SIZE = MAGIC_SIZE + 2 * sizeof(std::uint32_t);
+    
+    int                           sock_;
+    std::array<char, HEADER_SIZE> header;
+
+    void send_header_(std::uint32_t, Commands);
+    void send_body_(std::string_view);
+    std::string recv_response_();
+};
+
+struct GenericShell {
+    Geometry geometry(Gtk::Window& window) {
+        Geometry geo;
+        auto display = window.get_display();
+        if (auto monitor = display->get_monitor_at_window(window.get_window())) {
+            Gdk::Rectangle rect;
+            monitor->get_geometry(rect);
+            geo.x = rect.get_x();
+            geo.y = rect.get_y();
+            geo.width = rect.get_width();
+            geo.height = rect.get_height();
+        }
+        return geo;
+    }
+    void show(Gtk::Window& window) {
+        window.show();
+        window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
+        window.fullscreen();
+    }
+};
+
+struct SwayShell: GenericShell {
+    SwayShell(Gtk::Window& window) {
+        window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
+        window.set_decorated(false);
+    }
+    SwaySock sock_;
+    void show(Gtk::Window& window) {
+        // We can not go fullscreen() here:
+        // On sway the window would become opaque - we don't want it
+        // On i3 all windows below will be hidden - we don't want it as well
+        sock_.run("for_window [title=~nwggrid*] floating enable");
+        sock_.run("for_window [title=~nwggrid*] border none");
+        window.show();
+        // works just fine on Sway/i3 as far as I could test
+        // thus, no need to use ipc (I hope)
+        auto [x, y, w, h] = geometry(window);
+        window.resize(w, h);
+        window.move(x, y);
+    }
+};
+
+struct LayerShell: GenericShell {
+#ifdef HAVE_GTK_LAYER_SHELL
+    LayerShell(Gtk::Window& window) {
+        // this has to be called before the window is realized
+        gtk_layer_init_for_window(window.gobj());
+    }
+    void show(Gtk::Window& window) {
+        window.show();
+        auto gtk_win = window.gobj();
+        std::array edges {
+            GTK_LAYER_SHELL_EDGE_LEFT,
+            GTK_LAYER_SHELL_EDGE_RIGHT,
+            GTK_LAYER_SHELL_EDGE_TOP,
+            GTK_LAYER_SHELL_EDGE_BOTTOM
+        };
+        for (auto edge: edges) {
+            gtk_layer_set_anchor(gtk_win, edge, true);
+            gtk_layer_set_margin(gtk_win, edge, 0);
+        }
+        gtk_layer_set_layer(gtk_win, GTK_LAYER_SHELL_LAYER_TOP);
+        gtk_layer_set_keyboard_interactivity(gtk_win, true);
+        gtk_layer_set_namespace(gtk_win, "nwggrid");
+        gtk_layer_set_exclusive_zone(gtk_win, -1);        
+    }
+#endif
+};
+
+struct Platform {
+    Platform(Gtk::Window& window_, std::string_view wm):
+        shell{std::in_place_type_t<GenericShell>{}},
+        window{window_}
+    {
+#ifdef HAVE_GTK_LAYER_SHELL
+        if (gtk_layer_is_supported()) {
+            shell.emplace<LayerShell>(window);
+            return;
+        }
+#endif
+        if (wm == "sway" || wm == "i3") {
+            shell.emplace<SwayShell>(window);
+        }
+    }
+    void show() {
+        std::visit([&](auto& shell){ shell.show(window); }, shell);
+    }
+    std::variant<LayerShell, SwayShell, GenericShell> shell;
+    Gtk::Window& window;
+};
+
