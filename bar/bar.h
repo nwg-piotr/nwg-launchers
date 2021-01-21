@@ -47,6 +47,7 @@ class MainWindow : public CommonWindow {
 
     private:
         //Override default signal handler:
+        bool on_button_press_event(GdkEventButton* button);
         bool on_key_press_event(GdkEventKey* event) override;
 };
 

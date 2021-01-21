@@ -20,25 +20,20 @@ MainWindow::MainWindow(): CommonWindow("~nwgbar", "~nwgbar") {
     favs_grid.set_column_spacing(5);
     favs_grid.set_row_spacing(5);
     favs_grid.set_column_homogeneous(true);
+}
 
-    // We can not go fullscreen() here:
-    // On sway the window would become opaque - we don't wat it
-    // On i3 all windows below will be hidden - we don't want it too
-    if (wm != "sway" && wm != "i3") {
-        fullscreen();
-    } else {
-        set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
-        set_decorated(false);
-    }
+bool MainWindow::on_button_press_event(GdkEventButton* button) {
+    (void)button;
+    this->close();
+    return true;
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
     if (key_event -> keyval == GDK_KEY_Escape) {
-        Gtk::Main::quit();
-        return true;
+        this->close();
     }
     //if the event has not been handled, call the base class
-    return Gtk::Window::on_key_press_event(key_event);
+    return CommonWindow::on_key_press_event(key_event);
 }
 
 /*
@@ -63,5 +58,5 @@ void BarBox::on_activate() {
     const char *command = exec.c_str();
     std::system(command);
 
-    Gtk::Main::quit();
+    dynamic_cast<MainWindow*>(this->get_toplevel())->close();
 }

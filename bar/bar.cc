@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "WM: " << wm << "\n";
 
-    Gtk::Main kit(argc, argv);
+    auto app = Gtk::Application::create();
 
     auto provider = Gtk::CssProvider::create();
     auto display = Gdk::Display::get_default();
@@ -186,8 +186,6 @@ int main(int argc, char *argv[]) {
 
     MainWindow window;
     window.set_background_color(background_color);
-    window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
-    Platform platform{ window, wm };
 
     Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
     outer_box.set_spacing(15);
@@ -240,6 +238,7 @@ int main(int argc, char *argv[]) {
 
     window.add(outer_box);
     window.show_all_children();
+    Platform platform{ window, wm };
     platform.show();
 
     gettimeofday(&tp, NULL);
@@ -247,7 +246,5 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Time: " << end_ms - start_ms << "ms\n";
 
-    Gtk::Main::run(window);
-
-    return 0;
+    return app->run(window);
 }
