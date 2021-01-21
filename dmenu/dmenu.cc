@@ -183,9 +183,10 @@ int main(int argc, char *argv[]) {
 
     /* turn off borders, enable floating on sway */
     if (wm == "sway") {
+        using namespace std::string_view_literals;
         SwaySock sock;
-        sock.run("for_window [title=\"~nwgdmenu*\"] floating enable");
-        sock.run("for_window [title=\"~nwgdmenu*\"] border none");
+        sock.run("for_window [title=\"~nwgdmenu*\"] floating enable"sv);
+        sock.run("for_window [title=\"~nwgdmenu*\"] border none"sv);
     }
 
     Gtk::Main kit(argc, argv);

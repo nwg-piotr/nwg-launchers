@@ -270,18 +270,6 @@ std::string SwaySock::recv_response_() {
     return buffer;   
 }
 
-/*
- * Asks Sway to run `cmd`
- * Throws `SwayError::Send{Header,Body}Failed`
- * */
-void SwaySock::run(std::string_view cmd) {
-    send_header_(cmd.size(), Commands::Run);
-    send_body_(cmd);
-    // should we recv the response?
-    // suppress warning
-    (void)recv_response_();
-}
-
 void SwaySock::send_header_(std::uint32_t message_len, Commands command) {
     memcpy(header.data(), MAGIC.data(), MAGIC_SIZE);
     memcpy(header.data() + MAGIC_SIZE, &message_len, sizeof(message_len));

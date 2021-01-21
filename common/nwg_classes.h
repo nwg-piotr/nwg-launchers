@@ -108,7 +108,15 @@ struct SwaySock {
     SwaySock(const SwaySock&) = delete;
     ~SwaySock();
     // pass the command to sway via socket
-    void run(std::string_view);
+    template <typename ... Ts>
+    void run(Ts ... ts) {
+        auto body_size = (ts.size() + ...);
+        send_header_(body_size, Commands::Run);
+        (send_body_(ts), ...);
+        // should we recv the response?
+        // suppress warning
+        (void)recv_response_();
+    }
     // swaymsg -t get_outputs
     std::string get_outputs();
     std::string get_workspaces();
@@ -154,17 +162,20 @@ struct GenericShell {
 };
 
 struct SwayShell: GenericShell {
-    SwayShell(Gtk::Window& window) {
+    SwayShell(Gtk::Window& window): title_{window.get_title().c_str(), window.get_title().bytes()}
+    {
         window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
         window.set_decorated(false);
     }
-    SwaySock sock_;
+    SwaySock         sock_;
+    std::string_view title_;
     void show(Gtk::Window& window) {
         // We can not go fullscreen() here:
         // On sway the window would become opaque - we don't want it
         // On i3 all windows below will be hidden - we don't want it as well
-        sock_.run("for_window [title=~nwggrid*] floating enable");
-        sock_.run("for_window [title=~nwggrid*] border none");
+        using namespace std::string_view_literals;
+        sock_.run("for_window [title="sv, title_, "*] floating enable"sv);
+        sock_.run("for_window [title="sv, title_, "*] border none"sv);
         window.show();
         // works just fine on Sway/i3 as far as I could test
         // thus, no need to use ipc (I hope)

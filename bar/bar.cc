@@ -158,13 +158,6 @@ int main(int argc, char *argv[]) {
 
     std::cout << "WM: " << wm << "\n";
 
-    /* turn off borders, enable floating on sway */
-    if (wm == "sway") {
-        SwaySock sock;
-        sock.run("for_window [title=\"~nwgbar*\"] floating enable");
-        sock.run("for_window [title=\"~nwgbar*\"] border none");
-    }
-
     Gtk::Main kit(argc, argv);
 
     auto provider = Gtk::CssProvider::create();
@@ -193,24 +186,8 @@ int main(int argc, char *argv[]) {
 
     MainWindow window;
     window.set_background_color(background_color);
-    window.show();
-
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
-
-    /* Detect focused display geometry: {x, y, width, height} */
-    auto geometry = display_geometry(wm, display, window.get_window());
-    std::cout << "Focused display: " << geometry.x << ", " << geometry.y << ", " << geometry.width << ", "
-    << geometry.height << '\n';
-
-    int x = geometry.x;
-    int y = geometry.y;
-    int w = geometry.width;
-    int h = geometry.height;
-
-    if (wm == "sway" || wm == "i3" || wm == "openbox") {
-        window.resize(w, h);
-        window.move(x, y);
-    }
+    Platform platform{ window, wm };
 
     Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
     outer_box.set_spacing(15);
@@ -263,6 +240,7 @@ int main(int argc, char *argv[]) {
 
     window.add(outer_box);
     window.show_all_children();
+    platform.show();
 
     gettimeofday(&tp, NULL);
     long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
