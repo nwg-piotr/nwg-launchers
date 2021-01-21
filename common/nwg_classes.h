@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <vector>
 #include <variant>
@@ -47,15 +48,18 @@ class InputParser{
 
 class CommonWindow : public Gtk::Window {
     public:
-        CommonWindow(const Glib::ustring&, const Glib::ustring&);
+        CommonWindow(std::string_view, std::string_view);
         virtual ~CommonWindow();
 
         void check_screen();
         void set_background_color(RGBA color);
+        
+        std::string_view title_view();
     protected:
         bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr) override;
         void on_screen_changed(const Glib::RefPtr<Gdk::Screen>& previous_screen) override;
     private:
+        std::string_view title;
         RGBA background_color;
         bool _SUPPORTS_ALPHA;
 };
@@ -112,6 +116,7 @@ struct SwaySock {
     void run(Ts ... ts) {
         auto body_size = (ts.size() + ...);
         send_header_(body_size, Commands::Run);
+        // should we send it as one message? 1 write() is better than N
         (send_body_(ts), ...);
         // should we recv the response?
         // suppress warning
@@ -141,7 +146,7 @@ struct SwaySock {
 };
 
 struct GenericShell {
-    Geometry geometry(Gtk::Window& window) {
+    Geometry geometry(CommonWindow& window) {
         Geometry geo;
         auto display = window.get_display();
         if (auto monitor = display->get_monitor_at_window(window.get_window())) {
@@ -154,7 +159,7 @@ struct GenericShell {
         }
         return geo;
     }
-    void show(Gtk::Window& window) {
+    void show(CommonWindow& window) {
         window.show();
         window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
         window.fullscreen();
@@ -162,20 +167,18 @@ struct GenericShell {
 };
 
 struct SwayShell: GenericShell {
-    SwayShell(Gtk::Window& window): title_{window.get_title().c_str(), window.get_title().bytes()}
-    {
+    SwayShell(CommonWindow& window) {
         window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
         window.set_decorated(false);
     }
     SwaySock         sock_;
-    std::string_view title_;
-    void show(Gtk::Window& window) {
+    void show(CommonWindow& window) {
         // We can not go fullscreen() here:
         // On sway the window would become opaque - we don't want it
         // On i3 all windows below will be hidden - we don't want it as well
         using namespace std::string_view_literals;
-        sock_.run("for_window [title="sv, title_, "*] floating enable"sv);
-        sock_.run("for_window [title="sv, title_, "*] border none"sv);
+        sock_.run("for_window [title="sv, window.title_view(), "*] floating enable"sv);
+        sock_.run("for_window [title="sv, window.title_view(), "*] border none"sv);
         window.show();
         // works just fine on Sway/i3 as far as I could test
         // thus, no need to use ipc (I hope)
@@ -187,11 +190,11 @@ struct SwayShell: GenericShell {
 
 struct LayerShell: GenericShell {
 #ifdef HAVE_GTK_LAYER_SHELL
-    LayerShell(Gtk::Window& window) {
+    LayerShell(CommonWindow& window) {
         // this has to be called before the window is realized
         gtk_layer_init_for_window(window.gobj());
     }
-    void show(Gtk::Window& window) {
+    void show(CommonWindow& window) {
         window.show();
         auto gtk_win = window.gobj();
         std::array edges {
@@ -206,14 +209,14 @@ struct LayerShell: GenericShell {
         }
         gtk_layer_set_layer(gtk_win, GTK_LAYER_SHELL_LAYER_TOP);
         gtk_layer_set_keyboard_interactivity(gtk_win, true);
-        gtk_layer_set_namespace(gtk_win, "nwggrid");
+        gtk_layer_set_namespace(gtk_win, window.title_view().data());
         gtk_layer_set_exclusive_zone(gtk_win, -1);        
     }
 #endif
 };
 
 struct Platform {
-    Platform(Gtk::Window& window_, std::string_view wm):
+    Platform(CommonWindow& window_, std::string_view wm):
         shell{std::in_place_type_t<GenericShell>{}},
         window{window_}
     {
@@ -231,6 +234,6 @@ struct Platform {
         std::visit([&](auto& shell){ shell.show(window); }, shell);
     }
     std::variant<LayerShell, SwayShell, GenericShell> shell;
-    Gtk::Window& window;
+    CommonWindow& window;
 };
 

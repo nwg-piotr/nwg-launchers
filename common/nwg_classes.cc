@@ -52,9 +52,9 @@ RGBA InputParser::get_background_color(double default_opacity) const {
     return color;
 }
 
-CommonWindow::CommonWindow(const Glib::ustring& title, const Glib::ustring& role) {
-    set_title(title);
-    set_role(role);
+CommonWindow::CommonWindow(std::string_view title, std::string_view role): title{title} {
+    set_title({title.data(), title.size()});
+    set_role({role.data(), role.size()});
     set_skip_pager_hint(true);
     add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
     set_app_paintable(true);
@@ -62,6 +62,8 @@ CommonWindow::CommonWindow(const Glib::ustring& title, const Glib::ustring& role
 }
 
 CommonWindow::~CommonWindow() { }
+
+std::string_view CommonWindow::title_view() { return title; }
 
 bool CommonWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     cr->save();
