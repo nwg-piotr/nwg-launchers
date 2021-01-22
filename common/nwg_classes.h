@@ -11,17 +11,12 @@
 
 #pragma once
 
-#include <iostream>
 #include <string>
 #include <vector>
 #include <variant>
 
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
-
-#ifdef HAVE_GTK_LAYER_SHELL
-#include <gtk-layer-shell/gtk-layer-shell.h>
-#endif
 
 struct RGBA {
     double red;
@@ -146,93 +141,26 @@ struct SwaySock {
 };
 
 struct GenericShell {
-    Geometry geometry(CommonWindow& window) {
-        Geometry geo;
-        auto display = window.get_display();
-        if (auto monitor = display->get_monitor_at_window(window.get_window())) {
-            Gdk::Rectangle rect;
-            monitor->get_geometry(rect);
-            geo.x = rect.get_x();
-            geo.y = rect.get_y();
-            geo.width = rect.get_width();
-            geo.height = rect.get_height();
-        }
-        return geo;
-    }
-    void show(CommonWindow& window) {
-        window.show();
-        window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
-        window.fullscreen();
-    }
+    Geometry geometry(CommonWindow& window);
+    void show(CommonWindow& window);
 };
 
 struct SwayShell: GenericShell {
-    SwayShell(CommonWindow& window) {
-        window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
-        window.set_decorated(false);
-    }
-    SwaySock         sock_;
-    void show(CommonWindow& window) {
-        // We can not go fullscreen() here:
-        // On sway the window would become opaque - we don't want it
-        // On i3 all windows below will be hidden - we don't want it as well
-        using namespace std::string_view_literals;
-        sock_.run("for_window [title="sv, window.title_view(), "*] floating enable"sv);
-        sock_.run("for_window [title="sv, window.title_view(), "*] border none"sv);
-        window.show();
-        // works just fine on Sway/i3 as far as I could test
-        // thus, no need to use ipc (I hope)
-        auto [x, y, w, h] = geometry(window);
-        window.resize(w, h);
-        window.move(x, y);
-    }
+    SwayShell(CommonWindow& window);
+    void show(CommonWindow& window);
+    SwaySock sock_;
 };
 
 struct LayerShell: GenericShell {
 #ifdef HAVE_GTK_LAYER_SHELL
-    LayerShell(CommonWindow& window) {
-        // this has to be called before the window is realized
-        gtk_layer_init_for_window(window.gobj());
-    }
-    void show(CommonWindow& window) {
-        window.show();
-        auto gtk_win = window.gobj();
-        std::array edges {
-            GTK_LAYER_SHELL_EDGE_LEFT,
-            GTK_LAYER_SHELL_EDGE_RIGHT,
-            GTK_LAYER_SHELL_EDGE_TOP,
-            GTK_LAYER_SHELL_EDGE_BOTTOM
-        };
-        for (auto edge: edges) {
-            gtk_layer_set_anchor(gtk_win, edge, true);
-            gtk_layer_set_margin(gtk_win, edge, 0);
-        }
-        gtk_layer_set_layer(gtk_win, GTK_LAYER_SHELL_LAYER_TOP);
-        gtk_layer_set_keyboard_interactivity(gtk_win, true);
-        gtk_layer_set_namespace(gtk_win, window.title_view().data());
-        gtk_layer_set_exclusive_zone(gtk_win, -1);        
-    }
+    LayerShell(CommonWindow& window);
+    void show(CommonWindow& window);
 #endif
 };
 
 struct Platform {
-    Platform(CommonWindow& window_, std::string_view wm):
-        shell{std::in_place_type_t<GenericShell>{}},
-        window{window_}
-    {
-#ifdef HAVE_GTK_LAYER_SHELL
-        if (gtk_layer_is_supported()) {
-            shell.emplace<LayerShell>(window);
-            return;
-        }
-#endif
-        if (wm == "sway" || wm == "i3") {
-            shell.emplace<SwayShell>(window);
-        }
-    }
-    void show() {
-        std::visit([&](auto& shell){ shell.show(window); }, shell);
-    }
+    Platform(CommonWindow& window_, std::string_view wm);
+    void show();
     std::variant<LayerShell, SwayShell, GenericShell> shell;
     CommonWindow& window;
 };

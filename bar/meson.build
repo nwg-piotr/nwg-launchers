@@ -7,7 +7,7 @@ sources = files(
 executable(
 	'nwgbar',
 	sources,
-	dependencies: [json, gtkmm, gtk_layer_shell],
+	dependencies: [json, gtkmm],
 	link_with: nwg,
 	include_directories: [nwg_inc, nwg_conf_inc, json_header_dir],
 	install: true
