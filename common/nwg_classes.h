@@ -158,10 +158,11 @@ struct LayerShell: GenericShell {
 #endif
 };
 
-struct Platform {
-    Platform(CommonWindow& window_, std::string_view wm);
+struct PlatformWindow: public CommonWindow {
+public:
+    PlatformWindow(std::string_view, std::string_view, std::string_view);
     void show();
+private:
     std::variant<LayerShell, SwayShell, GenericShell> shell;
-    CommonWindow& window;
 };
 

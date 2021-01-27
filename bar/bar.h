@@ -35,7 +35,7 @@ public:
     void on_activate() override;
 };
 
-class MainWindow : public CommonWindow {
+class MainWindow : public PlatformWindow {
     public:
         MainWindow();
 

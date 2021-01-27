@@ -33,7 +33,7 @@ int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     return -cmp_(toplevel.stats_of(child_(a)).clicks, toplevel.stats_of(child_(b)).clicks);
 }
 MainWindow::MainWindow(Span<std::string> es, Span<Stats> ss)
- : CommonWindow("~nwggrid", "~nwggrid"), execs(es), stats(ss)
+ : PlatformWindow(wm, "~nwggrid", "~nwggrid"), execs(es), stats(ss)
 {
     searchbox
         .signal_search_changed()

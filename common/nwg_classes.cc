@@ -185,20 +185,21 @@ void LayerShell::show(CommonWindow& window) {
 }
 #endif
 
-Platform::Platform(CommonWindow& window_, std::string_view wm):
-    shell{std::in_place_type_t<GenericShell>{}},
-    window{window_}
+PlatformWindow::PlatformWindow(std::string_view wm, std::string_view title, std::string_view role):
+    CommonWindow{title, role},
+    shell{std::in_place_type_t<GenericShell>{}}
 {
     #ifdef HAVE_GTK_LAYER_SHELL
     if (gtk_layer_is_supported()) {
-        shell.emplace<LayerShell>(window);
+        shell.emplace<LayerShell>(*this);
         return;
     }
     #endif
     if (wm == "sway" || wm == "i3") {
-        shell.emplace<SwayShell>(window);
+        shell.emplace<SwayShell>(*this);
     }
 }
-void Platform::show() {
-    std::visit([&](auto& shell){ shell.show(window); }, shell);
+
+void PlatformWindow::show() {
+    std::visit([&](auto& shell){ shell.show(*this); }, shell);
 }

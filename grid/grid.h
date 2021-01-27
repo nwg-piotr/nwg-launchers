@@ -74,7 +74,7 @@ public:
     std::size_t        index;      // row index
 };
 
-class MainWindow : public CommonWindow {
+class MainWindow : public PlatformWindow {
     public:
         MainWindow(Span<std::string> entries, Span<Stats> stats);
         MainWindow(const MainWindow&) = delete;

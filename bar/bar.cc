@@ -238,8 +238,7 @@ int main(int argc, char *argv[]) {
 
     window.add(outer_box);
     window.show_all_children();
-    Platform platform{ window, wm };
-    platform.show();
+    window.show();
 
     gettimeofday(&tp, NULL);
     long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
