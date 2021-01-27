@@ -65,8 +65,6 @@ CommonWindow::CommonWindow(std::string_view title, std::string_view role): title
     check_screen();
 }
 
-CommonWindow::~CommonWindow() { }
-
 std::string_view CommonWindow::title_view() { return title; }
 
 bool CommonWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
@@ -107,17 +105,18 @@ AppBox::AppBox() {
     this -> set_always_show_image(true);
 }
 
-AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment) : Gtk::Button(name, true) {
-    this -> name = name;
+AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment):
+    Gtk::Button(name, true),
+    name{std::move(name)},
+    exec{std::move(exec)},
+    comment{std::move(comment)}
+{
     if (name.length() > 25) {
-        name = name.substr(0, 22) + "...";
+        name.resize(22);
+        name.append("...");
     }
-    this -> exec = std::move(exec);
-    this -> comment = std::move(comment);
     this -> set_always_show_image(true);
 }
-
-AppBox::~AppBox() { }
 
 Geometry GenericShell::geometry(CommonWindow& window) {
     Geometry geo;

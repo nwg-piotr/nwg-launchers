@@ -44,7 +44,7 @@ class InputParser{
 class CommonWindow : public Gtk::Window {
     public:
         CommonWindow(std::string_view, std::string_view);
-        virtual ~CommonWindow();
+        virtual ~CommonWindow() = default;
 
         void check_screen();
         void set_background_color(RGBA color);
@@ -70,7 +70,7 @@ class AppBox : public Gtk::Button {
         Glib::ustring exec;
         Glib::ustring comment;
 
-        virtual ~AppBox();
+        virtual ~AppBox() = default;
 };
 
 /*
