@@ -57,6 +57,7 @@ MainWindow::MainWindow(Span<std::string> es, Span<Stats> ss)
     apps_grid.set_sort_func(&by_name);
     favs_grid.set_sort_func(&by_clicks);
 
+    description.set_ellipsize(Pango::ELLIPSIZE_END);
     description.set_text("");
     description.set_name("description");
     separator.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
@@ -351,7 +352,7 @@ GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::string& i
 : name(std::move(name)), comment(std::move(comment)), desktop_id(&id), index(index) {
     // As we sort dynamically by actual names, we need to avoid shortening them, or long names will remain unsorted.
     // See the issue: https://github.com/nwg-piotr/nwg-launchers/issues/128
-    std::string display_name = this->name;
+    auto display_name = this->name;
     if (display_name.length() > 25) {
        display_name.resize(22);
        display_name += "...";
