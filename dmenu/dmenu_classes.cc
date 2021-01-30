@@ -16,102 +16,122 @@
 
 #include "dmenu.h"
 
-Anchor::Anchor(DMenu *menu) : menu{menu} {}
+Anchor::Anchor(DMenu& menu):
+    gravity_widget{Gdk::GRAVITY_CENTER}, gravity_menu{Gdk::GRAVITY_CENTER}, menu{menu}
+{
+    constexpr std::array gravity { Gdk::GRAVITY_SOUTH, Gdk::GRAVITY_NORTH };
+    auto is_sway_like = wm == "sway" || wm == "i3";
+    if (v_align == "t") {
+        gravity_widget = gravity[is_sway_like];
+        gravity_menu   = gravity[is_sway_like];
+    } else if (v_align == "b") {
+        gravity_widget = gravity[!is_sway_like];
+        gravity_menu   = gravity[!is_sway_like];
+    }
+}
 
 bool Anchor::on_focus_in_event(GdkEventFocus* focus_event) {
     (void) focus_event; // suppress warning
-
-    Gdk::Gravity gravity_widget {Gdk::GRAVITY_CENTER};
-    Gdk::Gravity gravity_menu {Gdk::GRAVITY_CENTER};
-    if (wm == "sway" || wm == "i3") {
-        if (v_align == "t") {
-            gravity_widget = Gdk::GRAVITY_NORTH;
-            gravity_menu = Gdk::GRAVITY_NORTH;
-        } else if (v_align == "b") {
-            gravity_widget = Gdk::GRAVITY_SOUTH;
-            gravity_menu = Gdk::GRAVITY_SOUTH;
-        }
-    } else {
-        if (v_align == "t") {
-            gravity_widget = Gdk::GRAVITY_SOUTH;
-            gravity_menu = Gdk::GRAVITY_SOUTH;
-        } else if (v_align == "b") {
-            gravity_widget = Gdk::GRAVITY_NORTH;
-            gravity_menu = Gdk::GRAVITY_NORTH;
-        }
-    }
-    menu->popup_at_widget(this, gravity_widget, gravity_menu, nullptr);
-
+    menu.popup_at_widget(this, gravity_widget, gravity_menu, nullptr);
     return true;
 }
 
-DMenu::DMenu() {
-    if (case_sensitive) {
-        searchbox.set_text("Type To Search");
-    } else {
-        searchbox.set_text("TYPE TO SEARCH");
+inline auto set_searchbox_placeholder = [](auto && searchbox, auto case_sensitive) {
+    constexpr std::array placeholders { "TYPE TO SEARCH", "Type to Search" };
+    searchbox.set_placeholder_text(placeholders[case_sensitive]);
+};
+
+inline auto build_commands_list = [](auto && dmenu, auto && commands, auto max) {
+    decltype(max) count{ 0 };
+    for (auto && command: commands) {
+        dmenu.emplace_back(command);
+        count++;
+        if (count == max) {
+            break;
+        }
     }
-    searchbox.set_sensitive(false);
+};
+
+DMenu::DMenu(Gtk::Window& main): main{main} {
+    set_searchbox_placeholder(searchbox, case_sensitive);
+    searchbox.set_sensitive(true);
     searchbox.set_name("searchbox");
-    search_phrase = "";
+    searchbox.signal_search_changed()
+        .connect(sigc::mem_fun(*this, &DMenu::filter_view));
+    // TODO: make searchbox return selection to items on focus_in event
+    if (show_searchbox) {
+        auto search_item = Gtk::manage(new Gtk::MenuItem{ searchbox });
+        search_item->set_name("search_item");
+        append(*search_item);
+    }
+    build_commands_list(*this, all_commands, rows);
 }
 
-void switch_case_sensitive(std::string filename, bool is_case_sensitive) {
-    if (is_case_sensitive) {
-        if (std::ifstream(filename)) {
-            int status = remove(filename.c_str());
-            std::cout << "status = " << status << std::endl;
-        }
-    } else {
-        std::ofstream file(filename);
-        file << "case_sensitive";
+DMenu::~DMenu() {
+    using namespace std::string_view_literals;
+    if (case_sensitivity_changed) {
+        std::ofstream file{ settings_file, std::ios::trunc };
+        constexpr std::array values { "case_insensitive"sv, "case_sensitive"sv };
+        file << values[case_sensitive];
+    }
+}
+
+void DMenu::emplace_back(const Glib::ustring& cmd) {
+    auto item = Gtk::manage(new Gtk::MenuItem{ cmd });
+    item->signal_activate()
+        .connect(sigc::bind<Glib::ustring>(sigc::mem_fun(*this, &DMenu::on_item_clicked), cmd));
+    append(*item);
+    if (!first_item) {
+        first_item = item;
+    }
+}
+
+void DMenu::switch_case_sensitivity() {
+    case_sensitivity_changed = true;
+    case_sensitive = !case_sensitive;
+    searchbox.set_text("");
+    set_searchbox_placeholder(searchbox, case_sensitive);
+}
+
+void DMenu::fix_selection() {
+    if (first_item) {
+        this->select_item(*first_item);
+        first_item->grab_focus();
     }
 }
 
 bool DMenu::on_key_press_event(GdkEventKey* key_event) {
     if (show_searchbox) {
-        if (key_event -> keyval == GDK_KEY_Escape) {
-            Gtk::Main::quit();
-            return Gtk::Menu::on_key_press_event(key_event);
-        } else if (((key_event -> keyval >= GDK_KEY_A && key_event -> keyval <= GDK_KEY_Z)
-            || (key_event -> keyval >= GDK_KEY_a && key_event -> keyval <= GDK_KEY_z)
-            || (key_event -> keyval >= GDK_KEY_0 && key_event -> keyval <= GDK_KEY_9)
-            || key_event -> keyval == GDK_KEY_plus
-            || key_event -> keyval == GDK_KEY_minus
-            || key_event -> keyval == GDK_KEY_underscore
-            || key_event -> keyval == GDK_KEY_hyphen)
-            && key_event->type == GDK_KEY_PRESS) {
-
-            char character = key_event -> keyval;
-            if (!case_sensitive) {
-                character = toupper(character);
-            }
-            this -> search_phrase += character;
-
-            this -> searchbox.set_text(this -> search_phrase);
-            this -> filter_view();
-            return true;
-
-        } else if (key_event -> keyval == GDK_KEY_BackSpace && this -> search_phrase.size() > 0) {
-            this -> search_phrase = this -> search_phrase.substr(0, this -> search_phrase.size() - 1);
-            this -> searchbox.set_text(this -> search_phrase);
-            this -> filter_view();
-            return true;
-        } else if (key_event -> keyval == GDK_KEY_Delete) {
-            this -> search_phrase = "";
-            this -> searchbox.set_text(this -> search_phrase);
-            this -> filter_view();
-            return true;
-        } else if (key_event -> keyval == GDK_KEY_Return) {
-            // Workaround to launch the single item which has been selected programmatically
-            this -> get_children()[1] -> activate();
-            return true;
-        } else if (key_event -> keyval == GDK_KEY_Insert) {
-            this -> search_phrase = "";
-            case_sensitive = !case_sensitive;
-            switch_case_sensitive(settings_file, case_sensitive);
-            this -> filter_view();
-            return true;
+        switch (key_event->keyval) {
+            case GDK_KEY_Escape:
+                main.close();
+                break;
+            case GDK_KEY_Delete:
+                searchbox.set_text("");
+                break;
+            case GDK_KEY_Insert:
+                case_sensitive = !case_sensitive;
+                switch_case_sensitivity();
+                searchbox.set_text("");
+                break;
+            case GDK_KEY_Left:
+            case GDK_KEY_Right:
+            case GDK_KEY_Up:
+            case GDK_KEY_Down:
+                // seem to work fine as is
+                break;
+            case GDK_KEY_Return:
+                if (auto active = dynamic_cast<Gtk::MenuItem*>(get_selected_item())) {
+                    if (active == dynamic_cast<Gtk::MenuItem*>(searchbox.get_parent())) {
+                        // searchbox is active, move selection to the first item in list
+                        fix_selection();
+                    }
+                }
+                break;
+            default:
+                searchbox.grab_focus();
+                searchbox.select_region(0, 0);
+                searchbox.set_position(-1);
         }
     }
     //if the event has not been handled, call the base class
@@ -126,44 +146,38 @@ void DMenu::on_item_clicked(Glib::ustring cmd) {
     } else {
         std::cout << cmd;
     }
-    Gtk::Main::quit();
+    main.close();
 }
 
 /* Rebuild menu to match the search phrase */
 void DMenu::filter_view() {
-    if (this -> search_phrase.size() > 0) {
-        // remove all items except searchbox
-        for (auto item : this -> get_children()) {
-            if (item -> get_name() != "search_item") {
-                delete item;
+    auto clear_children = [this]() {
+        this->foreach([this](auto && child) {
+            if (child.get_name() != "search_item") {
+                this->remove(child);
             }
-        }
+        });
+        this->first_item = nullptr;
+    };
+    auto search_phrase = searchbox.get_text();
+    if (search_phrase.size() > 0) {
+        // remove all items except searchbox
+        clear_children();
         int cnt = 0;
         bool limit_exhausted = false;
+        auto sf = search_phrase;
+        if (!case_sensitive) {
+            sf = sf.uppercase();
+        }
         for (Glib::ustring command : all_commands) {
-            std::string sf = this -> search_phrase;
-            std::string cm = command;
+            auto cm = command;
             if (!case_sensitive) {
-                for(unsigned int l = 0; l < sf.length(); l++) {
-                   sf[l] = toupper(sf[l]);
-                }
-                for(unsigned int l = 0; l < cm.length(); l++) {
-                   cm[l] = toupper(cm[l]);
-                }
+                cm = cm.uppercase();
             }
             if (cm.find(sf) == 0) {
-                Gtk::MenuItem *item = new Gtk::MenuItem();
-                item -> set_label(command);
-                item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun
-                    (*this, &DMenu::on_item_clicked), command));
-                this -> append(*item);
-                // This will highlight 1st menu item, still it won't start on Enter.
-                // See workaround in on_key_press_event.
-                if (cnt == 0) {
-                    item -> select();
-                }
+                emplace_back(command);
                 cnt++;
-                if (cnt > rows - 1) {
+                if (cnt == rows) {
                     limit_exhausted = true;
                     break;
                 }
@@ -171,24 +185,14 @@ void DMenu::filter_view() {
         }
         if (!limit_exhausted) {
             for (Glib::ustring command : all_commands) {
-                std::string sf = this -> search_phrase;
-                std::string cm = command;
+                auto cm = command;
                 if (!case_sensitive) {
-                    for(unsigned int l = 0; l < sf.length(); l++) {
-                       sf[l] = toupper(sf[l]);
-                    }
-                    for(unsigned int l = 0; l < cm.length(); l++) {
-                       cm[l] = toupper(cm[l]);
-                    }
+                    cm = cm.uppercase();
                 }
-                if (cm.find(sf) != std::string::npos && cm.find(sf) != 0) {
-                    Gtk::MenuItem *item = new Gtk::MenuItem();
-                    item -> set_label(command);
-                    item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun
-                        (*this, &DMenu::on_item_clicked), cm));
-                    this -> append(*item);
+                if (cm.find(sf) != cm.npos && cm.find(sf) != 0) {
+                    emplace_back(command);
                     cnt++;
-                    if (cnt > rows - 1) {
+                    if (cnt == rows) {
                         break;
                     }
                 }
@@ -197,30 +201,14 @@ void DMenu::filter_view() {
         this -> show_all();
 
     } else {
-        if (case_sensitive) {
-            this -> searchbox.set_text("Type To Search");
-        } else {
-            this -> searchbox.set_text("TYPE TO SEARCH");
-        }
+        set_searchbox_placeholder(searchbox, case_sensitive);
         // remove all items except searchbox
-        for (auto item : this -> get_children()) {
-            if (item -> get_name() != "search_item") {
-                delete item;
-            }
-        }
-        int cnt = 0;
-        for (Glib::ustring command : all_commands) {
-            Gtk::MenuItem *item = new Gtk::MenuItem();
-            item -> set_label(command);
-            item -> signal_activate().connect(sigc::bind<Glib::ustring>(sigc::mem_fun(*this, &DMenu::on_item_clicked), command));
-            this -> append(*item);
-            cnt++;
-            if (cnt > rows - 1) {
-                break;
-            }
-        }
+        clear_children();
+        build_commands_list(*this, all_commands, rows);
         this -> show_all();
     }
+    fix_selection();
+
 }
 
 MainWindow::MainWindow() : CommonWindow("~nwgdmenu", "~nwgdmenu"), menu(nullptr) {
