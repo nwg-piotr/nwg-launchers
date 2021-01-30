@@ -57,12 +57,12 @@ Insert        switch case sensitivity\n";
 int main(int argc, char *argv[]) {
     std::string custom_css_file {"style.css"};
 
-    /* For now the settings file only determines if case_sensitive was turned on.
-     * Let's just check if the file exists.
-     **/
+    // For now the settings file only determines if case_sensitive was turned on.
     settings_file = get_settings_path();
-    if (std::ifstream(settings_file)) {
-        case_sensitive = false;
+    if (std::ifstream settings{ settings_file }) {
+        std::string sensitivity;
+        settings >> sensitivity;
+        case_sensitive = sensitivity == "case_sensitive";
     }
 
     create_pid_file_or_kill_pid("nwgdmenu");
@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
         sock.run("for_window [title=\"~nwgdmenu*\"] border none");
     }
 
-    Gtk::Main kit(argc, argv);
+    auto app = Gtk::Application::create();
 
     auto provider = Gtk::CssProvider::create();
     auto display = Gdk::Display::get_default();
@@ -212,8 +212,8 @@ int main(int argc, char *argv[]) {
     // For openbox and similar we'll need the window x, y coordinates
     window.show();
 
-    DMenu menu;
-    Anchor anchor(&menu);
+    DMenu menu{window};
+    Anchor anchor{menu};
     window.anchor = &anchor;
 
     window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
@@ -262,30 +262,7 @@ int main(int argc, char *argv[]) {
         //~ window.hide();
     }
 
-    if (show_searchbox) {
-        auto search_item = new Gtk::MenuItem();
-        search_item -> add(menu.searchbox);
-        search_item -> set_name("search_item");
-        search_item -> set_sensitive(false);
-        menu.append(*search_item);
-    }
-
-    menu.signal_deactivate().connect(sigc::ptr_fun(Gtk::Main::quit));
-
-    int cnt = 0;
-    for (auto& command : all_commands) {
-        auto item = new Gtk::MenuItem();
-        item -> set_label(command);
-        item -> signal_activate().connect(sigc::bind<std::string>(sigc::ptr_fun(&on_item_clicked),
-                                                               std::move(command)));
-
-        menu.append(*item);
-        cnt++;
-        if (cnt > rows - 1) {
-            break;
-        }
-    }
-
+    menu.signal_deactivate().connect(sigc::mem_fun(window, &MainWindow::close));
     menu.set_reserve_toggle_size(false);
     menu.set_property("width_request", w / 8);
 
@@ -318,7 +295,5 @@ int main(int argc, char *argv[]) {
 
     menu.show_all();
 
-    Gtk::Main::run(window);
-
-    return 0;
+    return app->run(window);
 }
