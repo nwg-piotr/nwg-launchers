@@ -132,10 +132,21 @@ Geometry GenericShell::geometry(CommonWindow& window) {
     return geo;
 }
 
-void GenericShell::show(CommonWindow& window) {
+void GenericShell::fullscreen(CommonWindow& window) {
     window.show();
     window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
     window.fullscreen();
+}
+
+void GenericShell::show(CommonWindow& window, std::array<bool, 4> edges, std::array<int, 4> margins) {
+    window.show();
+    auto [x, y, w, h] = geometry(window);
+    auto w_ = w - edges[0] * margins[0] - edges[1] * margins[1];
+    auto h_ = h - edges[2] * margins[2] - edges[3] * margins[3];
+    auto x_ = x + edges[0] * margins[0];
+    auto y_ = y + edges[1] * margins[1];
+    window.resize(w_, h_);
+    window.move(x_, y_);
 }
 
 SwayShell::SwayShell(CommonWindow& window) {
@@ -143,7 +154,7 @@ SwayShell::SwayShell(CommonWindow& window) {
     window.set_decorated(false);
 }
 
-void SwayShell::show(CommonWindow& window) {
+void SwayShell::fullscreen(CommonWindow& window) {
     // We can not go fullscreen() here:
     // On sway the window would become opaque - we don't want it
     // On i3 all windows below will be hidden - we don't want it as well
@@ -164,23 +175,27 @@ LayerShell::LayerShell(CommonWindow& window) {
     gtk_layer_init_for_window(window.gobj());
 }
 
-void LayerShell::show(CommonWindow& window) {
+void LayerShell::show(CommonWindow& window, std::array<bool, 4> edges, std::array<int, 4> margins) {
     window.show();
     auto gtk_win = window.gobj();
-    std::array edges {
+    std::array edges_ {
         GTK_LAYER_SHELL_EDGE_LEFT,
         GTK_LAYER_SHELL_EDGE_RIGHT,
         GTK_LAYER_SHELL_EDGE_TOP,
         GTK_LAYER_SHELL_EDGE_BOTTOM
     };
-    for (auto edge: edges) {
-        gtk_layer_set_anchor(gtk_win, edge, true);
-        gtk_layer_set_margin(gtk_win, edge, 0);
+    for (size_t i = 0; i < 4; i++) {
+        gtk_layer_set_anchor(gtk_win, edges_[i], edges[i]);
+        gtk_layer_set_margin(gtk_win, edges_[i], margins[i]);
     }
     gtk_layer_set_layer(gtk_win, GTK_LAYER_SHELL_LAYER_TOP);
     gtk_layer_set_keyboard_interactivity(gtk_win, true);
     gtk_layer_set_namespace(gtk_win, window.title_view().data());
     gtk_layer_set_exclusive_zone(gtk_win, -1);        
+}
+
+void LayerShell::fullscreen(CommonWindow& window) {
+    show(window, { true, true, true, true }, { 0, 0, 0, 0 });
 }
 #endif
 
@@ -199,6 +214,10 @@ PlatformWindow::PlatformWindow(std::string_view wm, std::string_view title, std:
     }
 }
 
-void PlatformWindow::show() {
-    std::visit([&](auto& shell){ shell.show(*this); }, shell);
+void PlatformWindow::show(std::array<bool, 4> edges, std::array<int, 4> margins) {
+    std::visit([&](auto& shell){ shell.show(*this, edges, margins); }, shell);
+}
+
+void PlatformWindow::fullscreen() {
+    std::visit([&](auto& shell){ shell.fullscreen(*this); }, shell);
 }

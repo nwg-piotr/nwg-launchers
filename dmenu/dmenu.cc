@@ -210,27 +210,16 @@ int main(int argc, char *argv[]) {
 
     MainWindow window;
     window.set_background_color(background_color);
-    /* Detect focused display geometry: {x, y, width, height} */
-    auto [x, y, w, h] = display_geometry(wm, display, window.get_window());
-    std::cout << "Focused display: " << x << ", " << y << ", " << w << ", " << h << '\n';
-
 /*
     menu.set_reserve_toggle_size(false);
     menu.set_property("width_request", w / 8);
 */
-/*
-    if (v_align == "t") {
-        inner_vbox.pack_start(inner_hbox, false, false);
-    } else if (v_align == "b") {
-        inner_vbox.pack_end(inner_hbox, false, false);
-    } else {
-        inner_vbox.pack_start(inner_hbox, true, false);
-    }
-    outer_box.pack_start(inner_vbox, Gtk::PACK_EXPAND_WIDGET);
-    }
-    */
-
+    auto top = v_align == "t";
+    auto btm = v_align == "b";
+    auto left = h_align == "l";
+    auto right = h_align == "r";
     window.show_all_children();
+    window.show({ left, right, top, btm }, { 50, 50, 50, 50 });
     
     return app->run(window);
 }

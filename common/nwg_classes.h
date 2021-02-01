@@ -142,26 +142,29 @@ struct SwaySock {
 
 struct GenericShell {
     Geometry geometry(CommonWindow& window);
-    void show(CommonWindow& window);
+    void fullscreen(CommonWindow& window);
+    void show(CommonWindow&, std::array<bool, 4>, std::array<int, 4>);
 };
 
 struct SwayShell: GenericShell {
     SwayShell(CommonWindow& window);
-    void show(CommonWindow& window);
+    void fullscreen(CommonWindow& window);
     SwaySock sock_;
 };
 
 struct LayerShell: GenericShell {
 #ifdef HAVE_GTK_LAYER_SHELL
     LayerShell(CommonWindow& window);
-    void show(CommonWindow& window);
+    void show(CommonWindow& window, std::array<bool, 4>, std::array<int, 4>);
+    void fullscreen(CommonWindow&);
 #endif
 };
 
 struct PlatformWindow: public CommonWindow {
 public:
     PlatformWindow(std::string_view, std::string_view, std::string_view);
-    void show();
+    void fullscreen();
+    void show(std::array<bool, 4>, std::array<int, 4>);
 private:
     std::variant<LayerShell, SwayShell, GenericShell> shell;
 };

@@ -33,11 +33,11 @@ inline auto build_commands_list = [](auto && dmenu, auto && commands, auto max) 
 };
 
 MainWindow::MainWindow():
-    CommonWindow("~nwgdmenu", "~nwgdmenu"),
+    PlatformWindow(wm, "~nwgdmenu", "~nwgdmenu"),
     commands{ 1, false, Gtk::SELECTION_SINGLE }
 {
     // non-void lambdas are broken in gtkmm, thus the need for bind_return
-    signal_focus_out_event().connect(sigc::bind_return([this](auto*){ this->close(); }, true));
+    //signal_focus_out_event().connect(sigc::bind_return([this](auto*){ this->close(); }, true));
     commands.set_reorderable(false);
     commands.set_headers_visible(false);
     commands.set_enable_search(false);
@@ -51,6 +51,7 @@ MainWindow::MainWindow():
         iter->get_value(0, item);
         item += " &";
         system(item.c_str());
+        this->close();
     });
     if (show_searchbox) {
         set_searchbox_placeholder(searchbox, case_sensitive);

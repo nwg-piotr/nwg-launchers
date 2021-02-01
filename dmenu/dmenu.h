@@ -40,7 +40,7 @@ extern bool dmenu_run;
 extern bool show_searchbox;
 extern bool case_sensitive;
 
-class MainWindow : public CommonWindow {
+class MainWindow : public PlatformWindow {
     public:
         MainWindow();
         ~MainWindow();
@@ -56,6 +56,7 @@ class MainWindow : public CommonWindow {
         Gtk::ListViewText commands;
         Gtk::VBox         vbox;
         bool case_sensitivity_changed = false;
+        bool never_focused = true;
 };
 
 /*
