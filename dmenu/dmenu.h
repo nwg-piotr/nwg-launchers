@@ -40,51 +40,22 @@ extern bool dmenu_run;
 extern bool show_searchbox;
 extern bool case_sensitive;
 
-class DMenu : public Gtk::Menu {
-    public:
-        DMenu(Gtk::Window&);
-        ~DMenu();
-        void emplace_back(const Glib::ustring&);
-        void show_all() {
-            Gtk::Menu::show_all();
-            // required to have first item selected on launch
-            fix_selection();
-        }
-        
-    private:
-        Gtk::SearchEntry searchbox;
-        // parent window
-        Gtk::Window&     main;
-        // the first item in list
-        Gtk::MenuItem*   first_item = nullptr;
-        // whether case sensitivity was changed during run
-        bool case_sensitivity_changed = false;
-        
-        bool on_key_press_event(GdkEventKey* event) override;
-        void filter_view();
-        void switch_case_sensitivity();
-        void fix_selection();
-        void on_item_clicked(Glib::ustring cmd);
-};
-
-class Anchor : public Gtk::Button {
-    public:
-        Anchor(DMenu&);
-    private:
-        bool on_focus_in_event(GdkEventFocus* focus_event) override;
-        Gdk::Gravity gravity_widget, gravity_menu;
-        DMenu& menu;
-};
-
 class MainWindow : public CommonWindow {
     public:
         MainWindow();
-
-        Gtk::Menu* menu;
-        Gtk::Button* anchor;
-
+        ~MainWindow();
+        void emplace_back(const Glib::ustring&);
     private:
-        bool on_button_press_event(GdkEventButton* button_event);
+        void filter_view();
+        void select_first_item();
+        void switch_case_sensitivity();
+        
+        bool on_key_press_event(GdkEventKey*) override;
+        
+        Gtk::SearchEntry  searchbox;
+        Gtk::ListViewText commands;
+        Gtk::VBox         vbox;
+        bool case_sensitivity_changed = false;
 };
 
 /*
@@ -92,5 +63,3 @@ class MainWindow : public CommonWindow {
  * */
 std::vector<std::string> list_commands();
 std::string get_settings_path();
-
-void on_item_clicked(std::string);

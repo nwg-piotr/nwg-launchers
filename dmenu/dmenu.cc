@@ -210,78 +210,15 @@ int main(int argc, char *argv[]) {
 
     MainWindow window;
     window.set_background_color(background_color);
-    // For openbox and similar we'll need the window x, y coordinates
-    window.show();
-
-    DMenu menu{window};
-    Anchor anchor{menu};
-    window.anchor = &anchor;
-
-    window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
-
     /* Detect focused display geometry: {x, y, width, height} */
-    auto geometry = display_geometry(wm, display, window.get_window());
-    std::cout << "Focused display: " << geometry.x << ", " << geometry.y << ", " << geometry.width << ", "
-    << geometry.height << '\n';
+    auto [x, y, w, h] = display_geometry(wm, display, window.get_window());
+    std::cout << "Focused display: " << x << ", " << y << ", " << w << ", " << h << '\n';
 
-    int x = geometry.x;
-    int y = geometry.y;
-    int w = geometry.width;
-    int h = geometry.height;
-
-    if (wm == "sway" || wm == "i3") {
-        window.resize(w, h);
-        window.move(x, y);
-        window.hide();
-    } else {
-        window.hide();
-        int x_org;
-        int y_org;
-        window.resize(1, 1);
-        if (!h_align.empty() || !v_align.empty()) {
-            window.move(x, y);
-            window.get_position(x_org, y_org);
-        }
-        // We assume that the window has been opened at mouse pointer coordinates
-        window.get_position(x_org, y_org);
-
-        if (h_align == "l") {
-            window.move(x, y_org);
-            window.get_position(x_org, y_org);
-        }
-        if (h_align == "r") {
-            window.move(x + w - 50, y_org);
-            window.get_position(x_org, y_org);
-        }
-        if (v_align == "t") {
-            window.move(x_org, y);
-            window.get_position(x_org, y_org);
-        }
-        if (v_align == "b") {
-            window.move(x_org, y + h);
-        }
-        //~ window.hide();
-    }
-
-    menu.signal_deactivate().connect(sigc::mem_fun(window, &MainWindow::close));
+/*
     menu.set_reserve_toggle_size(false);
     menu.set_property("width_request", w / 8);
-
-    Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
-    outer_box.set_spacing(15);
-
-    Gtk::VBox inner_vbox;
-
-    Gtk::HBox inner_hbox;
-
-    if (h_align == "l") {
-        inner_hbox.pack_start(anchor, false, false);
-    } else if (h_align == "r") {
-        inner_hbox.pack_end(anchor, false, false);
-    } else {
-        inner_hbox.pack_start(anchor, true, false);
-    }
-
+*/
+/*
     if (v_align == "t") {
         inner_vbox.pack_start(inner_hbox, false, false);
     } else if (v_align == "b") {
@@ -290,11 +227,10 @@ int main(int argc, char *argv[]) {
         inner_vbox.pack_start(inner_hbox, true, false);
     }
     outer_box.pack_start(inner_vbox, Gtk::PACK_EXPAND_WIDGET);
+    }
+    */
 
-    window.add(outer_box);
     window.show_all_children();
-
-    menu.show_all();
-
+    
     return app->run(window);
 }
