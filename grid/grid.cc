@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
 
     MainWindow window(execs, stats);
     window.set_background_color(background_color);
-    window.fullscreen();
+    window.show(hint::Fullscreen);
 
     gettimeofday(&tp, NULL);
     long int images_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;

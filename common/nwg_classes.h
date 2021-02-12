@@ -18,6 +18,14 @@
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
 
+#ifdef HAVE_GTK_LAYER_SHELL
+#include <gtk-layer-shell/gtk-layer-shell.h>
+#endif
+
+template <typename ... Os>
+struct Overloaded: Os... { using Os::operator()...; };
+template <typename ... Os> Overloaded(Os ...) -> Overloaded<Os...>;
+
 struct RGBA {
     double red;
     double green;
@@ -140,23 +148,32 @@ struct SwaySock {
     std::string recv_response_();
 };
 
+namespace hint {
+    constexpr struct Fullscreen_ {} Fullscreen;
+    constexpr struct Center_     {} Center;
+    struct Horizontal{};
+    struct Vertical{};
+    template <typename S>
+    struct Side { bool side; int margin; constexpr static S side_type{}; };
+    struct Sides { Side<Horizontal> h; Side<Vertical> v; };
+}
+
 struct GenericShell {
     Geometry geometry(CommonWindow& window);
-    void fullscreen(CommonWindow& window);
-    void show(CommonWindow&, std::array<bool, 4>, std::array<int, 4>);
+    template <typename S> void show(CommonWindow&, S);
 };
 
 struct SwayShell: GenericShell {
     SwayShell(CommonWindow& window);
-    void fullscreen(CommonWindow& window);
+    using GenericShell::show;
+    void show(CommonWindow& window, hint::Fullscreen_);
     SwaySock sock_;
 };
 
 struct LayerShell: GenericShell {
 #ifdef HAVE_GTK_LAYER_SHELL
     LayerShell(CommonWindow& window);
-    void show(CommonWindow& window, std::array<bool, 4>, std::array<int, 4>);
-    void fullscreen(CommonWindow&);
+    template <typename S> void show(CommonWindow& window, S);
 #endif
 };
 
@@ -164,8 +181,85 @@ struct PlatformWindow: public CommonWindow {
 public:
     PlatformWindow(std::string_view, std::string_view, std::string_view);
     void fullscreen();
-    void show(std::array<bool, 4>, std::array<int, 4>);
+    template <typename S> void show(S);
 private:
     std::variant<LayerShell, SwayShell, GenericShell> shell;
 };
+
+template <typename Hint>
+void GenericShell::show(CommonWindow& window, Hint hint) {
+    window.show();
+    window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
+    window.set_decorated(false);
+    auto [d_x, d_y, d_w, d_h] = geometry(window);
+    auto window_coord_at_side = [](auto d_size, auto w_size, auto side, auto margin) {
+        return !side * margin + side * (d_size - w_size - margin);
+    };
+    Overloaded place_window {
+        [](hint::Center_) { /* we assume the window is opened at center... */ },
+        [&](hint::Fullscreen_) { window.fullscreen(); },
+        [&,d_w=d_w,d_h=d_h](hint::Side<hint::Horizontal> hint) {
+            int w_x = 0, w_y = 0;
+            window.get_position(w_x, w_y);
+            w_x = window_coord_at_side(d_w, window.get_width(), hint.side, hint.margin);
+            window.move(w_x, (d_h - window.get_height()) / 2);
+        },
+        [&,d_w=d_w,d_h=d_h](hint::Side<hint::Vertical> hint) {
+            int w_x = 0, w_y = 0;
+            window.get_position(w_x, w_y);
+            w_y = window_coord_at_side(d_h, window.get_height(), hint.side, hint.margin);
+            window.move((d_w - window.get_width()) / 2, w_y);
+        },
+        [&,d_w=d_w,d_h=d_h](hint::Sides hint) {
+            auto w_x = window_coord_at_side(d_w, window.get_width(), hint.h.side, hint.h.margin);
+            auto w_y = window_coord_at_side(d_h, window.get_height(), hint.v.side, hint.v.margin);
+            window.move(w_x, w_y);
+        }
+    };
+    place_window(hint);
+}
+
+#ifdef HAVE_GTK_LAYER_SHELL
+template <typename Hint>
+void LayerShell::show(CommonWindow& window, Hint hint) {
+    std::array<bool, 4> edges{ 0, 0, 0, 0 };
+    std::array<int,  4> margins{ 0, 0, 0, 0 };
+    constexpr Overloaded index { [](hint::Horizontal){ return 0; }, [](hint::Vertical) { return 2; } };
+    auto account_side = [&](auto side) {
+        constexpr auto i = index(side.side_type);
+        edges[i + side.side] = true;
+        margins[i + side.side] = side.margin;
+    };
+    Overloaded set_edges_margins {
+        [&](hint::Center_) { /* nothing to do */ },
+        [&](hint::Fullscreen_) { edges = { 1, 1, 1, 1 }; },
+        [&](hint::Sides hint) { account_side(hint.h); account_side(hint.v); },
+        account_side
+    };
+    set_edges_margins(hint);
+    window.show();
+    auto gtk_win = window.gobj();
+    std::array edges_ {
+        GTK_LAYER_SHELL_EDGE_LEFT,
+        GTK_LAYER_SHELL_EDGE_RIGHT,
+        GTK_LAYER_SHELL_EDGE_TOP,
+        GTK_LAYER_SHELL_EDGE_BOTTOM
+    };
+    for (size_t i = 0; i < 4; i++) {
+        gtk_layer_set_anchor(gtk_win, edges_[i], edges[i]);
+        gtk_layer_set_margin(gtk_win, edges_[i], margins[i]);
+    }
+    gtk_layer_set_layer(gtk_win, GTK_LAYER_SHELL_LAYER_TOP);
+    gtk_layer_set_keyboard_interactivity(gtk_win, true);
+    gtk_layer_set_namespace(gtk_win, window.title_view().data());
+    gtk_layer_set_exclusive_zone(gtk_win, -1);        
+}
+
+#endif
+
+template <typename Hint>
+void PlatformWindow::show(Hint h) {
+    std::visit([&](auto& shell){ shell.show(*this, h); }, shell);
+}
+
 

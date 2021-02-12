@@ -62,11 +62,6 @@ std::vector<std::filesystem::path> get_app_dirs() {
     return result;
 }
 
-// desktop_entry helpers
-template<typename> inline constexpr bool lazy_false_v = false;
-template<typename ... Ts> struct visitor : Ts... { using Ts::operator()...; };
-template<typename ... Ts> visitor(Ts...) -> visitor<Ts...>;
-
 /*
  * Parses .desktop file to DesktopEntry struct
  * */
@@ -138,7 +133,7 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
         };
         for (auto& [prefix, dest, tag] : matches) {
             if (auto [ok, pos] = try_strip_prefix(prefix); ok) {
-                std::visit(visitor {
+                std::visit(Overloaded {
                     [dest=dest, pos=pos, &view](nop_t) { *dest = view.substr(pos); },
                     [dest=dest, pos=pos, &view](cut_t) {
                         auto idx = view.find(" %", pos);

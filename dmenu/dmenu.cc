@@ -106,13 +106,11 @@ int main(int argc, char *argv[]) {
         v_align = "b";
     }
 
-    auto css_name = input.getCmdOption("-c");
-    if (!css_name.empty()){
+    if (auto css_name = input.getCmdOption("-c"); !css_name.empty()) {
         custom_css_file = css_name;
     }
 
-    auto wm_name = input.getCmdOption("-wm");
-    if (!wm_name.empty()){
+    if (auto wm_name = input.getCmdOption("-wm"); !wm_name.empty()) {
         wm = wm_name;
     }
 
@@ -181,16 +179,8 @@ int main(int argc, char *argv[]) {
         });
     }
 
-    /* turn off borders, enable floating on sway */
-    if (wm == "sway") {
-        using namespace std::string_view_literals;
-        SwaySock sock;
-        sock.run("for_window [title=\"~nwgdmenu*\"] floating enable"sv);
-        sock.run("for_window [title=\"~nwgdmenu*\"] border none"sv);
-    }
-
     auto app = Gtk::Application::create();
-
+    
     auto provider = Gtk::CssProvider::create();
     auto display = Gdk::Display::get_default();
     auto screen = display->get_default_screen();
@@ -210,16 +200,16 @@ int main(int argc, char *argv[]) {
 
     MainWindow window;
     window.set_background_color(background_color);
-/*
-    menu.set_reserve_toggle_size(false);
-    menu.set_property("width_request", w / 8);
-*/
-    auto top = v_align == "t";
-    auto btm = v_align == "b";
-    auto left = h_align == "l";
-    auto right = h_align == "r";
     window.show_all_children();
-    window.show({ left, right, top, btm }, { 50, 50, 50, 50 });
-    
+    switch (h_align.empty() + v_align.empty() * 2) {
+        case 0:
+            window.show(hint::Sides{ { h_align == "r", 50 }, { v_align == "b", 50 } }); break;
+        case 1:
+            window.show(hint::Side<hint::Vertical>{ v_align == "b", 50 }); break;
+        case 2:
+            window.show(hint::Side<hint::Horizontal>{ h_align == "r", 50 }); break;
+        case 3:
+            window.show(hint::Center); break;
+    }
     return app->run(window);
 }
