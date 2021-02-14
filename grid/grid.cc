@@ -15,7 +15,6 @@
 
 #include "nwg_tools.h"
 #include "nwg_classes.h"
-#include "on_event.h"
 #include "grid.h"
 
 bool pins = false;              // whether to display pinned

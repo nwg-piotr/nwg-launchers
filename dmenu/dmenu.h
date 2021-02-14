@@ -11,22 +11,15 @@
 #include <sys/file.h>
 #include <fcntl.h>
 
-#include <iostream>
-#include <fstream>
 #include <filesystem>
-#include <regex>
-#include <algorithm>
 
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
-
-#include <nlohmann/json.hpp>
 
 #include "nwgconfig.h"
 #include "nwg_classes.h"
 
 namespace fs = std::filesystem;
-namespace ns = nlohmann;
 
 extern int rows;
 extern std::filesystem::path settings_file;

@@ -10,11 +10,13 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <algorithm>
+#include <fstream>
+#include <iostream>
 #include <charconv>
 
 #include "nwg_tools.h"
 #include "nwg_classes.h"
-#include "on_event.h"
 #include "dmenu.h"
 
 #define ROWS_DEFAULT 20

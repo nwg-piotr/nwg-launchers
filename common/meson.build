@@ -1,6 +1,5 @@
 sources = files(
 	'nwg_tools.cc',
-	'on_event.cc',
 	'nwg_classes.cc'
 )
 

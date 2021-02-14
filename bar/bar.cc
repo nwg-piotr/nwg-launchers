@@ -13,7 +13,6 @@
 
 #include "nwg_classes.h"
 #include "nwg_tools.h"
-#include "on_event.h"
 #include "bar.h"
 
 std::string wm {""};            // detected or forced window manager name
