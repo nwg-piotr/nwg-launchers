@@ -14,6 +14,8 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
+#include <chrono>
+#include <ctime>
 #include "dmenu.h"
 
 inline auto set_searchbox_placeholder = [](auto && searchbox, auto case_sensitive) {
@@ -32,12 +34,13 @@ inline auto build_commands_list = [](auto && dmenu, auto && commands, auto max) 
     }
 };
 
-MainWindow::MainWindow():
+MainWindow::MainWindow(std::string_view wm, std::vector<Glib::ustring>& src):
     PlatformWindow(wm, "~nwgdmenu", "~nwgdmenu"),
-    commands{ 1, false, Gtk::SELECTION_SINGLE }
+    commands{ 1, false, Gtk::SELECTION_SINGLE },
+    commands_source{ src }
 {
     // non-void lambdas are broken in gtkmm, thus the need for bind_return
-    //signal_focus_out_event().connect(sigc::bind_return([this](auto*){ this->close(); }, true));
+    // signal_leave_notify_event().connect(sigc::bind_return(...........
     commands.set_reorderable(false);
     commands.set_headers_visible(false);
     commands.set_enable_search(false);
@@ -62,7 +65,7 @@ MainWindow::MainWindow():
     
     add(vbox);
     
-    build_commands_list(*this, all_commands, rows);
+    build_commands_list(*this, commands_source, rows);
 }
 
 MainWindow::~MainWindow() {
@@ -98,10 +101,10 @@ void MainWindow::filter_view() {
             return count;
         };
         // append entries matching `exact`, then entries matching `almost` (at most `max` entries)
-        auto fill_all = [fill_matches,rows=rows](auto && exact, auto && almost) {
-            auto count = fill_matches(all_commands, exact, rows);
+        auto fill_all = [this,fill_matches,rows=rows](auto && exact, auto && almost) {
+            auto count = fill_matches(this->commands_source, exact, rows);
             if (count < rows) {
-                fill_matches(all_commands, almost, rows - count);
+                fill_matches(this->commands_source, almost, rows - count);
             }
         };
         if (case_sensitive) {
@@ -114,7 +117,7 @@ void MainWindow::filter_view() {
         }
     } else {
         // searchentry is clear, show all options
-        build_commands_list(*this, all_commands, rows);
+        build_commands_list(*this, commands_source, rows);
     }
     select_first_item();
 }

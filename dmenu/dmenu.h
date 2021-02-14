@@ -28,13 +28,8 @@
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-extern std::string h_align;
-extern std::string v_align;
-extern std::string wm;
-extern std::string settings_file;
-
 extern int rows;
-extern std::vector<Glib::ustring> all_commands;
+extern std::filesystem::path settings_file;
 
 extern bool dmenu_run;
 extern bool show_searchbox;
@@ -42,7 +37,7 @@ extern bool case_sensitive;
 
 class MainWindow : public PlatformWindow {
     public:
-        MainWindow();
+        MainWindow(std::string_view, std::vector<Glib::ustring>&);
         ~MainWindow();
         void emplace_back(const Glib::ustring&);
     private:
@@ -55,6 +50,7 @@ class MainWindow : public PlatformWindow {
         Gtk::SearchEntry  searchbox;
         Gtk::ListViewText commands;
         Gtk::VBox         vbox;
+        std::vector<Glib::ustring>& commands_source;
         bool case_sensitivity_changed = false;
         bool never_focused = true;
 };
@@ -62,5 +58,5 @@ class MainWindow : public PlatformWindow {
 /*
  * Function declarations
  * */
-std::vector<std::string> list_commands();
-std::string get_settings_path();
+std::vector<Glib::ustring> list_commands();
+std::filesystem::path get_settings_path();

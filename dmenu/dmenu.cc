@@ -22,14 +22,10 @@
 #define STR_EXPAND(x) #x
 #define STR(x) STR_EXPAND(x)
 
-std::string h_align {""};                   // horizontal alignment
-std::string v_align {""};                   // vertical alignment
-RGBA background = {0.0, 0.0, 0.0, 0.3};
 std::string wm {""};                        // detected or forced window manager name
-std::string settings_file {""};
+std::filesystem::path settings_file {""};
 
 int rows = ROWS_DEFAULT;                    // number of menu items to display
-std::vector<Glib::ustring> all_commands {};
 
 bool dmenu_run = false;
 bool show_searchbox = true;
@@ -80,30 +76,22 @@ int main(int argc, char *argv[]) {
         dmenu_run = true;
     }
 
-    // Otherwise let's build from stdin input
-    if (!dmenu_run) {
-        all_commands = {};
-        for (std::string line; std::getline(std::cin, line);) {
-            all_commands.emplace_back(std::move(line));
-        }
-    }
-
     if (input.cmdOptionExists("-n")){
         show_searchbox = false;
     }
 
     auto halign = input.getCmdOption("-ha");
     if (halign == "l" || halign == "left") {
-        h_align = "l";
+        halign = "l";
     } else if (halign == "r" || halign == "right") {
-        h_align = "r";
+        halign = "r";
     }
 
     auto valign = input.getCmdOption("-va");
     if (valign == "t" || valign == "top") {
-        v_align = "t";
+        valign = "t";
     } else if (valign == "b" || valign == "bottom") {
-        v_align = "b";
+        valign = "b";
     }
 
     if (auto css_name = input.getCmdOption("-c"); !css_name.empty()) {
@@ -116,8 +104,7 @@ int main(int argc, char *argv[]) {
 
     auto background_color = input.get_background_color(0.3);
 
-    auto rw = input.getCmdOption("-r");
-    if (!rw.empty()){
+    if (auto rw = input.getCmdOption("-r"); !rw.empty()){
         int r;
         auto from = rw.data();
         auto to = from + rw.size();
@@ -157,19 +144,11 @@ int main(int argc, char *argv[]) {
         wm = detect_wm();
     }
 
+    std::vector<Glib::ustring> all_commands;
     if (dmenu_run) {
         /* get a list of paths to all commands from all application dirs */
-        std::vector<std::string> commands = list_commands();
-        std::cout << commands.size() << " commands found\n";
-
-        /* Create a vector of commands (w/o path) */
-        all_commands = {};
-        for (auto&& command : commands) {
-            auto cmd = take_last_by(command, "/");
-            if (cmd.find(".") != 0 && cmd.size() != 1) {
-                all_commands.emplace_back(cmd.data(), cmd.size());
-            }
-        }
+        all_commands = list_commands();
+        std::cout << all_commands.size() << " commands found\n";
 
         /* Sort case insensitive */
         std::sort(all_commands.begin(), all_commands.end(), [](auto& a, auto& b) {
@@ -177,6 +156,10 @@ int main(int argc, char *argv[]) {
                 return std::tolower(a) < std::tolower(b);
             });
         });
+    } else {
+        for (std::string line; std::getline(std::cin, line);) {
+            all_commands.emplace_back(std::move(line));
+        }
     }
 
     auto app = Gtk::Application::create();
@@ -198,16 +181,16 @@ int main(int argc, char *argv[]) {
         std::cout << "Using " << default_css_file << '\n';
     }
 
-    MainWindow window;
+    MainWindow window{ wm, all_commands };
     window.set_background_color(background_color);
     window.show_all_children();
-    switch (h_align.empty() + v_align.empty() * 2) {
+    switch (halign.empty() + valign.empty() * 2) {
         case 0:
-            window.show(hint::Sides{ { h_align == "r", 50 }, { v_align == "b", 50 } }); break;
+            window.show(hint::Sides{ { halign == "r", 50 }, { valign == "b", 50 } }); break;
         case 1:
-            window.show(hint::Side<hint::Vertical>{ v_align == "b", 50 }); break;
+            window.show(hint::Side<hint::Vertical>{ valign == "b", 50 }); break;
         case 2:
-            window.show(hint::Side<hint::Horizontal>{ h_align == "r", 50 }); break;
+            window.show(hint::Side<hint::Horizontal>{ halign == "r", 50 }); break;
         case 3:
             window.show(hint::Center); break;
     }
