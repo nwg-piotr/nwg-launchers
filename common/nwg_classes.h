@@ -217,6 +217,7 @@ void GenericShell::show(CommonWindow& window, Hint hint) {
         }
     };
     place_window(hint);
+    window.present();   // grab focus
 }
 
 #ifdef HAVE_GTK_LAYER_SHELL
@@ -252,7 +253,7 @@ void LayerShell::show(CommonWindow& window, Hint hint) {
     gtk_layer_set_layer(gtk_win, GTK_LAYER_SHELL_LAYER_TOP);
     gtk_layer_set_keyboard_interactivity(gtk_win, true);
     gtk_layer_set_namespace(gtk_win, window.title_view().data());
-    gtk_layer_set_exclusive_zone(gtk_win, -1);        
+    gtk_layer_set_exclusive_zone(gtk_win, -1);       
 }
 
 #endif
