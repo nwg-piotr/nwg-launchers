@@ -28,6 +28,8 @@ class MainWindow : public PlatformWindow {
         MainWindow(std::string_view, std::vector<Glib::ustring>&);
         ~MainWindow();
         void emplace_back(const Glib::ustring&);
+
+        int get_height() override;
     private:
         void filter_view();
         void select_first_item();

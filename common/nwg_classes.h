@@ -57,6 +57,8 @@ class CommonWindow : public Gtk::Window {
         void check_screen();
         void set_background_color(RGBA color);
         
+        virtual int get_height(); // we need to override get_height for dmenu to work
+        
         std::string_view title_view();
     protected:
         bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr) override;

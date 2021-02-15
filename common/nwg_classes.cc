@@ -101,6 +101,8 @@ void CommonWindow::set_background_color(RGBA color) {
     this->background_color = color;
 }
 
+int CommonWindow::get_height() { return Gtk::Window::get_height(); }
+
 AppBox::AppBox() {
     this -> set_always_show_image(true);
 }

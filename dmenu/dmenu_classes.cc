@@ -170,3 +170,19 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
     //if the event has not been handled, call the base class
     return CommonWindow::on_key_press_event(key_event);
 }
+
+// TreeView will have height of 1 until it's actually shown
+// in this hack we do our best to calculate actual window size
+// we assume all cells have same height (which is true for ListViewText) and all cells are filled
+int MainWindow::get_height() {
+    auto model = commands.get_model();
+    // Gtk::TreeModel::iter_n_root_children is protected, so ...
+    auto rows = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(model->gobj()), nullptr);
+    auto base_height = CommonWindow::get_height();
+    int off_x = -1, off_y = -1, cell_width = -1, cell_height = -1;
+    Gdk::Rectangle rect;
+    auto* column = commands.get_column(0);
+    column->cell_get_size(rect, off_x, off_y, cell_width, cell_height);
+    auto cell_spacing = column->get_spacing();
+    return base_height + cell_height * (rows + 1) + cell_spacing * rows;
+}
