@@ -152,7 +152,7 @@ struct SwaySock {
 
 namespace hint {
     constexpr struct Fullscreen_ {} Fullscreen;
-    constexpr struct Center_     {} Center;
+    constexpr struct Auto_       {} Auto;
     struct Horizontal{};
     struct Vertical{};
     template <typename S>
@@ -198,7 +198,7 @@ void GenericShell::show(CommonWindow& window, Hint hint) {
         return !side * margin + side * (d_size - w_size - margin);
     };
     Overloaded place_window {
-        [](hint::Center_) { /* we assume the window is opened at center... */ },
+        [](hint::Auto_) { /* we assume the window is opened at center... */ },
         [&](hint::Fullscreen_) { window.fullscreen(); },
         [&,d_w=d_w,d_h=d_h](hint::Side<hint::Horizontal> hint) {
             int w_x = 0, w_y = 0;
@@ -234,7 +234,7 @@ void LayerShell::show(CommonWindow& window, Hint hint) {
         margins[i + side.side] = side.margin;
     };
     Overloaded set_edges_margins {
-        [&](hint::Center_) { /* nothing to do */ },
+        [&](hint::Auto_) { /* nothing to do */ },
         [&](hint::Fullscreen_) { edges = { 1, 1, 1, 1 }; },
         [&](hint::Sides hint) { account_side(hint.h); account_side(hint.v); },
         account_side
