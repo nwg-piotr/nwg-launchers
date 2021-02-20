@@ -39,8 +39,21 @@ MainWindow::MainWindow(std::string_view wm, std::vector<Glib::ustring>& src):
     commands{ 1, false, Gtk::SELECTION_SINGLE },
     commands_source{ src }
 {
+    // different shells emit different events
+    auto display_name = this->get_screen()->get_display()->get_name();
+    auto is_wayland = display_name.find("wayland") == 0;
     // non-void lambdas are broken in gtkmm, thus the need for bind_return
-    // signal_leave_notify_event().connect(sigc::bind_return(...........
+    signal_leave_notify_event().connect(sigc::bind_return([this,is_wayland](auto* event) {
+        constexpr std::array windowing {
+            std::array { GDK_NOTIFY_ANCESTOR, GDK_NOTIFY_VIRTUAL }, // X11 (i3 and openbox atleast)
+            std::array { GDK_NOTIFY_NONLINEAR, GDK_NOTIFY_NONLINEAR_VIRTUAL } // Wayland (wlr-layer-shell)
+        };
+        for (auto detail: windowing[is_wayland]) {
+            if (event->detail == detail) {
+                this->close();
+            }
+        }
+    }, true));
     commands.set_reorderable(false);
     commands.set_headers_visible(false);
     commands.set_enable_search(false);

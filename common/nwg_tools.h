@@ -52,4 +52,3 @@ Gtk::Image* app_image(const Gtk::IconTheme&, const std::string&, const Glib::Ref
 Geometry display_geometry(std::string_view, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);
 
 void create_pid_file_or_kill_pid(std::string);
-
