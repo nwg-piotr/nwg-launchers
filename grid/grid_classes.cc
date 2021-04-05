@@ -1,3 +1,4 @@
+
 /* GTK-based application grid
  * Copyright (c) 2020 Piotr Miller
  * e-mail: nwg.piotr@gmail.com
@@ -32,8 +33,8 @@ int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     auto& toplevel = *dynamic_cast<MainWindow*>(a->get_toplevel());
     return -cmp_(toplevel.stats_of(child_(a)).clicks, toplevel.stats_of(child_(b)).clicks);
 }
-MainWindow::MainWindow(Span<std::string> es, Span<Stats> ss)
- : PlatformWindow(wm, "~nwggrid", "~nwggrid"), execs(es), stats(ss)
+MainWindow::MainWindow(Config& config, Span<std::string> es, Span<Stats> ss)
+ : PlatformWindow(config), execs(es), stats(ss)
 {
     searchbox
         .signal_search_changed()

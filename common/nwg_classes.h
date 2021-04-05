@@ -19,7 +19,7 @@
 #include <glibmm/ustring.h>
 
 #ifdef HAVE_GTK_LAYER_SHELL
-#include <gtk-layer-shell/gtk-layer-shell.h>
+#include <gtk-layer-shell.h>
 #endif
 
 template <typename ... Os>
@@ -49,9 +49,35 @@ class InputParser{
         std::vector <std::string_view> tokens;
 };
 
+#ifdef HAVE_GTK_LAYER_SHELL
+struct LayerShellArgs {
+    GtkLayerShellLayer layer                  = GTK_LAYER_SHELL_LAYER_OVERLAY;
+    int                exclusive_zone         = -1;
+    bool               exclusive_zone_is_auto = true;
+    
+    LayerShellArgs(const InputParser& parser);
+};
+#endif
+
+/* 
+ * Stores configuration data
+ */
+struct Config {
+    const InputParser& parser;
+    std::string        wm;
+    std::string_view   title;
+    std::string_view   role;
+    
+#ifdef HAVE_GTK_LAYER_SHELL
+    LayerShellArgs layer_shell_args;
+#endif
+
+    Config(const InputParser&, std::string_view, std::string_view);
+};
+
 class CommonWindow : public Gtk::Window {
     public:
-        CommonWindow(std::string_view, std::string_view);
+        CommonWindow(Config&);
         virtual ~CommonWindow() = default;
 
         void check_screen();
@@ -172,16 +198,20 @@ struct SwayShell: GenericShell {
     SwaySock sock_;
 };
 
+/* note: LayerShell struct becomes empty, but still exists if layer-shell is not present
+ * it is done to avoid writing a lot of typedefs in PlatformWindow */
 struct LayerShell: GenericShell {
 #ifdef HAVE_GTK_LAYER_SHELL
-    LayerShell(CommonWindow& window);
+    LayerShell(CommonWindow& window, LayerShellArgs args);
     template <typename S> void show(CommonWindow& window, S);
+    
+    LayerShellArgs args;
 #endif
 };
 
 struct PlatformWindow: public CommonWindow {
 public:
-    PlatformWindow(std::string_view, std::string_view, std::string_view);
+    PlatformWindow(Config& config);
     void fullscreen();
     template <typename S> void show(S);
 private:
@@ -252,10 +282,14 @@ void LayerShell::show(CommonWindow& window, Hint hint) {
         gtk_layer_set_anchor(gtk_win, edges_[i], edges[i]);
         gtk_layer_set_margin(gtk_win, edges_[i], margins[i]);
     }
-    gtk_layer_set_layer(gtk_win, GTK_LAYER_SHELL_LAYER_TOP);
+    gtk_layer_set_layer(gtk_win, args.layer);
     gtk_layer_set_keyboard_interactivity(gtk_win, true);
     gtk_layer_set_namespace(gtk_win, window.title_view().data());
-    gtk_layer_set_exclusive_zone(gtk_win, -1);       
+    if (args.exclusive_zone_is_auto) {
+        gtk_layer_auto_exclusive_zone_enable (gtk_win);
+    } else {
+        gtk_layer_set_exclusive_zone(gtk_win, args.exclusive_zone);
+    }
 }
 
 #endif

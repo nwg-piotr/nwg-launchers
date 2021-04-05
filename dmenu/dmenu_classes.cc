@@ -34,8 +34,8 @@ inline auto build_commands_list = [](auto && dmenu, auto && commands, auto max) 
     }
 };
 
-MainWindow::MainWindow(std::string_view wm, std::vector<Glib::ustring>& src):
-    PlatformWindow(wm, "~nwgdmenu", "~nwgdmenu"),
+MainWindow::MainWindow(Config& config, std::vector<Glib::ustring>& src):
+    PlatformWindow(config),
     commands{ 1, false, Gtk::SELECTION_SINGLE },
     commands_source{ src }
 {

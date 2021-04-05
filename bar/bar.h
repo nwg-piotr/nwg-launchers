@@ -37,7 +37,7 @@ public:
 
 class MainWindow : public PlatformWindow {
     public:
-        MainWindow();
+        MainWindow(Config&);
 
         Gtk::Grid favs_grid;                    // Favourites grid above
         Gtk::Separator separator;               // between favs and all apps

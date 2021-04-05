@@ -19,7 +19,6 @@
 
 bool pins = false;              // whether to display pinned
 bool favs = false;              // whether to display favorites
-std::string wm {""};            // detected or forced window manager name
 std::string term {""};
 std::size_t num_col = 6;        // number of grid columns
 
@@ -40,7 +39,9 @@ Options:\n\
 -s <size>        button image size (default: 72)\n\
 -c <name>        css file name (default: style.css)\n\
 -l <ln>          force use of <ln> language\n\
--wm <wmname>     window manager name (if can not be detected)\n";
+-wm <wmname>     window manager name (if can not be detected)\n\
+--layer-shell-layer={BACKGROUND,BOTTOM,TOP,OVERLAY}\n\
+--layer-shell-exclusive-zone={auto,some_number}\n";
 
 int main(int argc, char *argv[]) {
     std::filesystem::path custom_css_file{ "style.css" };
@@ -84,13 +85,6 @@ int main(int argc, char *argv[]) {
     if (auto css_name = input.getCmdOption("-c"); !css_name.empty()){
         custom_css_file = css_name;
     }
-    
-    if (auto wm_name = input.getCmdOption("-wm"); !wm_name.empty()){
-        wm = wm_name;
-    } else {
-        wm = detect_wm();
-    }
-    std::cout << "WM: " << wm << "\n";
 
     auto background_color = input.get_background_color(0.9);
 
@@ -267,7 +261,12 @@ int main(int argc, char *argv[]) {
     provider->load_from_path(css_file);
     std::cout << "Using " << css_file << '\n';
 
-    MainWindow window(execs, stats);
+    Config config {
+        input,
+        "~nwggrid",
+        "~nwggrid"
+    };
+    MainWindow window(config, execs, stats);
     window.set_background_color(background_color);
     window.show(hint::Fullscreen);
 
@@ -313,5 +312,6 @@ int main(int argc, char *argv[]) {
     format("\tbs:      ", bs_ms, images_ms);
     format("\tcommons: ", commons_ms, bs_ms);
 
+    
     return app->run(window);
 }

@@ -16,7 +16,7 @@
 
 #include "bar.h"
 
-MainWindow::MainWindow(): PlatformWindow(wm, "~nwgbar", "~nwgbar") {
+MainWindow::MainWindow(Config& config): PlatformWindow(config) {
     favs_grid.set_column_spacing(5);
     favs_grid.set_row_spacing(5);
     favs_grid.set_column_homogeneous(true);

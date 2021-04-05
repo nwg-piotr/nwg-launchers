@@ -11,11 +11,8 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <iostream>
-
-#ifdef HAVE_GTK_LAYER_SHELL
-#include <gtk-layer-shell/gtk-layer-shell.h>
-#endif
 
 #include "nwg_classes.h"
 #include "nwg_tools.h"
@@ -56,9 +53,24 @@ RGBA InputParser::get_background_color(double default_opacity) const {
     return color;
 }
 
-CommonWindow::CommonWindow(std::string_view title, std::string_view role): title{title} {
-    set_title({title.data(), title.size()});
-    set_role({role.data(), role.size()});
+Config::Config(const InputParser& parser, std::string_view title, std::string_view role):
+    parser{parser},
+    title{title},
+    role{role}
+#ifdef HAVE_GTK_LAYER_SHELL
+    ,layer_shell_args{parser}
+#endif
+{
+    if (auto wm_name = parser.getCmdOption("-wm"); !wm_name.empty()){
+        this->wm = wm_name;
+    } else {
+        this->wm = detect_wm();
+    }
+}
+
+CommonWindow::CommonWindow(Config& config): title{config.title} {
+    set_title({config.title.data(), config.title.size()});
+    set_role({config.role.data(), config.role.size()});
     set_skip_pager_hint(true);
     add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
     set_app_paintable(true);
@@ -155,23 +167,55 @@ void SwayShell::show(CommonWindow& window, hint::Fullscreen_) {
 }
 
 #ifdef HAVE_GTK_LAYER_SHELL
-LayerShell::LayerShell(CommonWindow& window) {
+LayerShellArgs::LayerShellArgs(const InputParser& parser) {
+    using namespace std::string_view_literals;
+    if (auto layer = parser.getCmdOption("-layer-shell-layer"); !layer.empty()) {
+        constexpr std::array map {
+            std::pair{ "BACKGROUND"sv, GTK_LAYER_SHELL_LAYER_BACKGROUND },
+            std::pair{ "BOTTOM"sv,     GTK_LAYER_SHELL_LAYER_BOTTOM },
+            std::pair{ "TOP"sv,        GTK_LAYER_SHELL_LAYER_TOP },
+            std::pair{ "OVERLAY"sv,    GTK_LAYER_SHELL_LAYER_OVERLAY }
+        };
+        bool found = false;
+        for (auto && [s, l]: map) {
+            if (layer == s) {
+                this->layer = l;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cerr << "ERROR: Incorrect layer-shell-layer value\n";
+            std::exit(EXIT_FAILURE);
+        }
+    }
+    if (auto zone = parser.getCmdOption("-layer-shell-exclusive-zone"); !zone.empty()) {
+        this->exclusive_zone_is_auto = zone == "auto"sv;
+        auto [p, ec] = std::from_chars(zone.data(), zone.data() + zone.size(), this->exclusive_zone);
+        if (ec != std::errc()) {
+            std::cerr << "ERROR: Unable to decode layer-shell-exclusive-zone value\n";
+            std::exit(EXIT_FAILURE);
+        }
+    }
+}
+
+LayerShell::LayerShell(CommonWindow& window, LayerShellArgs args): args{args} {
     // this has to be called before the window is realized
     gtk_layer_init_for_window(window.gobj());
 }
 #endif
 
-PlatformWindow::PlatformWindow(std::string_view wm, std::string_view title, std::string_view role):
-    CommonWindow{title, role},
+PlatformWindow::PlatformWindow(Config& config):
+    CommonWindow{config},
     shell{std::in_place_type_t<GenericShell>{}}
 {
     #ifdef HAVE_GTK_LAYER_SHELL
     if (gtk_layer_is_supported()) {
-        shell.emplace<LayerShell>(*this);
+        shell.emplace<LayerShell>(*this, config.layer_shell_args);
         return;
     }
     #endif
-    if (wm == "sway" || wm == "i3") {
+    if (config.wm == "sway" || config.wm == "i3") {
         shell.emplace<SwayShell>(*this);
     }
 }

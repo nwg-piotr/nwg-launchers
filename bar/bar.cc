@@ -81,11 +81,6 @@ int main(int argc, char *argv[]) {
         custom_css_file = css_name;
     }
 
-    auto wm_name = input.getCmdOption("-wm");
-    if (!wm_name.empty()){
-        wm = wm_name;
-    }
-
     auto background_color = input.get_background_color(0.9);
 
     auto i_size = input.getCmdOption("-s");
@@ -150,13 +145,6 @@ int main(int argc, char *argv[]) {
         bar_entries = get_bar_entries(std::move(bar_json));
     }
 
-    /* get current WM name if not forced */
-    if (wm.empty()) {
-        wm = detect_wm();
-    }
-
-    std::cout << "WM: " << wm << "\n";
-
     auto app = Gtk::Application::create();
 
     auto provider = Gtk::CssProvider::create();
@@ -183,7 +171,12 @@ int main(int argc, char *argv[]) {
         std::cout << "Using " << default_css_file << '\n';
     }
 
-    MainWindow window;
+    Config config {
+        input,
+        "~nwgbar",
+        "~nwgbar"
+    };
+    MainWindow window{ config };
     window.set_background_color(background_color);
 
     Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);

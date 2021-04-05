@@ -100,10 +100,6 @@ int main(int argc, char *argv[]) {
         custom_css_file = css_name;
     }
 
-    if (auto wm_name = input.getCmdOption("-wm"); !wm_name.empty()) {
-        wm = wm_name;
-    }
-
     auto background_color = input.get_background_color(0.3);
 
     if (auto rw = input.getCmdOption("-r"); !rw.empty()){
@@ -139,11 +135,6 @@ int main(int argc, char *argv[]) {
         } catch (...) {
             std::cerr << "Failed copying default style.css\n";
         }
-    }
-
-    /* get current WM name if not forced */
-    if (wm.empty()) {
-        wm = detect_wm();
     }
 
     std::vector<Glib::ustring> all_commands;
@@ -183,7 +174,12 @@ int main(int argc, char *argv[]) {
         std::cout << "Using " << default_css_file << '\n';
     }
 
-    MainWindow window{ wm, all_commands };
+    Config config {
+        input,
+        "~nwgdmenu",
+        "~nwgdmenu"
+    };
+    MainWindow window{ config, all_commands };
     window.set_background_color(background_color);
     window.show_all_children();
     switch (halign.empty() + valign.empty() * 2) {

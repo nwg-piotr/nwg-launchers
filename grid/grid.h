@@ -24,7 +24,6 @@ namespace ns = nlohmann;
 
 extern bool pins;
 extern bool favs;
-extern std::string wm;
 
 extern std::size_t num_col;
 
@@ -76,7 +75,7 @@ public:
 
 class MainWindow : public PlatformWindow {
     public:
-        MainWindow(Span<std::string> entries, Span<Stats> stats);
+        MainWindow(Config& config, Span<std::string> entries, Span<Stats> stats);
         MainWindow(const MainWindow&) = delete;
 
         Gtk::SearchEntry searchbox;              // Search apps

@@ -25,7 +25,7 @@ extern bool case_sensitive;
 
 class MainWindow : public PlatformWindow {
     public:
-        MainWindow(std::string_view, std::vector<Glib::ustring>&);
+        MainWindow(Config&, std::vector<Glib::ustring>&);
         ~MainWindow();
         void emplace_back(const Glib::ustring&);
 
