@@ -176,6 +176,14 @@ struct SwaySock {
     std::string recv_response_();
 };
 
+/*
+ * This namespace defines types that can be passed to PlatformWindow::show
+ * The rationale behind this design is as follows:
+ * 1) Logic implementing all the positioning is collected in one place,
+ *      not scattered across classes / spagetti functions
+ * 2) It is resolved at compile time, allowing compiler to optimize it better
+ * 3) It can be tweaked and expanded with ease and safety (everything is checked at compile-time)
+ */
 namespace hint {
     constexpr struct Fullscreen_ {} Fullscreen;
     constexpr struct Auto_       {} Auto;
@@ -186,6 +194,15 @@ namespace hint {
     struct Sides { Side<Horizontal> h; Side<Vertical> v; };
 }
 
+/*
+ * Each shell defined by which means window is positioned. They do not share common base class,
+ *  but instead wrapped in a variant to avoid unecessary dynamic allocations
+ * Shell::show method receives a window reference and a templated parameter,
+ *   it's job is to position window according to the parameter type
+ * GenericShell only uses common Gtk functions and is best used on X11 or as a fallback
+ * SwayShell uses IPC connection to Sway/i3
+ * LayerShell uses wlr-layer-shell (or rather gtk-layer-shell library built on top of it)
+ */
 struct GenericShell {
     Geometry geometry(CommonWindow& window);
     template <typename S> void show(CommonWindow&, S);
@@ -199,7 +216,7 @@ struct SwayShell: GenericShell {
 };
 
 /* note: LayerShell struct becomes empty, but still exists if layer-shell is not present
- * it is done to avoid writing a lot of typedefs in PlatformWindow */
+ * it is done to avoid writing a lot of ifdefs in PlatformWindow */
 struct LayerShell: GenericShell {
 #ifdef HAVE_GTK_LAYER_SHELL
     LayerShell(CommonWindow& window, LayerShellArgs args);
@@ -225,7 +242,8 @@ void GenericShell::show(CommonWindow& window, Hint hint) {
     window.set_decorated(false);
     auto [d_x, d_y, d_w, d_h] = geometry(window);
     auto window_coord_at_side = [](auto d_size, auto w_size, auto side, auto margin) {
-        return !side * margin + side * (d_size - w_size - margin);
+        std::array map { margin, d_size - w_size - margin };
+        return map[side];
     };
     Overloaded place_window {
         [](hint::Auto_) { /* we assume the window is opened at center... */ },
