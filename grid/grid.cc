@@ -39,9 +39,10 @@ Options:\n\
 -s <size>        button image size (default: 72)\n\
 -c <name>        css file name (default: style.css)\n\
 -l <ln>          force use of <ln> language\n\
--wm <wmname>     window manager name (if can not be detected)\n\
---layer-shell-layer={BACKGROUND,BOTTOM,TOP,OVERLAY}\n\
---layer-shell-exclusive-zone={auto,some_number}\n";
+-wm <wmname>     window manager name (if can not be detected)\n\n\
+[requires layer-shell]:\n\
+-layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
+-layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
 
 int main(int argc, char *argv[]) {
     std::filesystem::path custom_css_file{ "style.css" };

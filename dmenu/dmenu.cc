@@ -48,6 +48,9 @@ Options:\n\
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
 -wm <wmname>     window manager name (if can not be detected)\n\
 -run             ignore stdin, always build from commands in $PATH\n\n\
+[requires layer-shell]:\n\
+-layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
+-layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n\n\
 Hotkeys:\n\
 Delete        clear search box\n\
 Insert        switch case sensitivity\n";

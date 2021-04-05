@@ -15,7 +15,6 @@
 #include "nwg_tools.h"
 #include "bar.h"
 
-std::string wm {""};            // detected or forced window manager name
 const char* const HELP_MESSAGE =
 "GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
 Options:\n\
@@ -28,7 +27,10 @@ Options:\n\
 -o <opacity>     background opacity (0.0 - 1.0, default 0.9)\n\
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
 -s <size>        button image size (default: 72)\n\
--wm <wmname>     window manager name (if can not be detected)\n";
+-wm <wmname>     window manager name (if can not be detected)\n\n\
+[requires layer-shell]:\n\
+-layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
+-layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
 
 int main(int argc, char *argv[]) {
     std::string definition_file {"bar.json"};
