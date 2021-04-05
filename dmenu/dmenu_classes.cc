@@ -54,6 +54,7 @@ MainWindow::MainWindow(Config& config, std::vector<Glib::ustring>& src):
             }
         }
     }, true));
+    commands.set_name("commands");
     commands.set_reorderable(false);
     commands.set_headers_visible(false);
     commands.set_enable_search(false);
@@ -69,6 +70,7 @@ MainWindow::MainWindow(Config& config, std::vector<Glib::ustring>& src):
         system(item.c_str());
         this->close();
     });
+    searchbox.set_name("searchbox");
     if (show_searchbox) {
         set_searchbox_placeholder(searchbox, case_sensitive);
         searchbox.signal_search_changed().connect(sigc::mem_fun(*this, &MainWindow::filter_view));
