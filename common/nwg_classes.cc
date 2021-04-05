@@ -191,10 +191,12 @@ LayerShellArgs::LayerShellArgs(const InputParser& parser) {
     }
     if (auto zone = parser.getCmdOption("-layer-shell-exclusive-zone"); !zone.empty()) {
         this->exclusive_zone_is_auto = zone == "auto"sv;
-        auto [p, ec] = std::from_chars(zone.data(), zone.data() + zone.size(), this->exclusive_zone);
-        if (ec != std::errc()) {
-            std::cerr << "ERROR: Unable to decode layer-shell-exclusive-zone value\n";
-            std::exit(EXIT_FAILURE);
+        if (!this->exclusive_zone_is_auto) {
+            auto [p, ec] = std::from_chars(zone.data(), zone.data() + zone.size(), this->exclusive_zone);
+            if (ec != std::errc()) {
+                std::cerr << "ERROR: Unable to decode layer-shell-exclusive-zone value\n";
+                std::exit(EXIT_FAILURE);
+            }
         }
     }
 }
