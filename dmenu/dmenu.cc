@@ -24,7 +24,6 @@
 #define STR_EXPAND(x) #x
 #define STR(x) STR_EXPAND(x)
 
-std::string wm {""};                        // detected or forced window manager name
 std::filesystem::path settings_file {""};
 
 int rows = ROWS_DEFAULT;                    // number of menu items to display

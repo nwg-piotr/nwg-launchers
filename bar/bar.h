@@ -26,8 +26,6 @@
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-extern std::string wm;
-
 class BarBox : public AppBox {
 public:
     BarBox(Glib::ustring, Glib::ustring, Glib::ustring);
