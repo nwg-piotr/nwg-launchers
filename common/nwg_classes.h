@@ -204,27 +204,31 @@ namespace hint {
  * LayerShell uses wlr-layer-shell (or rather gtk-layer-shell library built on top of it)
  */
 struct GenericShell {
+    GenericShell(Config& config);
     Geometry geometry(CommonWindow& window);
     template <typename S> void show(CommonWindow&, S);
+    // some window managers (openbox, notably) do not open window in fullscreen
+    // when requested
+    bool respects_fullscreen = true;
 };
 
 struct SwayShell: GenericShell {
-    SwayShell(CommonWindow& window);
+    SwayShell(CommonWindow& window, Config& config);
+    // use GenericShell::show unless called with Fullscreen
     using GenericShell::show;
     void show(CommonWindow& window, hint::Fullscreen_);
+
     SwaySock sock_;
 };
 
-/* note: LayerShell struct becomes empty, but still exists if layer-shell is not present
- * it is done to avoid writing a lot of ifdefs in PlatformWindow */
-struct LayerShell: GenericShell {
 #ifdef HAVE_GTK_LAYER_SHELL
+struct LayerShell {
     LayerShell(CommonWindow& window, LayerShellArgs args);
     template <typename S> void show(CommonWindow& window, S);
     
     LayerShellArgs args;
-#endif
 };
+#endif
 
 struct PlatformWindow: public CommonWindow {
 public:
@@ -232,7 +236,11 @@ public:
     void fullscreen();
     template <typename S> void show(S);
 private:
-    std::variant<LayerShell, SwayShell, GenericShell> shell;
+    std::variant<
+#ifdef HAVE_GTK_LAYER_SHELL
+                 LayerShell,
+#endif
+                 SwayShell, GenericShell> shell;
 };
 
 template <typename Hint>
@@ -247,7 +255,14 @@ void GenericShell::show(CommonWindow& window, Hint hint) {
     };
     Overloaded place_window {
         [](hint::Auto_) { /* we assume the window is opened at center... */ },
-        [&](hint::Fullscreen_) { window.fullscreen(); },
+        [&](hint::Fullscreen_) {
+            if (this->respects_fullscreen) {
+                window.fullscreen();
+            } else {
+                window.resize(d_w, d_h);
+                window.move(0, 0);
+            }
+        },
         [&,d_w=d_w,d_h=d_h](hint::Side<hint::Horizontal> hint) {
             int w_x = 0, w_y = 0;
             window.get_position(w_x, w_y);
@@ -309,7 +324,6 @@ void LayerShell::show(CommonWindow& window, Hint hint) {
         gtk_layer_set_exclusive_zone(gtk_win, args.exclusive_zone);
     }
 }
-
 #endif
 
 template <typename Hint>

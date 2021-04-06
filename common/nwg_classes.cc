@@ -66,6 +66,7 @@ Config::Config(const InputParser& parser, std::string_view title, std::string_vi
     } else {
         this->wm = detect_wm();
     }
+    std::cout << "wm: " << this->wm << '\n';
 }
 
 CommonWindow::CommonWindow(Config& config): title{config.title} {
@@ -132,6 +133,18 @@ AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment):
     this -> set_always_show_image(true);
 }
 
+GenericShell::GenericShell(Config& config) {
+    // respects_fullscreen is default initialized to true
+    using namespace std::string_view_literals;
+    constexpr std::array wms { "openbox"sv, "i3"sv, "sway"sv };
+    for (auto && wm: wms) {
+        if (config.wm == wm) {
+            respects_fullscreen = false;
+            break;
+        }
+    }
+}
+
 Geometry GenericShell::geometry(CommonWindow& window) {
     Geometry geo;
     auto display = window.get_display();
@@ -146,7 +159,9 @@ Geometry GenericShell::geometry(CommonWindow& window) {
     return geo;
 }
 
-SwayShell::SwayShell(CommonWindow& window) {
+SwayShell::SwayShell(CommonWindow& window, Config& config):
+    GenericShell{config}
+{
     window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
     window.set_decorated(false);
     using namespace std::string_view_literals;
@@ -209,7 +224,7 @@ LayerShell::LayerShell(CommonWindow& window, LayerShellArgs args): args{args} {
 
 PlatformWindow::PlatformWindow(Config& config):
     CommonWindow{config},
-    shell{std::in_place_type_t<GenericShell>{}}
+    shell{std::in_place_type<GenericShell>, config}
 {
     #ifdef HAVE_GTK_LAYER_SHELL
     if (gtk_layer_is_supported()) {
@@ -218,6 +233,6 @@ PlatformWindow::PlatformWindow(Config& config):
     }
     #endif
     if (config.wm == "sway" || config.wm == "i3") {
-        shell.emplace<SwayShell>(*this);
+        shell.emplace<SwayShell>(*this, config);
     }
 }
