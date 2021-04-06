@@ -53,7 +53,7 @@ RGBA InputParser::get_background_color(double default_opacity) const {
     return color;
 }
 
-Config::Config(const InputParser& parser, std::string_view title, std::string_view role):
+Config::Config(const InputParser& parser, std::string_view title, std::string_view role, const Glib::RefPtr<Gdk::Screen>& screen):
     parser{parser},
     title{title},
     role{role}
@@ -64,7 +64,7 @@ Config::Config(const InputParser& parser, std::string_view title, std::string_vi
     if (auto wm_name = parser.getCmdOption("-wm"); !wm_name.empty()){
         this->wm = wm_name;
     } else {
-        this->wm = detect_wm();
+        this->wm = detect_wm(screen->get_display(), screen);
     }
     std::cout << "wm: " << this->wm << '\n';
 }

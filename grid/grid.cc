@@ -265,7 +265,8 @@ int main(int argc, char *argv[]) {
     Config config {
         input,
         "~nwggrid",
-        "~nwggrid"
+        "~nwggrid",
+        screen
     };
     MainWindow window(config, execs, stats);
     window.set_background_color(background_color);

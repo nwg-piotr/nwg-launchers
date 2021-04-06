@@ -23,6 +23,10 @@
 #include "nwgconfig.h"
 #include "nwg_tools.h"
 
+#ifdef HAVE_GDK_X11
+#include <gdk/gdkx.h>
+#endif
+
 // extern variables from nwg_tools.h
 int image_size = 72;
 
@@ -74,10 +78,28 @@ std::filesystem::path get_cache_home() {
 /*
  * Returns window manager name
  * */
-std::string detect_wm() {
+std::string detect_wm(const Glib::RefPtr<Gdk::Display>& display, const Glib::RefPtr<Gdk::Screen>& screen) {
     /* Actually we only need to check if we're on sway, i3 or other WM,
      * but let's try to find a WM name if possible. If not, let it be just "other" */
     std::string wm_name{"other"};
+
+#ifdef GDK_WINDOWING_X11
+    {
+        auto* g_display = display->gobj();
+        auto* g_screen  = screen->gobj();
+        if (GDK_IS_X11_DISPLAY (g_display)) {
+            auto* str_ = gdk_x11_screen_get_window_manager_name (g_screen);
+            if (str_) {
+                Glib::ustring str = str_;
+                wm_name = str.lowercase();
+                return wm_name;
+            }
+        }
+    }
+#else
+    (void)display;
+    (void)screen;
+#endif
 
     for(auto env : {"DESKTOP_SESSION", "SWAYSOCK", "I3SOCK"}) {
         // get environment values

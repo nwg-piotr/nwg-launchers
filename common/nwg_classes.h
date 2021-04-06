@@ -72,7 +72,7 @@ struct Config {
     LayerShellArgs layer_shell_args;
 #endif
 
-    Config(const InputParser&, std::string_view, std::string_view);
+    Config(const InputParser&, std::string_view, std::string_view, const Glib::RefPtr<Gdk::Screen>&);
 };
 
 class CommonWindow : public Gtk::Window {

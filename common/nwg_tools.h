@@ -18,8 +18,6 @@
 #include <string_view>
 #include <vector>
 
-#include <gtkmm.h>
-
 #include <nlohmann/json.hpp>
 
 #include "nwg_classes.h"
@@ -31,7 +29,7 @@ extern int image_size; // button image size in pixels
 std::filesystem::path get_cache_home();
 std::filesystem::path get_config_dir(std::string_view);
 
-std::string detect_wm(void);
+std::string detect_wm(const Glib::RefPtr<Gdk::Display>&, const Glib::RefPtr<Gdk::Screen>&);
 
 std::string get_term(std::string_view);
 std::string get_locale(void);

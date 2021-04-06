@@ -179,7 +179,8 @@ int main(int argc, char *argv[]) {
     Config config {
         input,
         "~nwgdmenu",
-        "~nwgdmenu"
+        "~nwgdmenu",
+        screen
     };
     MainWindow window{ config, all_commands };
     window.set_background_color(background_color);

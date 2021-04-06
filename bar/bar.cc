@@ -176,7 +176,8 @@ int main(int argc, char *argv[]) {
     Config config {
         input,
         "~nwgbar",
-        "~nwgbar"
+        "~nwgbar",
+        screen
     };
     MainWindow window{ config };
     window.set_background_color(background_color);
