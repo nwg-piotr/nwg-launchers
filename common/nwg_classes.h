@@ -255,7 +255,7 @@ void GenericShell::show(CommonWindow& window, Hint hint) {
     };
     Overloaded place_window {
         [](hint::Auto_) { /* we assume the window is opened at center... */ },
-        [&](hint::Fullscreen_) {
+        [&,d_w=d_w,d_h=d_h](hint::Fullscreen_) {
             if (this->respects_fullscreen) {
                 window.fullscreen();
             } else {
