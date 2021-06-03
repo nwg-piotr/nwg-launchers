@@ -2,11 +2,13 @@
 
 [![Build Status](https://travis-ci.com/nwg-piotr/nwg-launchers.svg?branch=master)](https://travis-ci.com/nwg-piotr/nwg-launchers)
 
-As it's never too late to learn something new, I decided to try and code my
-[sgtk-menu](https://github.com/nwg-piotr/sgtk-menu) set of launchers, written in python, from scratch in C++.
-It went not bad, thanks to the help from Contributors - more experienced C++ developers.
+## This project is community-driven
 
-![demo-gif](http://nwg.pl/Lychee/uploads/big/0b284762e075ee04df1d0a378ce5e20a.gif)
+As it seems I'm not going to live long enough to learn C++ properly, I decided to develop my launchers from scratch in Go. You'll find them in the
+[nwg-shell](https://github.com/nwg-piotr/nwg-shell) project. They only support sway, and partially other wlroots-based compositors. The nwg-launchers code
+is a community-driven project from now on, if it comes to further development. I'll only support bug fixes, if any.
+
+## Description
 
 It's damned difficult to make all the stuff behave properly on all window managers. My priorities are:
 
@@ -15,7 +17,7 @@ It's damned difficult to make all the stuff behave properly on all window manage
 
 Feel free to report issues you encounter on other window managers / desktop environments, but they may or may not be resolved.
 
-# Packages
+## Packages
 
 The latest released version is [available](https://aur.archlinux.org/packages/nwg-launchers) in Arch User Repository.
 Current development version (`master` branch) may be installed as the `nwg-launchers-git` AUR package.
@@ -23,19 +25,19 @@ For other Linux distributions see the table below.
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/nwg-launchers.svg)](https://repology.org/project/nwg-launchers/versions)
 
-# Building and installing
+## Building and installing
 
 To build nwg-launchers from source, you need a copy of the source code, which
 can be obtained by cloning the repository or by downloading and unpacking [the
 latest release](https://github.com/nwg-piotr/nwg-launchers/releases/latest).
 
-## Dependencies
+### Dependencies
 
 - `gtkmm3` (`libgtkmm-3.0-dev`)
 - `nlohmann-json` - optional, can be downloaded as a subproject
 - `meson` and `ninja` - build dependencies
 
-## Building
+### Building
 
 This project uses the Meson build system for building and installing the
 executables and the necessary data. The options that can be passed to the
@@ -49,7 +51,7 @@ $ meson builddir -Dbuildtype=release
 $ ninja -C builddir
 ```
 
-## Installation
+### Installation
 
 To install:
 
@@ -66,7 +68,7 @@ $ sudo ninja -C builddir uninstall
 **Note: the descriptions below apply to the `master` branch. Certain features may or may not be available in the latest
 release, as well as in the current package for your Linux distribution.**
 
-# nwggrid
+## nwggrid
 
 This command creates a GNOME-like application grid, with the search box, optionally prepended with a row of `-f` favourites
 (most frequently used apps) or `-p` pinned program icons.
@@ -119,7 +121,7 @@ the opacity, as well default, as defined with the -o <opacity> argument.
 On first run the program creates the `nwg-launchers/nwggrid` folder in your .config directory. You'll find the `style.css` files inside.
 You may edit the style sheet to your liking.
 
-# nwgbar
+## nwgbar
 
 This command creates a horizontal or vertical button bar, out of a template file.
 
@@ -209,7 +211,7 @@ You may use own icon files instead of icon names, like `/path/to/the/file/my_ico
 
 The style sheet makes the buttons look similar to `nwggrid`. You can customize them as well.
 
-# nwgdmenu
+## nwgdmenu
 
 This program provides 2 commands:
 
@@ -276,7 +278,7 @@ In case you use default window borders, an exclusion like this may be necessary:
 for_window [title="~nwg"] border none
 ```
 
-## Openbox Note
+### Openbox Note
 
 To start nwgdmenu from a key binding, use the `-run` argument, e.g.:
 
@@ -288,7 +290,7 @@ To start nwgdmenu from a key binding, use the `-run` argument, e.g.:
 </keybind>
 ```
 
-## Tips & tricks
+### Tips & tricks
 
 ### Hide unwanted icons in nwggrid
 
