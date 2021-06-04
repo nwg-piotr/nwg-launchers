@@ -1,9 +1,3 @@
-/* Don't delete, just in case: the menu anchor is a button */
-button {
-    background: none;
-    border-style: none;
-    box-shadow: none;
-}
 
 box {
     /* Uncomment to set vertical margin
@@ -17,6 +11,6 @@ box {
 }
 
 /* Menu items */
-label {
+#commands {
     padding-left: 5px
 }

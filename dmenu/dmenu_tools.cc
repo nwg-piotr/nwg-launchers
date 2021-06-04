@@ -12,51 +12,31 @@
 /*
  * Returns settings cache file path
  * */
-std::string get_settings_path() {
-    std::string s = "";
-    char* val = getenv("XDG_CACHE_HOME");
-    if (val) {
-        s = val;
-    } else {
-        val = getenv("HOME");
-        s = val;
-        s += "/.cache";
-    }
-    fs::path dir (s);
-    fs::path file ("nwg-dmenu-case");
-    fs::path full_path = dir / file;
-
+std::filesystem::path get_settings_path() {
+    auto full_path = get_cache_home();
+    full_path /= "nwg-dmenu-case";
     return full_path;
 }
 
 /*
- * Returns all command paths
+ * Returns all commands paths
  * */
-std::vector<std::string> list_commands() {
-    std::vector<std::string> command_paths;
-
-    if (auto command_dirs = getenv("PATH"); command_dirs) {
+std::vector<Glib::ustring> list_commands() {
+    std::vector<Glib::ustring> commands;
+    if (auto command_dirs_ = getenv("PATH")) {
+        std::string command_dirs{ command_dirs_ };
         auto paths = split_string(command_dirs, ":");
         std::error_code ec;
-        for (auto& dir : paths) {
-            // if directory exists
+        for (auto && dir: paths) {
             if (fs::is_directory(dir, ec) && !ec) {
-                for (const auto & entry : fs::directory_iterator(dir)) {
-                    command_paths.emplace_back(entry.path());
+                for (auto && entry: fs::directory_iterator(dir)) {
+                    auto cmd = take_last_by(entry.path().native(), "/");
+                    if (cmd.size() > 1 && cmd[0] != '.') {
+                        commands.emplace_back(cmd.data(), cmd.size());
+                    }
                 }
             }
         }
     }
-    return command_paths;
-}
-
-void on_item_clicked(std::string cmd) {
-    if (dmenu_run) {
-        cmd = cmd + " &";
-        const char *command = cmd.c_str();
-        std::system(command);
-    } else {
-        std::cout << cmd;
-    }
-    Gtk::Main::quit();
+    return commands;
 }

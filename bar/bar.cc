@@ -13,10 +13,8 @@
 
 #include "nwg_classes.h"
 #include "nwg_tools.h"
-#include "on_event.h"
 #include "bar.h"
 
-std::string wm {""};            // detected or forced window manager name
 const char* const HELP_MESSAGE =
 "GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
 Options:\n\
@@ -29,7 +27,10 @@ Options:\n\
 -o <opacity>     background opacity (0.0 - 1.0, default 0.9)\n\
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
 -s <size>        button image size (default: 72)\n\
--wm <wmname>     window manager name (if can not be detected)\n";
+-wm <wmname>     window manager name (if can not be detected)\n\n\
+[requires layer-shell]:\n\
+-layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
+-layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
 
 int main(int argc, char *argv[]) {
     std::string definition_file {"bar.json"};
@@ -80,11 +81,6 @@ int main(int argc, char *argv[]) {
     auto css_name = input.getCmdOption("-c");
     if (!css_name.empty()){
         custom_css_file = css_name;
-    }
-
-    auto wm_name = input.getCmdOption("-wm");
-    if (!wm_name.empty()){
-        wm = wm_name;
     }
 
     auto background_color = input.get_background_color(0.9);
@@ -151,21 +147,7 @@ int main(int argc, char *argv[]) {
         bar_entries = get_bar_entries(std::move(bar_json));
     }
 
-    /* get current WM name if not forced */
-    if (wm.empty()) {
-        wm = detect_wm();
-    }
-
-    std::cout << "WM: " << wm << "\n";
-
-    /* turn off borders, enable floating on sway */
-    if (wm == "sway") {
-        SwaySock sock;
-        sock.run("for_window [title=\"~nwgbar*\"] floating enable");
-        sock.run("for_window [title=\"~nwgbar*\"] border none");
-    }
-
-    Gtk::Main kit(argc, argv);
+    auto app = Gtk::Application::create();
 
     auto provider = Gtk::CssProvider::create();
     auto display = Gdk::Display::get_default();
@@ -191,26 +173,14 @@ int main(int argc, char *argv[]) {
         std::cout << "Using " << default_css_file << '\n';
     }
 
-    MainWindow window;
+    Config config {
+        input,
+        "~nwgbar",
+        "~nwgbar",
+        screen
+    };
+    MainWindow window{ config };
     window.set_background_color(background_color);
-    window.show();
-
-    window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
-
-    /* Detect focused display geometry: {x, y, width, height} */
-    auto geometry = display_geometry(wm, display, window.get_window());
-    std::cout << "Focused display: " << geometry.x << ", " << geometry.y << ", " << geometry.width << ", "
-    << geometry.height << '\n';
-
-    int x = geometry.x;
-    int y = geometry.y;
-    int w = geometry.width;
-    int h = geometry.height;
-
-    if (wm == "sway" || wm == "i3" || wm == "openbox") {
-        window.resize(w, h);
-        window.move(x, y);
-    }
 
     Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
     outer_box.set_spacing(15);
@@ -263,13 +233,12 @@ int main(int argc, char *argv[]) {
 
     window.add(outer_box);
     window.show_all_children();
+    window.show(hint::Fullscreen);
 
     gettimeofday(&tp, NULL);
     long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
     std::cout << "Time: " << end_ms - start_ms << "ms\n";
 
-    Gtk::Main::run(window);
-
-    return 0;
+    return app->run(window);
 }

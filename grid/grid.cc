@@ -15,19 +15,15 @@
 
 #include "nwg_tools.h"
 #include "nwg_classes.h"
-#include "on_event.h"
 #include "grid.h"
 
 bool pins = false;              // whether to display pinned
 bool favs = false;              // whether to display favorites
-std::string wm {""};            // detected or forced window manager name
 std::string term {""};
 std::size_t num_col = 6;        // number of grid columns
 
-std::string pinned_file {};
-std::vector<std::string> pinned;    // list of commands of pinned icons
-ns::json cache;
-std::string cache_file {};
+std::filesystem::path pinned_file;
+std::filesystem::path cache_file;
 
 const char* const HELP_MESSAGE =
 "GTK application grid: nwggrid " VERSION_STR " (c) 2020 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
@@ -43,10 +39,13 @@ Options:\n\
 -s <size>        button image size (default: 72)\n\
 -c <name>        css file name (default: style.css)\n\
 -l <ln>          force use of <ln> language\n\
--wm <wmname>     window manager name (if can not be detected)\n";
+-wm <wmname>     window manager name (if can not be detected)\n\n\
+[requires layer-shell]:\n\
+-layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
+-layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
 
 int main(int argc, char *argv[]) {
-    std::string custom_css_file {"style.css"};
+    std::filesystem::path custom_css_file{ "style.css" };
 
     struct timeval tp;
     gettimeofday(&tp, NULL);
@@ -63,12 +62,14 @@ int main(int argc, char *argv[]) {
     }
     favs = input.cmdOptionExists("-f") && !input.cmdOptionExists("-d");
     pins = input.cmdOptionExists("-p") && !input.cmdOptionExists("-d");
-    auto forced_lang = input.getCmdOption("-l");
-    if (!forced_lang.empty()){
+    if (auto forced_lang = input.getCmdOption("-l"); !forced_lang.empty()){
         lang = forced_lang;
+    } else {
+        lang = get_locale();
     }
-    auto cols = input.getCmdOption("-n");
-    if (!cols.empty()) {
+    std::cout << "Locale: " << lang << "\n";
+    
+    if (auto cols = input.getCmdOption("-n"); !cols.empty()) {
         int n_c;
         auto [p, ec] = std::from_chars(cols.data(), cols.data() + cols.size(), n_c);
         if (ec == std::errc()) {
@@ -82,14 +83,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    auto css_name = input.getCmdOption("-c");
-    if (!css_name.empty()){
+    if (auto css_name = input.getCmdOption("-c"); !css_name.empty()){
         custom_css_file = css_name;
-    }
-
-    auto wm_name = input.getCmdOption("-wm");
-    if (!wm_name.empty()){
-        wm = wm_name;
     }
 
     auto background_color = input.get_background_color(0.9);
@@ -109,41 +104,35 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    /* get current WM name if not forced */
-    if (wm.empty()) {
-        wm = detect_wm();
-    }
-    std::cout << "WM: " << wm << "\n";
-
-    /* get lang if not yet forced */
-    if (lang.empty()) {
-        lang = get_locale();
-    }
-    std::cout << "Locale: " << lang << "\n";
 
     auto cache_home = get_cache_home();
+    // This will be read-only, to find n most clicked items (n = number of grid columns)
+    std::vector<CacheEntry> favourites;
     if (favs) {
         cache_file = cache_home / "nwg-fav-cache";
         try {
-            cache = json_from_file(cache_file);
+            auto cache = json_from_file(cache_file);
+            if (cache.size() > 0) {
+                std::cout << cache.size() << " cache entries loaded\n";
+            } else {
+                std::cout << "No cache entries loaded\n";
+            }
+            auto n = std::min(num_col, cache.size());
+            favourites = get_favourites(std::move(cache), n);
         }  catch (...) {
-            std::cout << "Cache file not found, creating...\n";
-            save_json(cache, cache_file);
-        }
-        if (cache.size() > 0) {
-            std::cout << cache.size() << " cache entries loaded\n";
-        } else {
-            std::cout << "No cached favourites found\n";
+            // TODO: only save cache if favs were changed
+            std::cerr << "Failed to read cache file '" << cache_file << "'\n";
         }
     }
 
+    std::vector<std::string> pinned;
     if (pins) {
         pinned_file = cache_home / "nwg-pin-cache";
         pinned = get_pinned(pinned_file);
         if (pinned.size() > 0) {
-          std::cout << pinned.size() << " pinned entries loaded\n";
+            std::cout << pinned.size() << " pinned entries loaded\n";
         } else {
-          std::cout << "No pinned entries found\n";
+            std::cout << "No pinned entries found\n";
         }
     }
 
@@ -168,19 +157,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // This will be read-only, to find n most clicked items (n = number of grid columns)
-    std::vector<CacheEntry> favourites;
-    if (cache.size() > 0) {
-        auto n = std::min(num_col, cache.size());
-        favourites = get_favourites(std::move(cache), n);
-    }
-
-    auto special_dirs = input.getCmdOption("-d");
-    std::vector<std::string> dirs;
-    if (special_dirs.empty()) {
-        // get all applications dirs
-        dirs = get_app_dirs();
-    } else {
+    std::vector<std::filesystem::path> dirs;
+    if (auto special_dirs = input.getCmdOption("-d"); !special_dirs.empty()) {
         using namespace std::string_view_literals;
         // use special dirs specified with -d argument (feature request #122)
         auto dirs_ = split_string(special_dirs, ":");
@@ -194,6 +172,9 @@ int main(int argc, char *argv[]) {
                 dirs.emplace_back(dir);
             }
         }
+    } else {
+        // get all applications dirs
+        dirs = get_app_dirs();
     }
 
     gettimeofday(&tp, NULL);
@@ -281,26 +262,15 @@ int main(int argc, char *argv[]) {
     provider->load_from_path(css_file);
     std::cout << "Using " << css_file << '\n';
 
-    MainWindow window(execs, stats);
+    Config config {
+        input,
+        "~nwggrid",
+        "~nwggrid",
+        screen
+    };
+    MainWindow window(config, execs, stats);
     window.set_background_color(background_color);
-    window.show();
-
-    /* Detect focused display geometry: {x, y, w, h} */
-    auto [x, y, w, h] = display_geometry(wm, display, window.get_window());
-    std::cout << "Focused display: " << x << ", " << y << ", " << w << ", "
-    << h << '\n';
-
-    /* turn off borders, enable floating on sway */
-    if (wm == "sway") {
-        SwaySock sock;
-        sock.run("for_window [title=~nwggrid*] floating enable");
-        sock.run("for_window [title=~nwggrid*] border none");
-    }
-
-    if (wm == "sway" || wm == "i3" || wm == "openbox") {
-        window.resize(w, h);
-        window.move(x, y);
-    }
+    window.show(hint::Fullscreen);
 
     gettimeofday(&tp, NULL);
     long int images_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
@@ -344,5 +314,6 @@ int main(int argc, char *argv[]) {
     format("\tbs:      ", bs_ms, images_ms);
     format("\tcommons: ", commons_ms, bs_ms);
 
+    
     return app->run(window);
 }
