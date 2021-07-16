@@ -306,7 +306,7 @@ int main(int argc, char *argv[]) {
         long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
         auto format = [](auto&& title, auto from, auto to) {
-            Log::info(title, to - from, "ms");
+            Log::plain(title, to - from, "ms");
         };
         format("Total: ", start_ms, end_ms);
         format("\tgrids:   ", grids_ms, end_ms);

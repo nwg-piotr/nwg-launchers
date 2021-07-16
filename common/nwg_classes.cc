@@ -147,13 +147,6 @@ GenericShell::GenericShell(Config& config) {
 
 Geometry GenericShell::geometry(CommonWindow& window) {
     Geometry geo;
-    auto display = window.get_display();
-    // TODO: would it work under wayland?
-    auto device_mgr = display->get_device_manager();
-    auto device = device_mgr->get_client_pointer();
-    int x, y;
-    device->get_position(x, y);
-
     auto get_geo = [&](auto && monitor) {
         Gdk::Rectangle rect;
         monitor->get_geometry(rect);
@@ -162,10 +155,19 @@ Geometry GenericShell::geometry(CommonWindow& window) {
         geo.width = rect.get_width();
         geo.height = rect.get_height();
     };
+    auto display = window.get_display();
 
+#ifdef GDK_WINDOWING_X11
+    // only works on X11, reports 0,0 on wayland
+    auto device_mgr = display->get_device_manager();
+    auto device = device_mgr->get_client_pointer();
+    int x, y;
+    device->get_position(x, y);
     if (auto monitor = display->get_monitor_at_point(x, y)) {
         get_geo(monitor);
-    } else if (auto monitor = display->get_monitor_at_window(window.get_window())) {
+    } else
+#endif
+    if (auto monitor = display->get_monitor_at_window(window.get_window())) {
         get_geo(monitor);
     } else {
         throw std::logic_error{ "No monitor at window" };
