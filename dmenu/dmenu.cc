@@ -113,16 +113,16 @@ int main(int argc, char *argv[]) {
             if (r > 0 && r <= 100) {
                 rows = r;
             } else {
-                std::cerr << "\nERROR: Number of rows must be in range 1 - 100\n\n";
+                Log::error("Number of rows must be in range 1 - 100");
             }
         } else {
-            std::cerr << "\nERROR: Invalid rows number\n\n";
+            Log::error("Invalid rows number");
         }
     }
 
     auto config_dir = get_config_dir("nwgdmenu");
     if (!fs::is_directory(config_dir)) {
-        std::cout << "Config dir not found, creating...\n";
+        Log::info("Config dir not found, creating...");
         fs::create_directories(config_dir);
     }
 
@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwgdmenu/style.css", default_css_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cerr << "Failed copying default style.css\n";
+            Log::error("Failed copying default style.css");
         }
     }
 
@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
     if (dmenu_run) {
         /* get a list of paths to all commands from all application dirs */
         all_commands = list_commands();
-        std::cout << all_commands.size() << " commands found\n";
+        Log::info(all_commands.size(), " commands found");
 
         /* Sort case insensitive */
         std::sort(all_commands.begin(), all_commands.end(), [](auto& a, auto& b) {
@@ -163,17 +163,17 @@ int main(int argc, char *argv[]) {
     auto display = Gdk::Display::get_default();
     auto screen = display->get_default_screen();
     if (!provider || !display || !screen) {
-        std::cerr << "ERROR: Failed to initialize GTK\n";
+        Log::error("Failed to initialize GTK");
         return EXIT_FAILURE;
     }
     Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
 
     if (std::filesystem::is_regular_file(css_file)) {
         provider->load_from_path(css_file);
-        std::cout << "Using " << css_file << '\n';
+        Log::info("Using ", css_file);
     } else {
         provider->load_from_path(default_css_file);
-        std::cout << "Using " << default_css_file << '\n';
+        Log::info("Using ", default_css_file);
     }
 
     Config config {

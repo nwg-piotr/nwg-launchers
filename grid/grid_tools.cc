@@ -171,7 +171,7 @@ std::vector<std::string> get_pinned(const std::filesystem::path& pinned_file) {
     std::vector<std::string> lines;
     std::ifstream in(pinned_file);
     if(!in) {
-        std::cerr << "Could not find " << pinned_file << ", creating!" << std::endl;
+        Log::info("Could not find ", pinned_file, ", creating!");
         save_string_to_file("", pinned_file);
         return lines;
     }

@@ -44,7 +44,7 @@ RGBA InputParser::get_background_color(double default_opacity) const {
         if (opacity >= 0.0 && opacity <= 1.0) {
             color.alpha = opacity;
         } else {
-            std::cerr << "ERROR: Opacity must be in range 0.0 to 1.0\n";
+            Log::error("Opacity must be in range 0.0 to 1.0");
         }
     }
     if (auto color_str = getCmdOption("-b"); !color_str.empty()) {
@@ -66,7 +66,7 @@ Config::Config(const InputParser& parser, std::string_view title, std::string_vi
     } else {
         this->wm = detect_wm(screen->get_display(), screen);
     }
-    std::cout << "wm: " << this->wm << '\n';
+    Log::info("wm: ", this->wm);
 }
 
 CommonWindow::CommonWindow(Config& config): title{config.title} {
@@ -104,7 +104,7 @@ void CommonWindow::check_screen() {
     auto visual = screen -> get_rgba_visual();
 
     if (!visual) {
-        std::cerr << "Your screen does not support alpha channels!\n";
+        Log::warn("Your screen does not support alpha channels!");
     }
     _SUPPORTS_ALPHA = (bool)visual;
     gtk_widget_set_visual(GTK_WIDGET(gobj()), visual->gobj());
@@ -214,7 +214,7 @@ LayerShellArgs::LayerShellArgs(const InputParser& parser) {
             }
         }
         if (!found) {
-            std::cerr << "ERROR: Incorrect layer-shell-layer value\n";
+            Log::error("Incorrect layer-shell-layer value");
             std::exit(EXIT_FAILURE);
         }
     }
@@ -223,7 +223,7 @@ LayerShellArgs::LayerShellArgs(const InputParser& parser) {
         if (!this->exclusive_zone_is_auto) {
             auto [p, ec] = std::from_chars(zone.data(), zone.data() + zone.size(), this->exclusive_zone);
             if (ec != std::errc()) {
-                std::cerr << "ERROR: Unable to decode layer-shell-exclusive-zone value\n";
+                Log::error("Unable to decode layer-shell-exclusive-zone value");
                 std::exit(EXIT_FAILURE);
             }
         }

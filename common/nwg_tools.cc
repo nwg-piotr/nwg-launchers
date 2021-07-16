@@ -42,7 +42,7 @@ std::filesystem::path get_config_dir(std::string_view app) {
     if (!val) {
         val = getenv("HOME");
         if (!val) {
-            std::cerr << "ERROR: Couldn't find config directory, $HOME not set!";
+            Log::error("Couldn't find config directory, $HOME not set!");
             std::exit(EXIT_FAILURE);
         }
         path = val;
@@ -66,7 +66,7 @@ std::filesystem::path get_cache_home() {
     } else {
         home_ = getenv("HOME");
         if (!home_) {
-            std::cerr << "ERROR: Neither XDG_CACHE_HOME nor HOME are not defined\n";
+            Log::error("Neither XDG_CACHE_HOME nor HOME are not defined");
             std::exit(EXIT_FAILURE);
         }
         home = home_;
@@ -243,7 +243,7 @@ SwaySock::SwaySock() {
 
 SwaySock::~SwaySock() {
     if (close(sock_)) {
-        std::cerr << "ERROR: Unable to close socket\n";
+        Log::error("Unable to close socket");
     }
 }
 
@@ -346,7 +346,7 @@ Geometry display_geometry(std::string_view wm, Glib::RefPtr<Gdk::Display> displa
         }
         retry++;
         if (retry > 100) {
-            std::cerr << "\nERROR: Failed checking display geometry, tries: " << retry << "\n\n";
+            Log::error("Failed checking display geometry, tries: ", retry);
             break;
         }
     }
@@ -498,11 +498,11 @@ void decode_color(std::string_view string, RGBA& color) {
             color.blue = ((rgba >> 8) & 0xff) / 255.0;
             color.alpha = ((rgba) & 0xff) / 255.0;
         } else {
-            std::cerr << "ERROR: invalid color value. Should be RRGGBB or RRGGBBAA\n";
+            Log::error("invalid color value. Should be RRGGBB or RRGGBBAA");
         }
     }
     catch (...) {
-        std::cerr << "Error parsing RGB(A) value\n";
+        Log::error("Unable to parse RGB(A) value");
     }
 }
 

@@ -95,16 +95,16 @@ int main(int argc, char *argv[]) {
             if (i_s >= 16 && i_s <= 256) {
                 image_size = i_s;
             } else {
-                std::cerr << "\nERROR: Size must be in range 16 - 256\n\n";
+                Log::error("Size must be in range 16 - 256\n");
             }
         } else {
-            std::cerr << "\nERROR: Image size should be valid integer in range 16 - 256\n\n";
+            Log::error("Image size should be valid integer in range 16 - 256\n");
         }
     }
 
     auto config_dir = get_config_dir("nwgbar");
     if (!fs::is_directory(config_dir)) {
-        std::cout << "Config dir not found, creating...\n";
+        Log::info("Config dir not found, creating...");
         fs::create_directories(config_dir);
     }
 
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwgbar/style.css", default_css_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cerr << "Failed copying default style.css\n";
+            Log::error("Failed copying default style.css");
         }
     }
 
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwgbar/bar.json", default_bar_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cerr << "Failed copying default template\n";
+            Log::error("Failed copying default template");
         }
     }
 
@@ -137,10 +137,10 @@ int main(int argc, char *argv[]) {
     try {
         bar_json = json_from_file(custom_bar_file);
     }  catch (...) {
-        std::cerr << "ERROR: Template file not found, using default\n";
+        Log::error("Template file not found, using default");
         bar_json = json_from_file(default_bar_file);
     }
-    std::cout << bar_json.size() << " bar entries loaded\n";
+    Log::info(bar_json.size(), " bar entries loaded");
 
     std::vector<BarEntry> bar_entries {};
     if (bar_json.size() > 0) {
@@ -153,13 +153,13 @@ int main(int argc, char *argv[]) {
     auto display = Gdk::Display::get_default();
     auto screen = display->get_default_screen();
     if (!provider || !display || !screen) {
-        std::cerr << "ERROR: Failed to initialize GTK\n";
+        Log::error("Failed to initialize GTK");
         return EXIT_FAILURE;
     }
     Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
     auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
     if (!icon_theme) {
-        std::cerr << "ERROR: Failed to load icon theme\n";
+        Log::error("Failed to load icon theme");
         return EXIT_FAILURE;
     }
     auto& icon_theme_ref = *icon_theme.get();
@@ -167,10 +167,10 @@ int main(int argc, char *argv[]) {
 
     if (std::filesystem::is_regular_file(css_file)) {
         provider->load_from_path(css_file);
-        std::cout << "Using " << css_file << '\n';
+        Log::info("Using ", css_file);
     } else {
         provider->load_from_path(default_css_file);
-        std::cout << "Using " << default_css_file << '\n';
+        Log::info("Using ", default_css_file);
     }
 
     Config config {
@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&tp, NULL);
     long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-    std::cout << "Time: " << end_ms - start_ms << "ms\n";
+    Log::info("Time: ", end_ms - start_ms, "ms");
 
     return app->run(window);
 }

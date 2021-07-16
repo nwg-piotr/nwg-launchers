@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
         } else {
             lang = get_locale();
         }
-        std::cout << "Locale: " << lang << "\n";
+        Log::info("Locale: ", lang);
 
         if (auto cols = input.getCmdOption("-n"); !cols.empty()) {
             int n_c;
@@ -77,10 +77,10 @@ int main(int argc, char *argv[]) {
                 if (n_c > 0 && n_c < 100) {
                     num_col = n_c;
                 } else {
-                    std::cerr << "\nERROR: Columns must be in range 1 - 99\n\n";
+                    Log::error("Columns must be in range 1 - 99\n");
                 }
             } else {
-                std::cerr << "\nERROR: Invalid number of columns\n\n";
+                Log::error("Invalid number of columns\n");
             }
         }
 
@@ -98,10 +98,10 @@ int main(int argc, char *argv[]) {
                 if (i_s >= 16 && i_s <= 256) {
                     image_size = i_s;
                 } else {
-                    std::cerr << "\nERROR: Size must be in range 16 - 256\n\n";
+                    Log::error("Size must be in range 16 - 256\n");
                 }
             } else {
-                std::cerr << "\nERROR: Invalid image size\n\n";
+                Log::error("Invalid image size");
             }
         }
 
@@ -114,15 +114,15 @@ int main(int argc, char *argv[]) {
             try {
                 auto cache = json_from_file(cache_file);
                 if (cache.size() > 0) {
-                    std::cout << cache.size() << " cache entries loaded\n";
+                    Log::info(cache.size(), " cache entries loaded");
                 } else {
-                    std::cout << "No cache entries loaded\n";
+                    Log::info("No cache entries loaded");
                 }
                 auto n = std::min(num_col, cache.size());
                 favourites = get_favourites(std::move(cache), n);
             }  catch (...) {
                 // TODO: only save cache if favs were changed
-                std::cerr << "Failed to read cache file '" << cache_file << "'\n";
+                Log::error("Failed to read cache file '", cache_file, "'");
             }
         }
 
@@ -131,15 +131,15 @@ int main(int argc, char *argv[]) {
             pinned_file = cache_home / "nwg-pin-cache";
             pinned = get_pinned(pinned_file);
             if (pinned.size() > 0) {
-                std::cout << pinned.size() << " pinned entries loaded\n";
+                Log::info(pinned.size(), " pinned entries loaded");
             } else {
-                std::cout << "No pinned entries found\n";
+                Log::info("No pinned entries found");
             }
         }
 
         auto config_dir = get_config_dir("nwggrid");
         if (!fs::is_directory(config_dir)) {
-            std::cout << "Config dir not found, creating...\n";
+            Log::info("Config dir not found, creating...");
             fs::create_directories(config_dir);
         }
 
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
             try {
                 fs::copy_file(DATA_DIR_STR "/nwggrid/style.css", default_css_file, fs::copy_options::overwrite_existing);
             } catch (...) {
-                std::cerr << "ERROR: Failed copying default style.css\n";
+                Log::error("Failed copying default style.css");
             }
         }
 
@@ -163,12 +163,12 @@ int main(int argc, char *argv[]) {
             using namespace std::string_view_literals;
             // use special dirs specified with -d argument (feature request #122)
             auto dirs_ = split_string(special_dirs, ":");
-            std::cout << "\nUsing custom .desktop files path(s):\n";
+            Log::info("Using custom .desktop files path(s):\n");
             std::array status { "' [INVALID]\n"sv, "' [OK]\n"sv };
             for (auto && dir: dirs_) {
                 std::error_code ec;
                 auto is_dir = std::filesystem::is_directory(dir, ec) && !ec;
-                std::cout << '\'' << dir << status[is_dir];
+                Log::plain('\'', dir, status[is_dir]);
                 if (is_dir) {
                     dirs.emplace_back(dir);
                 }
@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
             auto dir_iter = fs::directory_iterator(dir, ec);
             for (auto& entry : dir_iter) {
                 if (ec) {
-                    std::cerr << ec.message() << '\n';
+                    Log::error(ec.message());
                     ec.clear();
                     continue;
                 }
@@ -245,13 +245,13 @@ int main(int argc, char *argv[]) {
         auto display = Gdk::Display::get_default();
         auto screen = display->get_default_screen();
         if (!provider || !display || !screen) {
-            std::cerr << "ERROR: Failed to initialize GTK\n";
+            Log::error("Failed to initialize GTK");
             return EXIT_FAILURE;
         }
         Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
         auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
         if (!icon_theme) {
-            std::cerr << "ERROR: Failed to load icon theme\n";
+            Log::error("Failed to load icon theme");
             std::exit(EXIT_FAILURE);
         }
         auto& icon_theme_ref = *icon_theme.get();
@@ -261,7 +261,7 @@ int main(int argc, char *argv[]) {
             css_file = default_css_file;
         }
         provider->load_from_path(css_file);
-        std::cout << "Using " << css_file << '\n';
+        Log::info("Using ", css_file, '\n');
 
         Config config {
             input,
@@ -305,8 +305,8 @@ int main(int argc, char *argv[]) {
         gettimeofday(&tp, NULL);
         long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-        auto format = [&cout=std::cout](auto&& title, auto from, auto to) {
-            cout << title << to - from << "ms\n";
+        auto format = [](auto&& title, auto from, auto to) {
+            Log::info(title, to - from, "ms");
         };
         format("Total: ", start_ms, end_ms);
         format("\tgrids:   ", grids_ms, end_ms);
@@ -317,7 +317,7 @@ int main(int argc, char *argv[]) {
 
         return app->run(window);
     } catch (const Glib::FileError& error) {
-        std::cerr << "ERROR: " << error.what() << '\n';
+        Log::error(error.what());
         return EXIT_FAILURE;
     }
 }

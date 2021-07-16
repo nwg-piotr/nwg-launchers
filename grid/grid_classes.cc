@@ -383,7 +383,7 @@ void GridBox::on_activate() {
     std::string cmd = toplevel.exec_of(*this);
     cmd += " &";
     if (cmd.find(term) == 0) {
-        std::cout << "Running: \'" << cmd << "\'\n";
+        Log::info("Running: \'", cmd, "\'");
     }
     std::system(cmd.data());
     toplevel.close();
