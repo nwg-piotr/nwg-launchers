@@ -19,18 +19,8 @@
 #include "nwg_classes.h"
 #include "dmenu.h"
 
-#define ROWS_DEFAULT 20
-
 #define STR_EXPAND(x) #x
 #define STR(x) STR_EXPAND(x)
-
-std::filesystem::path settings_file {""};
-
-int rows = ROWS_DEFAULT;                    // number of menu items to display
-
-bool dmenu_run = false;
-bool show_searchbox = true;
-bool case_sensitive = true;
 
 const char* const HELP_MESSAGE =
 "GTK dynamic menu: nwgdmenu " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
@@ -57,31 +47,12 @@ Insert        switch case sensitivity\n";
 int main(int argc, char *argv[]) {
     std::string custom_css_file {"style.css"};
 
-    // For now the settings file only determines if case_sensitive was turned on.
-    settings_file = get_settings_path();
-    if (std::ifstream settings{ settings_file }) {
-        std::string sensitivity;
-        settings >> sensitivity;
-        case_sensitive = sensitivity == "case_sensitive";
-    }
-
     create_pid_file_or_kill_pid("nwgdmenu");
 
     InputParser input(argc, argv);
     if (input.cmdOptionExists("-h")){
         std::cout << HELP_MESSAGE;
         std::exit(0);
-    }
-
-    // We will build dmenu out of commands found in $PATH if nothing has been passed by stdin
-    dmenu_run = isatty(STDIN_FILENO) == 1;
-
-    if (input.cmdOptionExists("-run")){
-        dmenu_run = true;
-    }
-
-    if (input.cmdOptionExists("-n")){
-        show_searchbox = false;
     }
 
     auto halign = input.getCmdOption("-ha");
@@ -104,22 +75,6 @@ int main(int argc, char *argv[]) {
 
     auto background_color = input.get_background_color(0.3);
 
-    if (auto rw = input.getCmdOption("-r"); !rw.empty()){
-        int r;
-        auto from = rw.data();
-        auto to = from + rw.size();
-        auto [p, ec] = std::from_chars(from, to, r);
-        if (ec == std::errc()) {
-            if (r > 0 && r <= 100) {
-                rows = r;
-            } else {
-                Log::error("Number of rows must be in range 1 - 100");
-            }
-        } else {
-            Log::error("Invalid rows number");
-        }
-    }
-
     auto config_dir = get_config_dir("nwgdmenu");
     if (!fs::is_directory(config_dir)) {
         Log::info("Config dir not found, creating...");
@@ -136,24 +91,6 @@ int main(int argc, char *argv[]) {
             fs::copy_file(DATA_DIR_STR "/nwgdmenu/style.css", default_css_file, fs::copy_options::overwrite_existing);
         } catch (...) {
             Log::error("Failed copying default style.css");
-        }
-    }
-
-    std::vector<Glib::ustring> all_commands;
-    if (dmenu_run) {
-        /* get a list of paths to all commands from all application dirs */
-        all_commands = list_commands();
-        Log::info(all_commands.size(), " commands found");
-
-        /* Sort case insensitive */
-        std::sort(all_commands.begin(), all_commands.end(), [](auto& a, auto& b) {
-            return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(), [](auto a, auto b) {
-                return std::tolower(a) < std::tolower(b);
-            });
-        });
-    } else {
-        for (std::string line; std::getline(std::cin, line);) {
-            all_commands.emplace_back(std::move(line));
         }
     }
 
@@ -182,7 +119,26 @@ int main(int argc, char *argv[]) {
         "~nwgdmenu",
         screen
     };
-    MainWindow window{ config, all_commands };
+    DmenuConfig dmenu_config { config };
+
+    std::vector<Glib::ustring> all_commands;
+    if (dmenu_config.dmenu_run) {
+        /* get a list of paths to all commands from all application dirs */
+        all_commands = list_commands();
+        Log::info(all_commands.size(), " commands found");
+
+        /* Sort case insensitive */
+        std::sort(all_commands.begin(), all_commands.end(), [](auto& a, auto& b) {
+            return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(), [](auto a, auto b) {
+                return std::tolower(a) < std::tolower(b);
+            });
+        });
+    } else {
+        for (std::string line; std::getline(std::cin, line);) {
+            all_commands.emplace_back(std::move(line));
+        }
+    }
+    MainWindow window{ dmenu_config, all_commands };
     window.set_background_color(background_color);
     window.show_all_children();
     switch (halign.empty() + valign.empty() * 2) {

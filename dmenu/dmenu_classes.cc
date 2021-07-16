@@ -16,7 +16,42 @@
 
 #include <filesystem>
 #include <fstream>
+#include <charconv>
+
+#include "nwg_tools.h"
 #include "dmenu.h"
+
+DmenuConfig::DmenuConfig(Config& config):
+    config{ config },
+    settings_file{ get_settings_path() }
+{
+    // For now the settings file only determines if case_sensitive was turned on.
+     if (std::ifstream settings{ settings_file }) {
+        std::string sensitivity;
+        settings >> sensitivity;
+        case_sensitive = sensitivity == "case_sensitive";
+    }
+
+    // We will build dmenu out of commands found in $PATH if nothing has been passed by stdin
+    dmenu_run = config.parser.cmdOptionExists("-run") || isatty(STDIN_FILENO) == 1;
+    show_searchbox = !config.parser.cmdOptionExists("-n");
+
+    if (auto rw = config.parser.getCmdOption("-r"); !rw.empty()){
+        int r;
+        auto from = rw.data();
+        auto to = from + rw.size();
+        auto [p, ec] = std::from_chars(from, to, r);
+        if (ec == std::errc()) {
+            if (r > 0 && r <= 100) {
+                rows = r;
+            } else {
+                Log::error("Number of rows must be in range 1 - 100");
+            }
+        } else {
+            Log::error("Invalid rows number");
+        }
+    }
+}
 
 inline auto set_searchbox_placeholder = [](auto && searchbox, auto case_sensitive) {
     constexpr std::array placeholders { "TYPE TO SEARCH", "Type to Search" };
@@ -34,10 +69,11 @@ inline auto build_commands_list = [](auto && dmenu, auto && commands, auto max) 
     }
 };
 
-MainWindow::MainWindow(Config& config, std::vector<Glib::ustring>& src):
-    PlatformWindow(config),
+MainWindow::MainWindow(DmenuConfig& dmenu_config, std::vector<Glib::ustring>& src):
+    PlatformWindow(dmenu_config.config),
     commands{ 1, false, Gtk::SELECTION_SINGLE },
-    commands_source{ src }
+    commands_source{ src },
+    config{ dmenu_config }
 {
     // different shells emit different events
     auto display_name = this->get_screen()->get_display()->get_name();
@@ -71,8 +107,8 @@ MainWindow::MainWindow(Config& config, std::vector<Glib::ustring>& src):
         this->close();
     });
     searchbox.set_name("searchbox");
-    if (show_searchbox) {
-        set_searchbox_placeholder(searchbox, case_sensitive);
+    if (config.show_searchbox) {
+        set_searchbox_placeholder(searchbox, config.case_sensitive);
         searchbox.signal_search_changed().connect(sigc::mem_fun(*this, &MainWindow::filter_view));
         vbox.pack_start(searchbox, false, false);
     }
@@ -80,15 +116,15 @@ MainWindow::MainWindow(Config& config, std::vector<Glib::ustring>& src):
     
     add(vbox);
     
-    build_commands_list(*this, commands_source, rows);
+    build_commands_list(*this, commands_source, config.rows);
 }
 
 MainWindow::~MainWindow() {
     using namespace std::string_view_literals;
     if (case_sensitivity_changed) {
-        std::ofstream file{ settings_file, std::ios::trunc };
+        std::ofstream file{ config.settings_file, std::ios::trunc };
         constexpr std::array values { "case_insensitive"sv, "case_sensitive"sv };
-        file << values[case_sensitive];
+        file << values[config.case_sensitive];
     }
 }
 
@@ -116,13 +152,13 @@ void MainWindow::filter_view() {
             return count;
         };
         // append entries matching `exact`, then entries matching `almost` (at most `max` entries)
-        auto fill_all = [this,fill_matches,rows=rows](auto && exact, auto && almost) {
+        auto fill_all = [this,fill_matches,rows=config.rows](auto && exact, auto && almost) {
             auto count = fill_matches(this->commands_source, exact, rows);
             if (count < rows) {
                 fill_matches(this->commands_source, almost, rows - count);
             }
         };
-        if (case_sensitive) {
+        if (config.case_sensitive) {
             fill_all([&a=search_phrase](auto && b){ return b.find(a) == 0; },
                      [&a=search_phrase](auto && b){ auto r = b.find(a); return r > 0 && r != a.npos; });
         } else {
@@ -132,7 +168,7 @@ void MainWindow::filter_view() {
         }
     } else {
         // searchentry is clear, show all options
-        build_commands_list(*this, commands_source, rows);
+        build_commands_list(*this, commands_source, config.rows);
     }
     select_first_item();
 }
@@ -145,9 +181,9 @@ void MainWindow::select_first_item() {
 
 void MainWindow::switch_case_sensitivity() {
     case_sensitivity_changed = true;
-    case_sensitive = !case_sensitive;
+    config.case_sensitive = !config.case_sensitive;
     searchbox.set_text("");
-    set_searchbox_placeholder(searchbox, case_sensitive);
+    set_searchbox_placeholder(searchbox, config.case_sensitive);
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
@@ -156,12 +192,12 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
             close();
             break;
         case GDK_KEY_Delete:
-            if (show_searchbox) {
+            if (config.show_searchbox) {
                 searchbox.set_text("");
             }
             break;
         case GDK_KEY_Insert:
-            if (show_searchbox) {
+            if (config.show_searchbox) {
                 switch_case_sensitivity();
                 searchbox.set_text("");
             }
@@ -175,7 +211,7 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
             // handling code assigned in constructor
             break;
         default:
-            if (show_searchbox) {
+            if (config.show_searchbox) {
                 searchbox.grab_focus();
                 searchbox.select_region(0, 0);
                 searchbox.set_position(-1);

@@ -6,6 +6,7 @@
  * License: GPL3
  * */
 
+
 #include <filesystem>
 
 #include <gtkmm.h>
@@ -16,16 +17,23 @@
 
 namespace fs = std::filesystem;
 
-extern int rows;
-extern std::filesystem::path settings_file;
+constexpr auto ROWS_DEFAULT = 20;
 
-extern bool dmenu_run;
-extern bool show_searchbox;
-extern bool case_sensitive;
+struct DmenuConfig {
+    DmenuConfig(Config& config);
+
+    Config& config;
+
+    std::filesystem::path settings_file;
+    int rows{ ROWS_DEFAULT };            // number of menu items to display
+    bool dmenu_run;
+    bool show_searchbox;
+    bool case_sensitive;
+};
 
 class MainWindow : public PlatformWindow {
     public:
-        MainWindow(Config&, std::vector<Glib::ustring>&);
+        MainWindow(DmenuConfig&, std::vector<Glib::ustring>&);
         ~MainWindow();
         void emplace_back(const Glib::ustring&);
 
@@ -43,6 +51,8 @@ class MainWindow : public PlatformWindow {
         std::vector<Glib::ustring>& commands_source;
         bool case_sensitivity_changed = false;
         bool never_focused = true;
+
+        DmenuConfig&       config;
 };
 
 /*
