@@ -248,38 +248,37 @@ void GenericShell::show(CommonWindow& window, Hint hint) {
     window.show();
     window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
     window.set_decorated(false);
-    auto [d_x, d_y, d_w, d_h] = geometry(window);
+    auto display = geometry(window);
     auto window_coord_at_side = [](auto d_size, auto w_size, auto side, auto margin) {
         std::array map { margin, d_size - w_size - margin };
         return map[side];
     };
     Overloaded place_window {
-        [&,d_w=d_w,d_h=d_h,d_x=d_x,d_y=d_y](hint::Center_) {
-            auto x = d_x + d_w / 2 - window.get_width() / 2;
-            auto y = d_y + d_h / 2 - window.get_height() / 2;
+        [&](hint::Center_) {
+            auto x = display.x + (display.width - window.get_width()) / 2;
+            auto y = display.y + (display.height - window.get_height()) / 2;
             window.move(x, y);
         },
-        [&,d_w=d_w,d_h=d_h,d_x=d_x,d_y=d_y](hint::Fullscreen_) {
+        [&](hint::Fullscreen_) {
             if (this->respects_fullscreen) {
                 window.fullscreen();
             } else {
-                window.resize(d_w, d_h);
-                window.move(d_x, d_y);
+                window.resize(display.width, display.height);
+                window.move(display.x, display.y);
             }
         },
-        [&,d_x=d_x,d_y=d_y,d_w=d_w,d_h=d_h](hint::Side<hint::Horizontal> hint) {
-            auto w_x = window_coord_at_side(d_w, window.get_width(), hint.side, hint.margin);
-            window.move(d_x + w_x, d_y + (d_h - window.get_height()) / 2);
-            //window.move(w_x, (d_h - window.get_height()) / 2);
+        [&](hint::Side<hint::Horizontal> hint) {
+            auto w_x = window_coord_at_side(display.width, window.get_width(), hint.side, hint.margin);
+            window.move(display.x + w_x, display.y + (display.height - window.get_height()) / 2);
         },
-        [&,d_w=d_w,d_h=d_h](hint::Side<hint::Vertical> hint) {
-            auto w_y = window_coord_at_side(d_h, window.get_height(), hint.side, hint.margin);
-            window.move(d_x + (d_w - window.get_width()) / 2, d_y + w_y);
+        [&](hint::Side<hint::Vertical> hint) {
+            auto w_y = window_coord_at_side(display.height, window.get_height(), hint.side, hint.margin);
+            window.move(display.x + (display.width - window.get_width()) / 2, display.y + w_y);
         },
-        [&,d_x=d_x,d_y=d_y,d_w=d_w,d_h=d_h](hint::Sides hint) {
-            auto w_x = window_coord_at_side(d_w, window.get_width(), hint.h.side, hint.h.margin);
-            auto w_y = window_coord_at_side(d_h, window.get_height(), hint.v.side, hint.v.margin);
-            window.move(d_x + w_x, d_y + w_y);
+        [&,display](hint::Sides hint) {
+            auto w_x = window_coord_at_side(display.width, window.get_width(), hint.h.side, hint.h.margin);
+            auto w_y = window_coord_at_side(display.height, window.get_height(), hint.v.side, hint.v.margin);
+            window.move(display.x + w_x, display.y + w_y);
         }
     };
     place_window(hint);
