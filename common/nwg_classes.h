@@ -186,7 +186,7 @@ struct SwaySock {
  */
 namespace hint {
     constexpr struct Fullscreen_ {} Fullscreen;
-    constexpr struct Auto_       {} Auto;
+    constexpr struct Center_     {} Center;
     struct Horizontal{};
     struct Vertical{};
     template <typename S>
@@ -254,7 +254,11 @@ void GenericShell::show(CommonWindow& window, Hint hint) {
         return map[side];
     };
     Overloaded place_window {
-        [](hint::Auto_) { /* we assume the window is opened at center... */ },
+        [&,d_w=d_w,d_h=d_h,d_x=d_x,d_y=d_y](hint::Center_) {
+            auto x = d_x + d_w / 2 - window.get_width() / 2;
+            auto y = d_y + d_h / 2 - window.get_height() / 2;
+            window.move(x, y);
+        },
         [&,d_w=d_w,d_h=d_h,d_x=d_x,d_y=d_y](hint::Fullscreen_) {
             if (this->respects_fullscreen) {
                 window.fullscreen();
@@ -263,22 +267,19 @@ void GenericShell::show(CommonWindow& window, Hint hint) {
                 window.move(d_x, d_y);
             }
         },
-        [&,d_w=d_w,d_h=d_h](hint::Side<hint::Horizontal> hint) {
-            int w_x = 0, w_y = 0;
-            window.get_position(w_x, w_y);
-            w_x = window_coord_at_side(d_w, window.get_width(), hint.side, hint.margin);
-            window.move(w_x, (d_h - window.get_height()) / 2);
+        [&,d_x=d_x,d_y=d_y,d_w=d_w,d_h=d_h](hint::Side<hint::Horizontal> hint) {
+            auto w_x = window_coord_at_side(d_w, window.get_width(), hint.side, hint.margin);
+            window.move(d_x + w_x, d_y + (d_h - window.get_height()) / 2);
+            //window.move(w_x, (d_h - window.get_height()) / 2);
         },
         [&,d_w=d_w,d_h=d_h](hint::Side<hint::Vertical> hint) {
-            int w_x = 0, w_y = 0;
-            window.get_position(w_x, w_y);
-            w_y = window_coord_at_side(d_h, window.get_height(), hint.side, hint.margin);
-            window.move((d_w - window.get_width()) / 2, w_y);
+            auto w_y = window_coord_at_side(d_h, window.get_height(), hint.side, hint.margin);
+            window.move(d_x + (d_w - window.get_width()) / 2, d_y + w_y);
         },
-        [&,d_w=d_w,d_h=d_h](hint::Sides hint) {
+        [&,d_x=d_x,d_y=d_y,d_w=d_w,d_h=d_h](hint::Sides hint) {
             auto w_x = window_coord_at_side(d_w, window.get_width(), hint.h.side, hint.h.margin);
             auto w_y = window_coord_at_side(d_h, window.get_height(), hint.v.side, hint.v.margin);
-            window.move(w_x, w_y);
+            window.move(d_x + w_x, d_y + w_y);
         }
     };
     place_window(hint);
@@ -297,7 +298,7 @@ void LayerShell::show(CommonWindow& window, Hint hint) {
         margins[i + side.side] = side.margin;
     };
     Overloaded set_edges_margins {
-        [&](hint::Auto_) { /* nothing to do */ },
+        [&](hint::Center_) { /* nothing to do */ },
         [&](hint::Fullscreen_) { edges = { 1, 1, 1, 1 }; },
         [&](hint::Sides hint) { account_side(hint.h); account_side(hint.v); },
         account_side

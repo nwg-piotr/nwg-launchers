@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
         case 2:
             window.show(hint::Side<hint::Horizontal>{ halign == "r", 50 }); break;
         case 3:
-            window.show(hint::Auto); break;
+            window.show(hint::Center); break;
     }
     return app->run(window);
 }
