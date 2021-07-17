@@ -17,7 +17,9 @@
 
 namespace fs = std::filesystem;
 
-constexpr auto ROWS_DEFAULT = 20;
+#ifndef ROWS_DEFAULT
+#define ROWS_DEFAULT 20 // used in dmenu.cc/HELP_MESSAGE, don't turn into variable
+#endif
 
 struct DmenuConfig {
     DmenuConfig(Config& config);
