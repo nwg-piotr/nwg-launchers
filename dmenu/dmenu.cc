@@ -45,7 +45,7 @@ Delete        clear search box\n\
 Insert        switch case sensitivity\n";
 
 int main(int argc, char *argv[]) {
-    std::string custom_css_file {"style.css"};
+    std::filesystem::path custom_css_file {"style.css"};
 
     create_pid_file_or_kill_pid("nwgdmenu");
 
@@ -81,18 +81,6 @@ int main(int argc, char *argv[]) {
         fs::create_directories(config_dir);
     }
 
-    // default and custom style sheet
-    auto default_css_file = config_dir / "style.css";
-    // css file to be used
-    auto css_file = config_dir / custom_css_file;
-    // copy default file if not found
-    if (!fs::exists(default_css_file)) {
-        try {
-            fs::copy_file(DATA_DIR_STR "/nwgdmenu/style.css", default_css_file, fs::copy_options::overwrite_existing);
-        } catch (...) {
-            Log::error("Failed copying default style.css");
-        }
-    }
 
     auto app = Gtk::Application::create();
     
@@ -104,13 +92,10 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
-
-    if (std::filesystem::is_regular_file(css_file)) {
+    {
+        auto css_file = setup_css_file("nwgdmenu", config_dir, custom_css_file);
+        Log::info("Using css file \'", css_file, "\'");
         provider->load_from_path(css_file);
-        Log::info("Using ", css_file);
-    } else {
-        provider->load_from_path(default_css_file);
-        Log::info("Using ", default_css_file);
     }
 
     Config config {

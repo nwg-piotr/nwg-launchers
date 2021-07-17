@@ -45,6 +45,7 @@ void save_json(const ns::json&, const std::filesystem::path&);
 void decode_color(std::string_view, RGBA& color);
 
 std::string get_output(const std::string&);
+std::string setup_css_file(std::string_view name, const std::filesystem::path& config_dir, const std::filesystem::path& custom_css_file);
 
 Gtk::Image* app_image(const Gtk::IconTheme&, const std::string&, const Glib::RefPtr<Gdk::Pixbuf>&);
 Geometry display_geometry(std::string_view, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);

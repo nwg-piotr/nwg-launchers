@@ -523,6 +523,33 @@ std::string get_output(const std::string& cmd) {
     return result;
 }
 
+/* Prepares CSS file for app `name` using config directory `config_dir`
+ * if default css file (config_dir / style.css) does not exist, it is copied from DATA directory to config_dir
+ * TODO: explain better
+ */
+std::string setup_css_file(std::string_view name, const std::filesystem::path& config_dir, const std::filesystem::path& custom_css_file) {
+    // default and custom style sheet
+    auto default_css_file = config_dir / "style.css";
+    // css file to be used
+    auto css_file = config_dir / custom_css_file;
+    // copy default file if not found
+    if (!std::filesystem::exists(default_css_file)) {
+        try {
+            std::filesystem::path sample_css_file { DATA_DIR_STR };
+            sample_css_file /= name;
+            sample_css_file /= "style.css";
+            std::filesystem::copy_file(sample_css_file, default_css_file, std::filesystem::copy_options::overwrite_existing);
+        } catch (const std::filesystem::filesystem_error& error) {
+            Log::error("Failed copying default style.css: \'", error.what(), "\'");
+        }
+    }
+
+    if (!std::filesystem::is_regular_file(css_file)) {
+        css_file = default_css_file;
+    }
+    return css_file;
+}
+
 /*
  * Remove pid_file created by create_pid_file_or_kill_pid.
  * This function will be run before exiting.

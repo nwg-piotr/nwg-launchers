@@ -145,19 +145,6 @@ int main(int argc, char *argv[]) {
 
         term = get_term(config_dir.native());
 
-        // default and custom style sheet
-        auto default_css_file = config_dir / "style.css";
-        // css file to be used
-        auto css_file = config_dir / custom_css_file;
-        // copy default file if not found
-        if (!fs::exists(default_css_file)) {
-            try {
-                fs::copy_file(DATA_DIR_STR "/nwggrid/style.css", default_css_file, fs::copy_options::overwrite_existing);
-            } catch (...) {
-                Log::error("Failed copying default style.css");
-            }
-        }
-
         std::vector<std::filesystem::path> dirs;
         if (auto special_dirs = input.getCmdOption("-d"); !special_dirs.empty()) {
             using namespace std::string_view_literals;
@@ -249,6 +236,11 @@ int main(int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
         Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+        {
+            auto css_file = setup_css_file("nwggrid", config_dir, custom_css_file);
+            provider->load_from_path(css_file);
+            Log::info("Using css file \'", css_file, "\'");
+        }
         auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
         if (!icon_theme) {
             Log::error("Failed to load icon theme");
@@ -256,12 +248,6 @@ int main(int argc, char *argv[]) {
         }
         auto& icon_theme_ref = *icon_theme.get();
         auto icon_missing = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg");
-
-        if (!std::filesystem::is_regular_file(css_file)) {
-            css_file = default_css_file;
-        }
-        provider->load_from_path(css_file);
-        Log::info("Using ", css_file, '\n');
 
         Config config {
             input,

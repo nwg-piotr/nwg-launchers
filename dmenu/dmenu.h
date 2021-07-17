@@ -26,9 +26,9 @@ struct DmenuConfig {
 
     std::filesystem::path settings_file;
     int rows{ ROWS_DEFAULT };            // number of menu items to display
-    bool dmenu_run;
-    bool show_searchbox;
-    bool case_sensitive;
+    bool dmenu_run{ true };
+    bool show_searchbox{ true };
+    bool case_sensitive{ true };
 };
 
 class MainWindow : public PlatformWindow {
