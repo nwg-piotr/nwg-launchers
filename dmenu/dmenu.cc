@@ -10,11 +10,13 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <algorithm>
+#include <fstream>
+#include <iostream>
 #include <charconv>
 
 #include "nwg_tools.h"
 #include "nwg_classes.h"
-#include "on_event.h"
 #include "dmenu.h"
 
 #define ROWS_DEFAULT 20
@@ -22,14 +24,9 @@
 #define STR_EXPAND(x) #x
 #define STR(x) STR_EXPAND(x)
 
-std::string h_align {""};                   // horizontal alignment
-std::string v_align {""};                   // vertical alignment
-RGBA background = {0.0, 0.0, 0.0, 0.3};
-std::string wm {""};                        // detected or forced window manager name
-std::string settings_file {""};
+std::filesystem::path settings_file {""};
 
 int rows = ROWS_DEFAULT;                    // number of menu items to display
-std::vector<Glib::ustring> all_commands {};
 
 bool dmenu_run = false;
 bool show_searchbox = true;
@@ -50,6 +47,9 @@ Options:\n\
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
 -wm <wmname>     window manager name (if can not be detected)\n\
 -run             ignore stdin, always build from commands in $PATH\n\n\
+[requires layer-shell]:\n\
+-layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
+-layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n\n\
 Hotkeys:\n\
 Delete        clear search box\n\
 Insert        switch case sensitivity\n";
@@ -80,46 +80,31 @@ int main(int argc, char *argv[]) {
         dmenu_run = true;
     }
 
-    // Otherwise let's build from stdin input
-    if (!dmenu_run) {
-        all_commands = {};
-        for (std::string line; std::getline(std::cin, line);) {
-            all_commands.emplace_back(std::move(line));
-        }
-    }
-
     if (input.cmdOptionExists("-n")){
         show_searchbox = false;
     }
 
     auto halign = input.getCmdOption("-ha");
     if (halign == "l" || halign == "left") {
-        h_align = "l";
+        halign = "l";
     } else if (halign == "r" || halign == "right") {
-        h_align = "r";
+        halign = "r";
     }
 
     auto valign = input.getCmdOption("-va");
     if (valign == "t" || valign == "top") {
-        v_align = "t";
+        valign = "t";
     } else if (valign == "b" || valign == "bottom") {
-        v_align = "b";
+        valign = "b";
     }
 
-    auto css_name = input.getCmdOption("-c");
-    if (!css_name.empty()){
+    if (auto css_name = input.getCmdOption("-c"); !css_name.empty()) {
         custom_css_file = css_name;
-    }
-
-    auto wm_name = input.getCmdOption("-wm");
-    if (!wm_name.empty()){
-        wm = wm_name;
     }
 
     auto background_color = input.get_background_color(0.3);
 
-    auto rw = input.getCmdOption("-r");
-    if (!rw.empty()){
+    if (auto rw = input.getCmdOption("-r"); !rw.empty()){
         int r;
         auto from = rw.data();
         auto to = from + rw.size();
@@ -128,16 +113,16 @@ int main(int argc, char *argv[]) {
             if (r > 0 && r <= 100) {
                 rows = r;
             } else {
-                std::cerr << "\nERROR: Number of rows must be in range 1 - 100\n\n";
+                Log::error("Number of rows must be in range 1 - 100");
             }
         } else {
-            std::cerr << "\nERROR: Invalid rows number\n\n";
+            Log::error("Invalid rows number");
         }
     }
 
     auto config_dir = get_config_dir("nwgdmenu");
     if (!fs::is_directory(config_dir)) {
-        std::cout << "Config dir not found, creating...\n";
+        Log::info("Config dir not found, creating...");
         fs::create_directories(config_dir);
     }
 
@@ -150,28 +135,15 @@ int main(int argc, char *argv[]) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwgdmenu/style.css", default_css_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cerr << "Failed copying default style.css\n";
+            Log::error("Failed copying default style.css");
         }
     }
 
-    /* get current WM name if not forced */
-    if (wm.empty()) {
-        wm = detect_wm();
-    }
-
+    std::vector<Glib::ustring> all_commands;
     if (dmenu_run) {
         /* get a list of paths to all commands from all application dirs */
-        std::vector<std::string> commands = list_commands();
-        std::cout << commands.size() << " commands found\n";
-
-        /* Create a vector of commands (w/o path) */
-        all_commands = {};
-        for (auto&& command : commands) {
-            auto cmd = take_last_by(command, "/");
-            if (cmd.find(".") != 0 && cmd.size() != 1) {
-                all_commands.emplace_back(cmd.data(), cmd.size());
-            }
-        }
+        all_commands = list_commands();
+        Log::info(all_commands.size(), " commands found");
 
         /* Sort case insensitive */
         std::sort(all_commands.begin(), all_commands.end(), [](auto& a, auto& b) {
@@ -179,121 +151,49 @@ int main(int argc, char *argv[]) {
                 return std::tolower(a) < std::tolower(b);
             });
         });
-    }
-
-    /* turn off borders, enable floating on sway */
-    if (wm == "sway") {
-        SwaySock sock;
-        sock.run("for_window [title=\"~nwgdmenu*\"] floating enable");
-        sock.run("for_window [title=\"~nwgdmenu*\"] border none");
+    } else {
+        for (std::string line; std::getline(std::cin, line);) {
+            all_commands.emplace_back(std::move(line));
+        }
     }
 
     auto app = Gtk::Application::create();
-
+    
     auto provider = Gtk::CssProvider::create();
     auto display = Gdk::Display::get_default();
     auto screen = display->get_default_screen();
     if (!provider || !display || !screen) {
-        std::cerr << "ERROR: Failed to initialize GTK\n";
+        Log::error("Failed to initialize GTK");
         return EXIT_FAILURE;
     }
     Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
 
     if (std::filesystem::is_regular_file(css_file)) {
         provider->load_from_path(css_file);
-        std::cout << "Using " << css_file << '\n';
+        Log::info("Using ", css_file);
     } else {
         provider->load_from_path(default_css_file);
-        std::cout << "Using " << default_css_file << '\n';
+        Log::info("Using ", default_css_file);
     }
 
-    MainWindow window;
+    Config config {
+        input,
+        "~nwgdmenu",
+        "~nwgdmenu",
+        screen
+    };
+    MainWindow window{ config, all_commands };
     window.set_background_color(background_color);
-    // For openbox and similar we'll need the window x, y coordinates
-    window.show();
-
-    DMenu menu{window};
-    Anchor anchor{menu};
-    window.anchor = &anchor;
-
-    window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
-
-    /* Detect focused display geometry: {x, y, width, height} */
-    auto geometry = display_geometry(wm, display, window.get_window());
-    std::cout << "Focused display: " << geometry.x << ", " << geometry.y << ", " << geometry.width << ", "
-    << geometry.height << '\n';
-
-    int x = geometry.x;
-    int y = geometry.y;
-    int w = geometry.width;
-    int h = geometry.height;
-
-    if (wm == "sway" || wm == "i3") {
-        window.resize(w, h);
-        window.move(x, y);
-        window.hide();
-    } else {
-        window.hide();
-        int x_org;
-        int y_org;
-        window.resize(1, 1);
-        if (!h_align.empty() || !v_align.empty()) {
-            window.move(x, y);
-            window.get_position(x_org, y_org);
-        }
-        // We assume that the window has been opened at mouse pointer coordinates
-        window.get_position(x_org, y_org);
-
-        if (h_align == "l") {
-            window.move(x, y_org);
-            window.get_position(x_org, y_org);
-        }
-        if (h_align == "r") {
-            window.move(x + w - 50, y_org);
-            window.get_position(x_org, y_org);
-        }
-        if (v_align == "t") {
-            window.move(x_org, y);
-            window.get_position(x_org, y_org);
-        }
-        if (v_align == "b") {
-            window.move(x_org, y + h);
-        }
-        //~ window.hide();
-    }
-
-    menu.signal_deactivate().connect(sigc::mem_fun(window, &MainWindow::close));
-    menu.set_reserve_toggle_size(false);
-    menu.set_property("width_request", w / 8);
-
-    Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
-    outer_box.set_spacing(15);
-
-    Gtk::VBox inner_vbox;
-
-    Gtk::HBox inner_hbox;
-
-    if (h_align == "l") {
-        inner_hbox.pack_start(anchor, false, false);
-    } else if (h_align == "r") {
-        inner_hbox.pack_end(anchor, false, false);
-    } else {
-        inner_hbox.pack_start(anchor, true, false);
-    }
-
-    if (v_align == "t") {
-        inner_vbox.pack_start(inner_hbox, false, false);
-    } else if (v_align == "b") {
-        inner_vbox.pack_end(inner_hbox, false, false);
-    } else {
-        inner_vbox.pack_start(inner_hbox, true, false);
-    }
-    outer_box.pack_start(inner_vbox, Gtk::PACK_EXPAND_WIDGET);
-
-    window.add(outer_box);
     window.show_all_children();
-
-    menu.show_all();
-
+    switch (halign.empty() + valign.empty() * 2) {
+        case 0:
+            window.show(hint::Sides{ { halign == "r", 50 }, { valign == "b", 50 } }); break;
+        case 1:
+            window.show(hint::Side<hint::Vertical>{ valign == "b", 50 }); break;
+        case 2:
+            window.show(hint::Side<hint::Horizontal>{ halign == "r", 50 }); break;
+        case 3:
+            window.show(hint::Center); break;
+    }
     return app->run(window);
 }

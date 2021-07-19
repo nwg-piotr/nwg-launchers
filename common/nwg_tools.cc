@@ -23,6 +23,10 @@
 #include "nwgconfig.h"
 #include "nwg_tools.h"
 
+#ifdef HAVE_GDK_X11
+#include <gdk/gdkx.h>
+#endif
+
 // extern variables from nwg_tools.h
 int image_size = 72;
 
@@ -38,7 +42,7 @@ std::filesystem::path get_config_dir(std::string_view app) {
     if (!val) {
         val = getenv("HOME");
         if (!val) {
-            std::cerr << "ERROR: Couldn't find config directory, $HOME not set!";
+            Log::error("Couldn't find config directory, $HOME not set!");
             std::exit(EXIT_FAILURE);
         }
         path = val;
@@ -62,7 +66,7 @@ std::filesystem::path get_cache_home() {
     } else {
         home_ = getenv("HOME");
         if (!home_) {
-            std::cerr << "ERROR: Neither XDG_CACHE_HOME nor HOME are not defined\n";
+            Log::error("Neither XDG_CACHE_HOME nor HOME are not defined");
             std::exit(EXIT_FAILURE);
         }
         home = home_;
@@ -74,10 +78,28 @@ std::filesystem::path get_cache_home() {
 /*
  * Returns window manager name
  * */
-std::string detect_wm() {
+std::string detect_wm(const Glib::RefPtr<Gdk::Display>& display, const Glib::RefPtr<Gdk::Screen>& screen) {
     /* Actually we only need to check if we're on sway, i3 or other WM,
      * but let's try to find a WM name if possible. If not, let it be just "other" */
     std::string wm_name{"other"};
+
+#ifdef GDK_WINDOWING_X11
+    {
+        auto* g_display = display->gobj();
+        auto* g_screen  = screen->gobj();
+        if (GDK_IS_X11_DISPLAY (g_display)) {
+            auto* str_ = gdk_x11_screen_get_window_manager_name (g_screen);
+            if (str_) {
+                Glib::ustring str = str_;
+                wm_name = str.lowercase();
+                return wm_name;
+            }
+        }
+    }
+#else
+    (void)display;
+    (void)screen;
+#endif
 
     for(auto env : {"DESKTOP_SESSION", "SWAYSOCK", "I3SOCK"}) {
         // get environment values
@@ -221,7 +243,7 @@ SwaySock::SwaySock() {
 
 SwaySock::~SwaySock() {
     if (close(sock_)) {
-        std::cerr << "ERROR: Unable to close socket\n";
+        Log::error("Unable to close socket");
     }
 }
 
@@ -231,6 +253,15 @@ SwaySock::~SwaySock() {
  * */
 std::string SwaySock::get_outputs() {
     send_header_(0, Commands::GetOutputs);
+    return recv_response_();
+}
+
+/*
+ * Returns `swaymsg -t get_workspaces`
+ * Throws `SwayError`
+ * */
+std::string SwaySock::get_workspaces() {
+    send_header_(0, Commands::GetWorkspaces);
     return recv_response_();
 }
 
@@ -261,18 +292,6 @@ std::string SwaySock::recv_response_() {
     return buffer;   
 }
 
-/*
- * Asks Sway to run `cmd`
- * Throws `SwayError::Send{Header,Body}Failed`
- * */
-void SwaySock::run(std::string_view cmd) {
-    send_header_(cmd.size(), Commands::Run);
-    send_body_(cmd);
-    // should we recv the response?
-    // suppress warning
-    (void)recv_response_();
-}
-
 void SwaySock::send_header_(std::uint32_t message_len, Commands command) {
     memcpy(header.data(), MAGIC.data(), MAGIC_SIZE);
     memcpy(header.data() + MAGIC_SIZE, &message_len, sizeof(message_len));
@@ -290,12 +309,13 @@ void SwaySock::send_body_(std::string_view cmd) {
 /*
  * Returns x, y, width, hight of focused display
  * */
-Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> display, Glib::RefPtr<Gdk::Window> window) {
+Geometry display_geometry(std::string_view wm, Glib::RefPtr<Gdk::Display> display, Glib::RefPtr<Gdk::Window> window) {
     Geometry geo = {0, 0, 0, 0};
-    if (wm == "sway") {
+    if (wm == "sway" || wm == "i3") {
         try {
+            // TODO: Maybe there is a way to make it more uniform?
             SwaySock sock;
-            auto jsonString = sock.get_outputs();
+            auto jsonString = wm == "sway" ? sock.get_outputs() : sock.get_workspaces();
             auto jsonObj = string_to_json(jsonString);
             for (auto&& entry : jsonObj) {
                 if (entry.at("focused")) {
@@ -308,22 +328,6 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
                 }
             }
             return geo;
-        }
-        catch (...) { }
-    } else if (wm == "i3") { // TODO: shouldn't sway also work with i3?
-        try {
-            auto jsonString = get_output("i3-msg -t get_workspaces");
-            auto jsonObj = string_to_json(jsonString);
-            for (auto&& entry : jsonObj) {
-                if (entry.at("focused")) {
-                    auto&& rect = entry.at("rect");
-                    geo.x = rect.at("x");
-                    geo.y = rect.at("y");
-                    geo.width = rect.at("width");
-                    geo.height = rect.at("height");
-                    break;
-                }
-            }
         }
         catch (...) { }
     }
@@ -342,7 +346,7 @@ Geometry display_geometry(const std::string& wm, Glib::RefPtr<Gdk::Display> disp
         }
         retry++;
         if (retry > 100) {
-            std::cerr << "\nERROR: Failed checking display geometry, tries: " << retry << "\n\n";
+            Log::error("Failed checking display geometry, tries: ", retry);
             break;
         }
     }
@@ -494,11 +498,11 @@ void decode_color(std::string_view string, RGBA& color) {
             color.blue = ((rgba >> 8) & 0xff) / 255.0;
             color.alpha = ((rgba) & 0xff) / 255.0;
         } else {
-            std::cerr << "ERROR: invalid color value. Should be RRGGBB or RRGGBBAA\n";
+            Log::error("invalid color value. Should be RRGGBB or RRGGBBAA");
         }
     }
     catch (...) {
-        std::cerr << "Error parsing RGB(A) value\n";
+        Log::error("Unable to parse RGB(A) value");
     }
 }
 

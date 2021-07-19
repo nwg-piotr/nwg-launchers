@@ -13,10 +13,8 @@
 
 #include "nwg_classes.h"
 #include "nwg_tools.h"
-#include "on_event.h"
 #include "bar.h"
 
-std::string wm {""};            // detected or forced window manager name
 const char* const HELP_MESSAGE =
 "GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
 Options:\n\
@@ -29,7 +27,10 @@ Options:\n\
 -o <opacity>     background opacity (0.0 - 1.0, default 0.9)\n\
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
 -s <size>        button image size (default: 72)\n\
--wm <wmname>     window manager name (if can not be detected)\n";
+-wm <wmname>     window manager name (if can not be detected)\n\n\
+[requires layer-shell]:\n\
+-layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
+-layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
 
 int main(int argc, char *argv[]) {
     std::string definition_file {"bar.json"};
@@ -82,11 +83,6 @@ int main(int argc, char *argv[]) {
         custom_css_file = css_name;
     }
 
-    auto wm_name = input.getCmdOption("-wm");
-    if (!wm_name.empty()){
-        wm = wm_name;
-    }
-
     auto background_color = input.get_background_color(0.9);
 
     auto i_size = input.getCmdOption("-s");
@@ -99,16 +95,16 @@ int main(int argc, char *argv[]) {
             if (i_s >= 16 && i_s <= 256) {
                 image_size = i_s;
             } else {
-                std::cerr << "\nERROR: Size must be in range 16 - 256\n\n";
+                Log::error("Size must be in range 16 - 256\n");
             }
         } else {
-            std::cerr << "\nERROR: Image size should be valid integer in range 16 - 256\n\n";
+            Log::error("Image size should be valid integer in range 16 - 256\n");
         }
     }
 
     auto config_dir = get_config_dir("nwgbar");
     if (!fs::is_directory(config_dir)) {
-        std::cout << "Config dir not found, creating...\n";
+        Log::info("Config dir not found, creating...");
         fs::create_directories(config_dir);
     }
 
@@ -121,7 +117,7 @@ int main(int argc, char *argv[]) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwgbar/style.css", default_css_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cerr << "Failed copying default style.css\n";
+            Log::error("Failed copying default style.css");
         }
     }
 
@@ -133,7 +129,7 @@ int main(int argc, char *argv[]) {
         try {
             fs::copy_file(DATA_DIR_STR "/nwgbar/bar.json", default_bar_file, fs::copy_options::overwrite_existing);
         } catch (...) {
-            std::cerr << "Failed copying default template\n";
+            Log::error("Failed copying default template");
         }
     }
 
@@ -141,43 +137,29 @@ int main(int argc, char *argv[]) {
     try {
         bar_json = json_from_file(custom_bar_file);
     }  catch (...) {
-        std::cerr << "ERROR: Template file not found, using default\n";
+        Log::error("Template file not found, using default");
         bar_json = json_from_file(default_bar_file);
     }
-    std::cout << bar_json.size() << " bar entries loaded\n";
+    Log::info(bar_json.size(), " bar entries loaded");
 
     std::vector<BarEntry> bar_entries {};
     if (bar_json.size() > 0) {
         bar_entries = get_bar_entries(std::move(bar_json));
     }
 
-    /* get current WM name if not forced */
-    if (wm.empty()) {
-        wm = detect_wm();
-    }
-
-    std::cout << "WM: " << wm << "\n";
-
-    /* turn off borders, enable floating on sway */
-    if (wm == "sway") {
-        SwaySock sock;
-        sock.run("for_window [title=\"~nwgbar*\"] floating enable");
-        sock.run("for_window [title=\"~nwgbar*\"] border none");
-    }
-
-    Gtk::Main kit(argc, argv);
+    auto app = Gtk::Application::create();
 
     auto provider = Gtk::CssProvider::create();
     auto display = Gdk::Display::get_default();
     auto screen = display->get_default_screen();
     if (!provider || !display || !screen) {
-        std::cerr << "ERROR: Failed to initialize GTK\n";
+        Log::error("Failed to initialize GTK");
         return EXIT_FAILURE;
     }
     Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
     auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
     if (!icon_theme) {
-        std::cerr << "ERROR: Failed to load icon theme\n";
+        Log::error("Failed to load icon theme");
         return EXIT_FAILURE;
     }
     auto& icon_theme_ref = *icon_theme.get();
@@ -185,32 +167,20 @@ int main(int argc, char *argv[]) {
 
     if (std::filesystem::is_regular_file(css_file)) {
         provider->load_from_path(css_file);
-        std::cout << "Using " << css_file << '\n';
+        Log::info("Using ", css_file);
     } else {
         provider->load_from_path(default_css_file);
-        std::cout << "Using " << default_css_file << '\n';
+        Log::info("Using ", default_css_file);
     }
 
-    MainWindow window;
+    Config config {
+        input,
+        "~nwgbar",
+        "~nwgbar",
+        screen
+    };
+    MainWindow window{ config };
     window.set_background_color(background_color);
-    window.show();
-
-    window.signal_button_press_event().connect(sigc::ptr_fun(&on_window_clicked));
-
-    /* Detect focused display geometry: {x, y, width, height} */
-    auto geometry = display_geometry(wm, display, window.get_window());
-    std::cout << "Focused display: " << geometry.x << ", " << geometry.y << ", " << geometry.width << ", "
-    << geometry.height << '\n';
-
-    int x = geometry.x;
-    int y = geometry.y;
-    int w = geometry.width;
-    int h = geometry.height;
-
-    if (wm == "sway" || wm == "i3" || wm == "openbox") {
-        window.resize(w, h);
-        window.move(x, y);
-    }
 
     Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);
     outer_box.set_spacing(15);
@@ -263,13 +233,12 @@ int main(int argc, char *argv[]) {
 
     window.add(outer_box);
     window.show_all_children();
+    window.show(hint::Fullscreen);
 
     gettimeofday(&tp, NULL);
     long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-    std::cout << "Time: " << end_ms - start_ms << "ms\n";
+    Log::info("Time: ", end_ms - start_ms, "ms");
 
-    Gtk::Main::run(window);
-
-    return 0;
+    return app->run(window);
 }

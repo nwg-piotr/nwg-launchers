@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <iostream>
 
 #include "nwg_classes.h"
@@ -43,7 +44,7 @@ RGBA InputParser::get_background_color(double default_opacity) const {
         if (opacity >= 0.0 && opacity <= 1.0) {
             color.alpha = opacity;
         } else {
-            std::cerr << "ERROR: Opacity must be in range 0.0 to 1.0\n";
+            Log::error("Opacity must be in range 0.0 to 1.0");
         }
     }
     if (auto color_str = getCmdOption("-b"); !color_str.empty()) {
@@ -52,16 +53,32 @@ RGBA InputParser::get_background_color(double default_opacity) const {
     return color;
 }
 
-CommonWindow::CommonWindow(const Glib::ustring& title, const Glib::ustring& role) {
-    set_title(title);
-    set_role(role);
+Config::Config(const InputParser& parser, std::string_view title, std::string_view role, const Glib::RefPtr<Gdk::Screen>& screen):
+    parser{parser},
+    title{title},
+    role{role}
+#ifdef HAVE_GTK_LAYER_SHELL
+    ,layer_shell_args{parser}
+#endif
+{
+    if (auto wm_name = parser.getCmdOption("-wm"); !wm_name.empty()){
+        this->wm = wm_name;
+    } else {
+        this->wm = detect_wm(screen->get_display(), screen);
+    }
+    Log::info("wm: ", this->wm);
+}
+
+CommonWindow::CommonWindow(Config& config): title{config.title} {
+    set_title({config.title.data(), config.title.size()});
+    set_role({config.role.data(), config.role.size()});
     set_skip_pager_hint(true);
     add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
     set_app_paintable(true);
     check_screen();
 }
 
-CommonWindow::~CommonWindow() { }
+std::string_view CommonWindow::title_view() { return title; }
 
 bool CommonWindow::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     cr->save();
@@ -87,7 +104,7 @@ void CommonWindow::check_screen() {
     auto visual = screen -> get_rgba_visual();
 
     if (!visual) {
-        std::cerr << "Your screen does not support alpha channels!\n";
+        Log::warn("Your screen does not support alpha channels!");
     }
     _SUPPORTS_ALPHA = (bool)visual;
     gtk_widget_set_visual(GTK_WIDGET(gobj()), visual->gobj());
@@ -97,19 +114,141 @@ void CommonWindow::set_background_color(RGBA color) {
     this->background_color = color;
 }
 
+int CommonWindow::get_height() { return Gtk::Window::get_height(); }
+
 AppBox::AppBox() {
     this -> set_always_show_image(true);
 }
 
-AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment) : Gtk::Button(name, true) {
-    this -> name = name;
+AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment):
+    Gtk::Button(name, true),
+    name{std::move(name)},
+    exec{std::move(exec)},
+    comment{std::move(comment)}
+{
     if (name.length() > 25) {
-        name = name.substr(0, 22) + "...";
+        name.resize(22);
+        name.append("...");
     }
-    this -> exec = std::move(exec);
-    this -> comment = std::move(comment);
     this -> set_always_show_image(true);
 }
 
-AppBox::~AppBox() {
+GenericShell::GenericShell(Config& config) {
+    // respects_fullscreen is default initialized to true
+    using namespace std::string_view_literals;
+    constexpr std::array wms { "openbox"sv, "i3"sv, "sway"sv };
+    for (auto && wm: wms) {
+        if (config.wm == wm) {
+            respects_fullscreen = false;
+            break;
+        }
+    }
+}
+
+Geometry GenericShell::geometry(CommonWindow& window) {
+    Geometry geo;
+    auto get_geo = [&](auto && monitor) {
+        Gdk::Rectangle rect;
+        monitor->get_geometry(rect);
+        geo.x = rect.get_x();
+        geo.y = rect.get_y();
+        geo.width = rect.get_width();
+        geo.height = rect.get_height();
+    };
+    auto display = window.get_display();
+
+#ifdef GDK_WINDOWING_X11
+    // only works on X11, reports 0,0 on wayland
+    auto device_mgr = display->get_device_manager();
+    auto device = device_mgr->get_client_pointer();
+    int x, y;
+    device->get_position(x, y);
+    if (auto monitor = display->get_monitor_at_point(x, y)) {
+        get_geo(monitor);
+    } else
+#endif
+    if (auto monitor = display->get_monitor_at_window(window.get_window())) {
+        get_geo(monitor);
+    } else {
+        throw std::logic_error{ "No monitor at window" };
+    }
+    return geo;
+}
+
+SwayShell::SwayShell(CommonWindow& window, Config& config):
+    GenericShell{config}
+{
+    window.set_type_hint(Gdk::WINDOW_TYPE_HINT_SPLASHSCREEN);
+    window.set_decorated(false);
+    using namespace std::string_view_literals;
+    sock_.run("for_window [title="sv, window.title_view(), "*] floating enable"sv);
+    sock_.run("for_window [title="sv, window.title_view(), "*] border none"sv);
+}
+
+void SwayShell::show(CommonWindow& window, hint::Fullscreen_) {
+    // We can not go fullscreen() here:
+    // On sway the window would become opaque - we don't want it
+    // On i3 all windows below will be hidden - we don't want it as well
+    window.show();
+    // works just fine on Sway/i3 as far as I could test
+    // thus, no need to use ipc (I hope)
+    auto [x, y, w, h] = geometry(window);
+    window.resize(w, h);
+    window.move(x, y);
+}
+
+#ifdef HAVE_GTK_LAYER_SHELL
+LayerShellArgs::LayerShellArgs(const InputParser& parser) {
+    using namespace std::string_view_literals;
+    if (auto layer = parser.getCmdOption("-layer-shell-layer"); !layer.empty()) {
+        constexpr std::array map {
+            std::pair{ "BACKGROUND"sv, GTK_LAYER_SHELL_LAYER_BACKGROUND },
+            std::pair{ "BOTTOM"sv,     GTK_LAYER_SHELL_LAYER_BOTTOM },
+            std::pair{ "TOP"sv,        GTK_LAYER_SHELL_LAYER_TOP },
+            std::pair{ "OVERLAY"sv,    GTK_LAYER_SHELL_LAYER_OVERLAY }
+        };
+        bool found = false;
+        for (auto && [s, l]: map) {
+            if (layer == s) {
+                this->layer = l;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            Log::error("Incorrect layer-shell-layer value");
+            std::exit(EXIT_FAILURE);
+        }
+    }
+    if (auto zone = parser.getCmdOption("-layer-shell-exclusive-zone"); !zone.empty()) {
+        this->exclusive_zone_is_auto = zone == "auto"sv;
+        if (!this->exclusive_zone_is_auto) {
+            auto [p, ec] = std::from_chars(zone.data(), zone.data() + zone.size(), this->exclusive_zone);
+            if (ec != std::errc()) {
+                Log::error("Unable to decode layer-shell-exclusive-zone value");
+                std::exit(EXIT_FAILURE);
+            }
+        }
+    }
+}
+
+LayerShell::LayerShell(CommonWindow& window, LayerShellArgs args): args{args} {
+    // this has to be called before the window is realized
+    gtk_layer_init_for_window(window.gobj());
+}
+#endif
+
+PlatformWindow::PlatformWindow(Config& config):
+    CommonWindow{config},
+    shell{std::in_place_type<GenericShell>, config}
+{
+    #ifdef HAVE_GTK_LAYER_SHELL
+    if (gtk_layer_is_supported()) {
+        shell.emplace<LayerShell>(*this, config.layer_shell_args);
+        return;
+    }
+    #endif
+    if (config.wm == "sway" || config.wm == "i3") {
+        shell.emplace<SwayShell>(*this, config);
+    }
 }

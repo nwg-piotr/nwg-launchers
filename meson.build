@@ -4,7 +4,7 @@ project('nwg-launchers', 'cpp',
 			'warning_level=3'
 			],
 	license: 'GPL-3.0-or-later',
-	version: '0.4.3'
+	version: '0.5.0'
 )
 
 compiler = meson.get_compiler('cpp')
@@ -16,11 +16,24 @@ elif compiler.has_link_argument('-lstdc++fs')
 endif
 
 # Dependencies
-gtkmm = dependency('gtkmm-3.0', required: true)
-json = dependency('nlohmann_json', required: false)
+gdk_x11 = dependency('gdk-x11-3.0', required: get_option('gdk-x11'))
+if gdk_x11.found()
+	add_project_arguments('-DHAVE_GDK_X11', language: 'cpp')
+endif
 
-# If nlohmann-json is not installed on the system
-# we download the repository and use the single header file they have
+## gtkmm
+gtkmm = dependency('gtkmm-3.0', required: true)
+
+## gtk-layer-shell
+gtk_layer_shell = dependency('gtk-layer-shell-0', version: ['>= 0.5.0'], required: get_option('layer-shell'))
+if gtk_layer_shell.found()
+    add_project_arguments('-DHAVE_GTK_LAYER_SHELL', language: 'cpp')
+endif
+
+## nlohmann-json
+json = dependency('nlohmann_json', required: false)
+## If nlohmann-json is not installed on the system
+## we download the repository and use the single header file they have
 json_header_dir = []
 if not json.found()
 	subproject('nlohmann_json')

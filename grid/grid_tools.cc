@@ -18,64 +18,49 @@ CacheEntry::CacheEntry(std::string desktop_id, int clicks): desktop_id(std::move
 /*
  * Returns locations of .desktop files
  * */
-std::vector<std::string> get_app_dirs() {
-    std::vector<std::string> result;
-
+std::vector<std::filesystem::path> get_app_dirs() {
+    std::vector<std::filesystem::path> result;
     result.reserve(8);
-    auto append = [](auto&& str, auto&& suf) {
-        if (str.back() != '/') {
-            str.push_back('/');
-        }
-        str.append(suf);
-    };
 
-    std::string home;
+    std::filesystem::path home;
     if (auto home_ = getenv("HOME")) {
         home = home_;
     }
 
-    auto xdg_data_home = getenv("XDG_DATA_HOME");
-    if (xdg_data_home) {
-        auto dirs = split_string(xdg_data_home, ":");
-        for (auto& dir : dirs) {
-            auto& s = result.emplace_back(dir);
-            append(s, "applications");
+    if (auto env_ = getenv("XDG_DATA_HOME")) {
+        std::string xdg_data_home = env_; // getenv result is not guaranteed to live long enough
+        for (auto&& dir : split_string(xdg_data_home, ":")) {
+            result.emplace_back(dir) /= "applications";
         }
     } else {
         if (!home.empty()) {
-            auto& s = result.emplace_back(home);
-            append(s, ".local/share/applications");
+            result.emplace_back(home) /= ".local/share/applications";
         }
     }
-
-    const char* xdg_data_dirs = getenv("XDG_DATA_DIRS");
-    if (!xdg_data_dirs) {
+    std::string xdg_data_dirs;
+    if (auto env_ = getenv("XDG_DATA_DIRS")) {
+        xdg_data_dirs = env_;
+    } else {
         xdg_data_dirs = "/usr/local/share/:/usr/share/";
     }
-    auto dirs = split_string(xdg_data_dirs, ":");
-    for (auto& dir : dirs) {
-        auto& s = result.emplace_back(dir);
-        append(s, "applications");
+    for (auto&& dir: split_string(xdg_data_dirs, ":")) {
+        result.emplace_back(dir) /= "applications";
     }
 
     // Add flatpak dirs if not found in XDG_DATA_DIRS
-    std::string flatpak_data_dirs[] = {
-        home + "/.local/share/flatpak/exports/share/applications",
-        "/var/lib/flatpak/exports/share/applications"
+    auto suffix = "flatpak/exports/share/applications";
+    std::array flatpak_data_dirs {
+        home / suffix,
+        std::filesystem::path{"/var/lib"} / suffix
     };
-    for (auto& fp_dir : flatpak_data_dirs) {
+    for (auto&& fp_dir : flatpak_data_dirs) {
         if (std::find(result.begin(), result.end(), fp_dir) == result.end()) {
             result.emplace_back(fp_dir);
         }
     }
-
+    
     return result;
 }
-
-// desktop_entry helpers
-template<typename> inline constexpr bool lazy_false_v = false;
-template<typename ... Ts> struct visitor : Ts... { using Ts::operator()...; };
-template<typename ... Ts> visitor(Ts...) -> visitor<Ts...>;
 
 /*
  * Parses .desktop file to DesktopEntry struct
@@ -148,7 +133,7 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
         };
         for (auto& [prefix, dest, tag] : matches) {
             if (auto [ok, pos] = try_strip_prefix(prefix); ok) {
-                std::visit(visitor {
+                std::visit(Overloaded {
                     [dest=dest, pos=pos, &view](nop_t) { *dest = view.substr(pos); },
                     [dest=dest, pos=pos, &view](cut_t) {
                         auto idx = view.find(" %", pos);
@@ -186,7 +171,7 @@ std::vector<std::string> get_pinned(const std::filesystem::path& pinned_file) {
     std::vector<std::string> lines;
     std::ifstream in(pinned_file);
     if(!in) {
-        std::cerr << "Could not find " << pinned_file << ", creating!" << std::endl;
+        Log::info("Could not find ", pinned_file, ", creating!");
         save_string_to_file("", pinned_file);
         return lines;
     }

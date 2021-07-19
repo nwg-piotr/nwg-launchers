@@ -18,8 +18,6 @@
 #include <string_view>
 #include <vector>
 
-#include <gtkmm.h>
-
 #include <nlohmann/json.hpp>
 
 #include "nwg_classes.h"
@@ -31,10 +29,9 @@ extern int image_size; // button image size in pixels
 std::filesystem::path get_cache_home();
 std::filesystem::path get_config_dir(std::string_view);
 
-std::string detect_wm(void);
+std::string detect_wm(const Glib::RefPtr<Gdk::Display>&, const Glib::RefPtr<Gdk::Screen>&);
 
 std::string get_term(std::string_view);
-
 std::string get_locale(void);
 
 std::string read_file_to_string(const std::filesystem::path&);
@@ -50,43 +47,23 @@ void decode_color(std::string_view, RGBA& color);
 std::string get_output(const std::string&);
 
 Gtk::Image* app_image(const Gtk::IconTheme&, const std::string&, const Glib::RefPtr<Gdk::Pixbuf>&);
-Geometry display_geometry(const std::string&, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);
+Geometry display_geometry(std::string_view, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);
 
 void create_pid_file_or_kill_pid(std::string);
 
-enum class SwayError {
-    ConnectFailed,
-    EnvNotSet,
-    OpenFailed,
-    RecvHeaderFailed,
-    RecvBodyFailed,
-    SendHeaderFailed,
-    SendBodyFailed
-};
+namespace Log {
+    template <typename ... Ts>
+    void write(std::ostream& out, Ts && ... ts) {
+        ((out << ts), ...);
+        out << '\n';
+    }
 
-struct SwaySock {
-    SwaySock();
-    SwaySock(const SwaySock&) = delete;
-    ~SwaySock();
-    // pass the command to sway via socket
-    void run(std::string_view);
-    // swaymsg -t get_outputs
-    std::string get_outputs();
-    
-    // see sway-ipc (7)
-    enum class Commands: std::uint32_t {
-        Run = 0,
-        GetOutputs = 3
-    };
-    static constexpr std::array MAGIC { 'i', '3', '-', 'i', 'p', 'c' };
-    static constexpr auto MAGIC_SIZE = MAGIC.size();
-    // magic + body length (u32) + type (u32)
-    static constexpr auto HEADER_SIZE = MAGIC_SIZE + 2 * sizeof(std::uint32_t);
-    
-    int                           sock_;
-    std::array<char, HEADER_SIZE> header;
-
-    void send_header_(std::uint32_t, Commands);
-    void send_body_(std::string_view);
-    std::string recv_response_();
+    template <typename ... Ts>
+    void info(Ts && ... ts) { write(std::cerr, "INFO: ", std::forward<Ts>(ts)...); }
+    template <typename ... Ts>
+    void warn(Ts && ... ts) { write(std::cerr, "WARN: ", std::forward<Ts>(ts)...); }
+    template <typename ... Ts>
+    void error(Ts && ... ts) { write(std::cerr, "ERROR: ", std::forward<Ts>(ts)...); }
+    template <typename ... Ts>
+    void plain(Ts && ... ts) { write(std::cerr, std::forward<Ts>(ts)...); }
 };

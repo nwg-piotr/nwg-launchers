@@ -24,14 +24,11 @@ namespace ns = nlohmann;
 
 extern bool pins;
 extern bool favs;
-extern std::string wm;
 
 extern std::size_t num_col;
 
-extern std::string pinned_file;
-extern std::vector<std::string> pinned;
-extern ns::json cache;
-extern std::string cache_file;
+extern std::filesystem::path cache_file;
+extern std::filesystem::path pinned_file;
 extern std::string term;
 
 /* Primitive version of C++20's std::span */
@@ -76,9 +73,9 @@ public:
     std::size_t        index;      // row index
 };
 
-class MainWindow : public CommonWindow {
+class MainWindow : public PlatformWindow {
     public:
-        MainWindow(Span<std::string> entries, Span<Stats> stats);
+        MainWindow(Config& config, Span<std::string> entries, Span<Stats> stats);
         MainWindow(const MainWindow&) = delete;
 
         Gtk::SearchEntry searchbox;              // Search apps
@@ -157,7 +154,7 @@ struct CacheEntry {
 /*
  * Function declarations
  * */
-std::vector<std::string>    get_app_dirs(void);
-std::vector<std::string>    get_pinned(const std::filesystem::path& pinned_file);
-std::vector<CacheEntry>     get_favourites(ns::json&&, int);
-std::optional<DesktopEntry> desktop_entry(std::string&&, const std::string&);
+std::vector<std::filesystem::path> get_app_dirs(void);
+std::vector<std::string>           get_pinned(const std::filesystem::path& pinned_file);
+std::vector<CacheEntry>            get_favourites(ns::json&&, int);
+std::optional<DesktopEntry>        desktop_entry(std::string&&, const std::string&);

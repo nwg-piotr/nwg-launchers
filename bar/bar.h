@@ -26,8 +26,6 @@
 namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
-extern std::string wm;
-
 class BarBox : public AppBox {
 public:
     BarBox(Glib::ustring, Glib::ustring, Glib::ustring);
@@ -35,9 +33,9 @@ public:
     void on_activate() override;
 };
 
-class MainWindow : public CommonWindow {
+class MainWindow : public PlatformWindow {
     public:
-        MainWindow();
+        MainWindow(Config&);
 
         Gtk::Grid favs_grid;                    // Favourites grid above
         Gtk::Separator separator;               // between favs and all apps
@@ -47,6 +45,7 @@ class MainWindow : public CommonWindow {
 
     private:
         //Override default signal handler:
+        bool on_button_press_event(GdkEventButton* button) override;
         bool on_key_press_event(GdkEventKey* event) override;
 };
 
