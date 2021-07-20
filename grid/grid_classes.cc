@@ -80,19 +80,19 @@ int by_name(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
 // return -1 if a < b, 0 if a == b, 1 if a > b
 inline auto cmp_ = [](auto a, auto b) { return int(a > b) - int(a < b); };
 int by_position(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
-    auto& toplevel = *dynamic_cast<MainWindow*>(a->get_toplevel());
+    auto& toplevel = *dynamic_cast<GridWindow*>(a->get_toplevel());
     return cmp_(toplevel.stats_of(child_(a)).position, toplevel.stats_of(child_(b)).position);
 }
 int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
-    auto& toplevel = *dynamic_cast<MainWindow*>(a->get_toplevel());
+    auto& toplevel = *dynamic_cast<GridWindow*>(a->get_toplevel());
     return -cmp_(toplevel.stats_of(child_(a)).clicks, toplevel.stats_of(child_(b)).clicks);
 }
-MainWindow::MainWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss):
+GridWindow::GridWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss):
     PlatformWindow{ config }, config{ config }, execs(es), stats(ss)
 {
     searchbox
         .signal_search_changed()
-        .connect(sigc::mem_fun(*this, &MainWindow::filter_view));
+        .connect(sigc::mem_fun(*this, &GridWindow::filter_view));
     searchbox.set_placeholder_text("Type to search");
     searchbox.set_sensitive(true);
     searchbox.set_name("searchbox");
@@ -151,14 +151,14 @@ MainWindow::MainWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss)
     this -> show_all_children();
 }
 
-bool MainWindow::on_button_press_event(GdkEventButton *event) {
+bool GridWindow::on_button_press_event(GdkEventButton *event) {
     (void) event; // suppress warning
 
     this->close();
     return true;
 }
 
-bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
+bool GridWindow::on_key_press_event(GdkEventKey* key_event) {
     switch (key_event->keyval) {
         case GDK_KEY_Escape:
             this->close();
@@ -214,7 +214,7 @@ inline auto build_grid = [](auto& grid, auto& container, auto num_col) {
 };
 
 /* Called each time `search_entry` changes, rebuilds `apps_grid` according to search criteria */
-void MainWindow::filter_view() {
+void GridWindow::filter_view() {
     auto clean_grid = [](auto& grid) {
         grid.foreach([&grid](auto& child) {
             grid.remove(child);
@@ -249,7 +249,7 @@ void MainWindow::filter_view() {
 }
 
 /* Sets separators' visibility according to grid status */
-void MainWindow::refresh_separators() {
+void GridWindow::refresh_separators() {
     auto set_shown = [](auto c, auto& s) { if (c) s.show(); else s.hide(); };
     auto p = !pinned_boxes.empty();
     auto f = !fav_boxes.empty();
@@ -263,7 +263,7 @@ void MainWindow::refresh_separators() {
     }
 }
 
-void MainWindow::build_grids() {
+void GridWindow::build_grids() {
     this -> pinned_grid.freeze_child_notify();
     this -> favs_grid.freeze_child_notify();
     this -> apps_grid.freeze_child_notify();
@@ -287,7 +287,7 @@ void MainWindow::build_grids() {
     this -> refresh_separators();
 }
 
-void MainWindow::focus_first_box() {
+void GridWindow::focus_first_box() {
     // flowbox -> flowboxchild -> gridbox
     if (is_filtered) {
         if (auto child = apps_grid.get_child_at_index(0)) {
@@ -304,11 +304,11 @@ void MainWindow::focus_first_box() {
     }
 }
 
-void MainWindow::set_description(const Glib::ustring& text) {
+void GridWindow::set_description(const Glib::ustring& text) {
     this->description.set_text(text);
 }
 
-void MainWindow::toggle_pinned(GridBox& box) {
+void GridWindow::toggle_pinned(GridBox& box) {
     // pins changed, we'll need to update the cache
     this->pins_changed = true;
 
@@ -363,7 +363,7 @@ void MainWindow::toggle_pinned(GridBox& box) {
 /*
  * Saves pinned cache file
  * */
-void MainWindow::save_cache() {
+void GridWindow::save_cache() {
     if (pins_changed) {
         std::sort(pinned_boxes.begin(), pinned_boxes.end(), [this](auto* a, auto* b) {
             return this->stats_of(*a).position < this->stats_of(*b).position;
@@ -392,7 +392,7 @@ void MainWindow::save_cache() {
     }
 }
 
-bool MainWindow::on_delete_event(GdkEventAny* event) {
+bool GridWindow::on_delete_event(GdkEventAny* event) {
     this -> save_cache();
     return CommonWindow::on_delete_event(event);
 }
@@ -411,7 +411,7 @@ GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::string& i
 }
 
 bool GridBox::on_button_press_event(GdkEventButton* event) {
-    auto& toplevel = *dynamic_cast<MainWindow*>(this -> get_toplevel());
+    auto& toplevel = *dynamic_cast<GridWindow*>(this -> get_toplevel());
     if (toplevel.config.pins && event->button == 3) { // right-clicked
         toplevel.toggle_pinned(*this);
     } else {
@@ -423,19 +423,19 @@ bool GridBox::on_button_press_event(GdkEventButton* event) {
 bool GridBox::on_focus_in_event(GdkEventFocus* event) {
     (void) event; // suppress warning
 
-    auto& toplevel = *dynamic_cast<MainWindow*>(this->get_toplevel());
+    auto& toplevel = *dynamic_cast<GridWindow*>(this->get_toplevel());
     toplevel.set_description(comment);
     return true;
 }
 
 void GridBox::on_enter() {
-    auto& toplevel = *dynamic_cast<MainWindow*>(this->get_toplevel());
+    auto& toplevel = *dynamic_cast<GridWindow*>(this->get_toplevel());
     toplevel.set_description(comment);
     return Gtk::Button::on_enter();
 }
 
 void GridBox::on_activate() {
-    auto& toplevel = *dynamic_cast<MainWindow*>(this->get_toplevel());
+    auto& toplevel = *dynamic_cast<GridWindow*>(this->get_toplevel());
     toplevel.stats_of(*this).clicks++;
     std::string cmd = toplevel.exec_of(*this);
     cmd += " &";

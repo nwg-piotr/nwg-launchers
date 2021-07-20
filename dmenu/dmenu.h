@@ -32,10 +32,10 @@ struct DmenuConfig: public Config {
     bool case_sensitive{ true };
 };
 
-class MainWindow : public PlatformWindow {
+class DmenuWindow : public PlatformWindow {
     public:
-        MainWindow(DmenuConfig&, std::vector<Glib::ustring>&);
-        ~MainWindow();
+        DmenuWindow(DmenuConfig&, std::vector<Glib::ustring>&);
+        ~DmenuWindow();
         void emplace_back(const Glib::ustring&);
 
         int get_height() override;

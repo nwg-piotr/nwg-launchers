@@ -133,9 +133,9 @@ AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment):
     exec{std::move(exec)},
     comment{std::move(comment)}
 {
-    if (name.length() > 25) {
-        name.resize(22);
-        name.append("...");
+    if (this->name.length() > 25) {
+        this->name.resize(22);
+        this->name.append("...");
     }
     this -> set_always_show_image(true);
 }

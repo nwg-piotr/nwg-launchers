@@ -78,10 +78,10 @@ struct GridConfig: public Config {
     RGBA background_color;
 };
 
-class MainWindow : public PlatformWindow {
+class GridWindow : public PlatformWindow {
     public:
-        MainWindow(GridConfig& config, Span<std::string> entries, Span<Stats> stats);
-        MainWindow(const MainWindow&) = delete;
+        GridWindow(GridConfig& config, Span<std::string> entries, Span<Stats> stats);
+        GridWindow(const GridWindow&) = delete;
 
         Gtk::SearchEntry searchbox;              // Search apps
         Gtk::Label description;                  // To display .desktop entry Comment field at the bottom
@@ -139,7 +139,7 @@ class MainWindow : public PlatformWindow {
 };
 
 template <typename ... Args>
-GridBox& MainWindow::emplace_box(Args&& ... args) {
+GridBox& GridWindow::emplace_box(Args&& ... args) {
     auto& ab = this -> all_boxes.emplace_back(std::forward<Args>(args)...);
     auto* boxes = &apps_boxes;
     auto& stats = this -> stats_of(ab);

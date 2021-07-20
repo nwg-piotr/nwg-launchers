@@ -16,19 +16,19 @@
 
 #include "bar.h"
 
-MainWindow::MainWindow(Config& config): PlatformWindow(config) {
+BarWindow::BarWindow(Config& config): PlatformWindow(config) {
     favs_grid.set_column_spacing(5);
     favs_grid.set_row_spacing(5);
     favs_grid.set_column_homogeneous(true);
 }
 
-bool MainWindow::on_button_press_event(GdkEventButton* button) {
+bool BarWindow::on_button_press_event(GdkEventButton* button) {
     (void)button;
     this->close();
     return true;
 }
 
-bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
+bool BarWindow::on_key_press_event(GdkEventKey* key_event) {
     if (key_event -> keyval == GDK_KEY_Escape) {
         this->close();
     }
@@ -58,5 +58,5 @@ void BarBox::on_activate() {
     const char *command = exec.c_str();
     std::system(command);
 
-    dynamic_cast<MainWindow*>(this->get_toplevel())->close();
+    dynamic_cast<BarWindow*>(this->get_toplevel())->close();
 }

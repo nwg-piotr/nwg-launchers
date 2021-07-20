@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
     };
 
     auto all_commands = get_commands_list(config);
-    MainWindow window{ config, all_commands };
+    DmenuWindow window{ config, all_commands };
     window.set_background_color(background_color);
     window.show_all_children();
     switch (2 * (config.valign == VAlign::NotSpecified) + (config.halign == HAlign::NotSpecified )) {
@@ -96,8 +96,6 @@ int main(int argc, char *argv[]) {
             window.show(hint::Side<hint::Horizontal>{ config.halign == HAlign::Right, 50 }); break;
         case 3:
             window.show(hint::Center); break;
-        default:
-            Log::error("wtf");
     }
     return app->run(window);
 }

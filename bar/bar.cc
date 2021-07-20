@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
         "~nwgbar",
         screen
     };
-    MainWindow window{ config };
+    BarWindow window{ config };
     window.set_background_color(background_color);
 
     Gtk::Box outer_box(Gtk::ORIENTATION_VERTICAL);

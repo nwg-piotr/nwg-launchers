@@ -70,7 +70,7 @@ inline auto build_commands_list = [](auto && dmenu, auto && commands, auto max) 
     }
 };
 
-MainWindow::MainWindow(DmenuConfig& config, std::vector<Glib::ustring>& src):
+DmenuWindow::DmenuWindow(DmenuConfig& config, std::vector<Glib::ustring>& src):
     PlatformWindow{ config },
     commands{ 1, false, Gtk::SELECTION_SINGLE },
     commands_source{ src },
@@ -110,7 +110,7 @@ MainWindow::MainWindow(DmenuConfig& config, std::vector<Glib::ustring>& src):
     searchbox.set_name("searchbox");
     if (config.show_searchbox) {
         set_searchbox_placeholder(searchbox, config.case_sensitive);
-        searchbox.signal_search_changed().connect(sigc::mem_fun(*this, &MainWindow::filter_view));
+        searchbox.signal_search_changed().connect(sigc::mem_fun(*this, &DmenuWindow::filter_view));
         vbox.pack_start(searchbox, false, false);
     }
     vbox.pack_start(commands);
@@ -120,7 +120,7 @@ MainWindow::MainWindow(DmenuConfig& config, std::vector<Glib::ustring>& src):
     build_commands_list(*this, commands_source, config.rows);
 }
 
-MainWindow::~MainWindow() {
+DmenuWindow::~DmenuWindow() {
     using namespace std::string_view_literals;
     if (case_sensitivity_changed) {
         std::ofstream file{ config.settings_file, std::ios::trunc };
@@ -129,11 +129,11 @@ MainWindow::~MainWindow() {
     }
 }
 
-void MainWindow::emplace_back(const Glib::ustring& command) {
+void DmenuWindow::emplace_back(const Glib::ustring& command) {
     this->commands.append(command);
 }
 
-void MainWindow::filter_view() {
+void DmenuWindow::filter_view() {
     auto model_refptr = commands.get_model();
     auto& model = dynamic_cast<Gtk::ListStore&>(*model_refptr.get());
     model.clear();
@@ -174,20 +174,20 @@ void MainWindow::filter_view() {
     select_first_item();
 }
 
-void MainWindow::select_first_item() {
+void DmenuWindow::select_first_item() {
     Gtk::ListStore::Path path{1};
     commands.set_cursor(path);
     commands.grab_focus();
 }
 
-void MainWindow::switch_case_sensitivity() {
+void DmenuWindow::switch_case_sensitivity() {
     case_sensitivity_changed = true;
     config.case_sensitive = !config.case_sensitive;
     searchbox.set_text("");
     set_searchbox_placeholder(searchbox, config.case_sensitive);
 }
 
-bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
+bool DmenuWindow::on_key_press_event(GdkEventKey* key_event) {
     switch (key_event->keyval) {
         case GDK_KEY_Escape:
             close();
@@ -226,7 +226,7 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
 // TreeView will have height of 1 until it's actually shown
 // in this hack we do our best to calculate actual window size
 // we assume all cells have same height (which is true for ListViewText) and all cells are filled
-int MainWindow::get_height() {
+int DmenuWindow::get_height() {
     auto model = commands.get_model();
     // Gtk::TreeModel::iter_n_root_children is protected, so ...
     auto rows = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(model->gobj()), nullptr);

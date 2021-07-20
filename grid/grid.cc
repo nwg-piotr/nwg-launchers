@@ -198,7 +198,7 @@ int main(int argc, char *argv[]) {
         gettimeofday(&tp, NULL);
         long int bs_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-        MainWindow window{ config, execs, stats };
+        GridWindow window{ config, execs, stats };
         window.show(hint::Fullscreen);
 
         gettimeofday(&tp, NULL);

@@ -33,9 +33,9 @@ public:
     void on_activate() override;
 };
 
-class MainWindow : public PlatformWindow {
+class BarWindow : public PlatformWindow {
     public:
-        MainWindow(Config&);
+        BarWindow(Config&);
 
         Gtk::Grid favs_grid;                    // Favourites grid above
         Gtk::Separator separator;               // between favs and all apps
