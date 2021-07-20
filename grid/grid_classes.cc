@@ -15,8 +15,43 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
+#include <charconv>
 #include "nwg_tools.h"
 #include "grid.h"
+
+GridConfig::GridConfig(Config& config, const fs::path& config_dir): config{ config } {
+    favs = config.parser.cmdOptionExists("-f") && !config.parser.cmdOptionExists("-d");
+    pins = config.parser.cmdOptionExists("-p") && !config.parser.cmdOptionExists("-d");
+    if (auto forced_lang = config.parser.getCmdOption("-l"); !forced_lang.empty()){
+        lang = forced_lang;
+    } else {
+        lang = get_locale();
+    }
+    if (auto cols = config.parser.getCmdOption("-n"); !cols.empty()) {
+        int n_c;
+        auto [p, ec] = std::from_chars(cols.data(), cols.data() + cols.size(), n_c);
+        if (ec == std::errc()) {
+            if (n_c > 0 && n_c < 100) {
+                num_col = n_c;
+            } else {
+                Log::error("Columns must be in range 1 - 99\n");
+            }
+        } else {
+            Log::error("Invalid number of columns\n");
+        }
+    }
+
+    if (pins || favs) {
+        auto cache_home = get_cache_home();
+        if (pins) {
+            pinned_file = cache_home / "nwg-pin-cache";
+        }
+        if (favs) {
+            cached_file = cache_home / "nwg-fav-cache";
+        }
+    }
+    term = get_term(config_dir.native());
+}
 
 // we only store GridBoxes inside of our FlowBoxes, so dynamic_cast won't fail
 inline auto child_ = [](auto c) -> auto& { return *dynamic_cast<GridBox*>(c->get_child()); };
@@ -33,8 +68,8 @@ int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     auto& toplevel = *dynamic_cast<MainWindow*>(a->get_toplevel());
     return -cmp_(toplevel.stats_of(child_(a)).clicks, toplevel.stats_of(child_(b)).clicks);
 }
-MainWindow::MainWindow(Config& config, Span<std::string> es, Span<Stats> ss)
- : PlatformWindow(config), execs(es), stats(ss)
+MainWindow::MainWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss)
+ : PlatformWindow(config.config), config{ config }, execs(es), stats(ss)
 {
     searchbox
         .signal_search_changed()
@@ -140,7 +175,7 @@ bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
  * In order to keep Gtk FlowBox content properly haligned, we have to maintain
  * `max_children_per_line` equal to the total number of children
  * */
-inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container) {
+inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container, auto num_col) {
     auto size = container.size();
     decltype(size) cols = num_col;
     if (auto min = std::min(cols, size)) { // suppress gtk warnings about size=0
@@ -150,12 +185,12 @@ inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container) {
 };
 
 /* Populate grid with widgets from container */
-inline auto build_grid = [](auto& grid, auto& container) {
+inline auto build_grid = [](auto& grid, auto& container, auto num_col) {
     for (auto child : container) {
         grid.add(*child);
         child->get_parent()->set_can_focus(false); // FlowBoxChild shouldn't consume focus
     }
-    refresh_max_children_per_line(grid, container);
+    refresh_max_children_per_line(grid, container, num_col);
 };
 
 /* Called each time `search_entry` changes, rebuilds `apps_grid` according to search criteria */
@@ -183,10 +218,10 @@ void MainWindow::filter_view() {
             }
         }
         clean_grid(apps_grid);
-        build_grid(apps_grid, filtered_boxes);
+        build_grid(apps_grid, filtered_boxes, config.num_col);
     } else {
         clean_grid(apps_grid);
-        build_grid(apps_grid, apps_boxes);
+        build_grid(apps_grid, apps_boxes, config.num_col);
     }
     this -> refresh_separators();
     this -> focus_first_box();
@@ -213,9 +248,10 @@ void MainWindow::build_grids() {
     this -> favs_grid.freeze_child_notify();
     this -> apps_grid.freeze_child_notify();
 
-    build_grid(this->pinned_grid, this->pinned_boxes);
-    build_grid(this->favs_grid, this->fav_boxes);
-    build_grid(this->apps_grid, this->apps_boxes);
+    auto num_col = config.num_col;
+    build_grid(this->pinned_grid, this->pinned_boxes, num_col);
+    build_grid(this->favs_grid, this->fav_boxes, num_col);
+    build_grid(this->apps_grid, this->apps_boxes, num_col);
 
     this -> monotonic_index = this->pinned_boxes.size();
 
@@ -285,8 +321,9 @@ void MainWindow::toggle_pinned(GridBox& box) {
     auto to_remove = std::remove(from->begin(), from->end(), &box);;
     from->erase(to_remove);
     to->push_back(&box);
-    refresh_max_children_per_line(*from_grid, *from);
-    refresh_max_children_per_line(*to_grid, *to);
+    auto num_col = config.num_col;
+    refresh_max_children_per_line(*from_grid, *from, num_col);
+    refresh_max_children_per_line(*to_grid, *to, num_col);
 
     // get_parent is important
     // FlowBox { ... FlowBoxChild { box } ... }
@@ -311,12 +348,12 @@ void MainWindow::save_cache() {
         std::sort(pinned_boxes.begin(), pinned_boxes.end(), [this](auto* a, auto* b) {
             return this->stats_of(*a).position < this->stats_of(*b).position;
         });
-        std::ofstream out(pinned_file, std::ios::trunc);
+        std::ofstream out{ config.pinned_file, std::ios::trunc };
         for (auto* pin : this->pinned_boxes) {
             out << *pin->desktop_id << '\n';
         }
     }
-    if (favs) {
+    if (config.favs) {
         ns::json favs_cache;
         // find min positive clicks count
         decltype(Stats::clicks) min = 1000000; // avoid including <limits>
@@ -331,7 +368,7 @@ void MainWindow::save_cache() {
                 favs_cache[*box.desktop_id] = clicks;
             }
         }
-        save_json(favs_cache, cache_file);
+        save_json(favs_cache, config.cached_file);
     }
 }
 
@@ -355,7 +392,7 @@ GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::string& i
 
 bool GridBox::on_button_press_event(GdkEventButton* event) {
     auto& toplevel = *dynamic_cast<MainWindow*>(this -> get_toplevel());
-    if (pins && event->button == 3) { // right-clicked
+    if (toplevel.config.pins && event->button == 3) { // right-clicked
         toplevel.toggle_pinned(*this);
     } else {
         this -> activate();
@@ -382,7 +419,8 @@ void GridBox::on_activate() {
     toplevel.stats_of(*this).clicks++;
     std::string cmd = toplevel.exec_of(*this);
     cmd += " &";
-    if (cmd.find(term) == 0) {
+    // TODO: use special flag
+    if (cmd.find(toplevel.config.term) == 0) {
         Log::info("Running: \'", cmd, "\'");
     }
     std::system(cmd.data());

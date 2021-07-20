@@ -65,20 +65,20 @@ std::vector<std::filesystem::path> get_app_dirs() {
 /*
  * Parses .desktop file to DesktopEntry struct
  * */
-std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string& lang) {
+std::optional<DesktopEntry> desktop_entry(const fs::path& path, std::string_view lang, std::string_view term) {
     using namespace std::literals::string_view_literals;
 
     DesktopEntry entry;
     entry.terminal = false;
 
-    std::ifstream file(path);
+    std::ifstream file{ path };
     std::string str;
 
     std::string name_ln {};         // localized: Name[ln]=
-    std::string loc_name = "Name[" + lang + "]=";
+    std::string loc_name = concat("Name[", lang, "]=");
 
     std::string comment_ln {};      // localized: Comment[ln]=
-    std::string loc_comment = "Comment[" + lang + "]=";
+    std::string loc_comment = concat("Comment[", lang, "]=");
 
     struct nop_t { } nop;
     struct cut_t { } cut;
@@ -159,7 +159,7 @@ std::optional<DesktopEntry> desktop_entry(std::string&& path, const std::string&
         return std::nullopt;
     }
     if (entry.terminal) {
-        entry.exec = term + " " + entry.exec;
+        entry.exec = concat(term, " ", entry.exec);
     }
     return entry;
 }

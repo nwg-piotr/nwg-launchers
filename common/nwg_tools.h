@@ -68,3 +68,6 @@ namespace Log {
     template <typename ... Ts>
     void plain(Ts && ... ts) { write(std::cerr, std::forward<Ts>(ts)...); }
 };
+
+constexpr auto concat = [](auto&& ... xs) { std::string r; ((r += xs), ...); return r; };
+

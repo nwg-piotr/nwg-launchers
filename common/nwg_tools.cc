@@ -134,7 +134,6 @@ std::string detect_wm(const Glib::RefPtr<Gdk::Display>& display, const Glib::Ref
  * */
 std::string get_term(std::string_view config_dir) {
     using namespace std::string_view_literals;
-    auto concat = [](auto&& ... xs) { std::string r; ((r += xs), ...); return r; };
     
     auto term_file = concat(config_dir, "/term"sv);
     auto terminal_file = concat(config_dir, "/terminal"sv);
