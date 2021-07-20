@@ -8,8 +8,7 @@
  * */
 
 #include <sys/time.h>
-
-#include <charconv>
+#include <iostream>
 
 #include "nwg_tools.h"
 #include "nwg_classes.h"
@@ -84,28 +83,10 @@ int main(int argc, char *argv[]) {
             screen,
             config_dir
         };
-
         Log::info("Locale: ", config.lang);
 
         if (auto css_name = input.getCmdOption("-c"); !css_name.empty()){
             custom_css_file = css_name;
-        }
-
-        auto background_color = input.get_background_color(0.9);
-
-        auto i_size = input.getCmdOption("-s");
-        if (!i_size.empty()){
-            int i_s;
-            auto [p, ec] = std::from_chars(i_size.data(), i_size.data() + i_size.size(), i_s);
-            if (ec == std::errc()) {
-                if (i_s >= 16 && i_s <= 256) {
-                    image_size = i_s;
-                } else {
-                    Log::error("Size must be in range 16 - 256\n");
-                }
-            } else {
-                Log::error("Invalid image size");
-            }
         }
 
         // This will be read-only, to find n most clicked items (n = number of grid columns)
@@ -218,7 +199,6 @@ int main(int argc, char *argv[]) {
         long int bs_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
         MainWindow window{ config, execs, stats };
-        window.set_background_color(background_color);
         window.show(hint::Fullscreen);
 
         gettimeofday(&tp, NULL);
@@ -226,7 +206,7 @@ int main(int argc, char *argv[]) {
 
         // The most expensive part
         for (std::size_t i = 0; i < desktop_entries.size(); i++) {
-            images[i] = app_image(icon_theme_ref, desktop_entries[i].icon, icon_missing);
+            images[i] = app_image(icon_theme_ref, desktop_entries[i].icon, icon_missing, config.icon_size);
         }
 
         gettimeofday(&tp, NULL);

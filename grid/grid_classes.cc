@@ -20,10 +20,14 @@
 #include "grid.h"
 
 GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen, const fs::path& config_dir):
-    Config{ parser, "~nwggrid", "~nwggrid", screen }
+    Config{ parser, "~nwggrid", "~nwggrid", screen },
+    term{ get_term(config_dir.native()) },
+    background_color{ parser.get_background_color(0.9) }
 {
-    favs = parser.cmdOptionExists("-f") && !parser.cmdOptionExists("-d");
-    pins = parser.cmdOptionExists("-p") && !parser.cmdOptionExists("-d");
+    auto has_custom_paths = parser.cmdOptionExists("-d");
+    favs = parser.cmdOptionExists("-f") && !has_custom_paths;
+    pins = parser.cmdOptionExists("-p") && !has_custom_paths;
+
     if (auto forced_lang = parser.getCmdOption("-l"); !forced_lang.empty()){
         lang = forced_lang;
     } else {
@@ -52,7 +56,20 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
             cached_file = cache_home / "nwg-fav-cache";
         }
     }
-    term = get_term(config_dir.native());
+
+    if (auto i_size = parser.getCmdOption("-s"); !i_size.empty()){
+        int i_s;
+        auto [p, ec] = std::from_chars(i_size.data(), i_size.data() + i_size.size(), i_s);
+        if (ec == std::errc()) {
+            if (i_s >= 16 && i_s <= 256) {
+                icon_size = i_s;
+            } else {
+                Log::error("Size must be in range 16 - 256\n");
+            }
+        } else {
+            Log::error("Invalid image size");
+        }
+    }
 }
 
 // we only store GridBoxes inside of our FlowBoxes, so dynamic_cast won't fail
@@ -129,6 +146,7 @@ MainWindow::MainWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss)
 
     outer_vbox.pack_start(description, Gtk::PACK_SHRINK);
 
+    this -> set_background_color(config.background_color);
     this -> add(outer_vbox);
     this -> show_all_children();
 }

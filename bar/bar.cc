@@ -85,6 +85,7 @@ int main(int argc, char *argv[]) {
 
     auto background_color = input.get_background_color(0.9);
 
+    int image_size = 72;
     auto i_size = input.getCmdOption("-s");
     if (!i_size.empty()) {
         int i_s;
@@ -171,7 +172,7 @@ int main(int argc, char *argv[]) {
 
     /* Create buttons */
     for (auto& entry : bar_entries) {
-        Gtk::Image* image = app_image(icon_theme_ref, entry.icon, icon_missing);
+        Gtk::Image* image = app_image(icon_theme_ref, entry.icon, icon_missing, image_size);
         auto& ab = window.boxes.emplace_back(std::move(entry.name),
                                              std::move(entry.exec),
                                              std::move(entry.icon));

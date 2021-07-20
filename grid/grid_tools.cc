@@ -169,7 +169,7 @@ std::optional<DesktopEntry> desktop_entry(const fs::path& path, std::string_view
  * */
 std::vector<std::string> get_pinned(const std::filesystem::path& pinned_file) {
     std::vector<std::string> lines;
-    std::ifstream in(pinned_file);
+    std::ifstream in{ pinned_file };
     if(!in) {
         Log::info("Could not find ", pinned_file, ", creating!");
         save_string_to_file("", pinned_file);

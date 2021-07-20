@@ -5,8 +5,8 @@
  * Project: https://github.com/nwg-piotr/nwg-launchers
  * License: GPL3
  * */
+#pragma once
 
-#include <iostream>
 #include <fstream>
 #include <filesystem>
 #include <optional>
@@ -74,6 +74,8 @@ struct GridConfig: public Config {
     std::size_t num_col{ 6 }; // number of grid columns
     fs::path pinned_file;     // file with pins
     fs::path cached_file;     // file with favs
+    int icon_size{ 72 };
+    RGBA background_color;
 };
 
 class MainWindow : public PlatformWindow {

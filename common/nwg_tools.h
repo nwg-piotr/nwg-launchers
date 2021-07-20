@@ -24,8 +24,6 @@
 
 namespace ns = nlohmann;
 
-extern int image_size; // button image size in pixels
-
 std::filesystem::path get_cache_home();
 std::filesystem::path get_config_dir(std::string_view);
 
@@ -47,7 +45,7 @@ void decode_color(std::string_view, RGBA& color);
 std::string get_output(const std::string&);
 std::string setup_css_file(std::string_view name, const std::filesystem::path& config_dir, const std::filesystem::path& custom_css_file);
 
-Gtk::Image* app_image(const Gtk::IconTheme&, const std::string&, const Glib::RefPtr<Gdk::Pixbuf>&);
+Gtk::Image* app_image(const Gtk::IconTheme&, const std::string&, const Glib::RefPtr<Gdk::Pixbuf>&, int icon_size);
 Geometry display_geometry(std::string_view, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);
 
 void create_pid_file_or_kill_pid(std::string);
