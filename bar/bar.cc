@@ -55,24 +55,6 @@ int main(int argc, char *argv[]) {
         orientation = "v";
     }
 
-    auto halign = input.getCmdOption("-ha");
-    if (!halign.empty()){
-        if (halign == "l" || halign == "left") {
-            h_align = "l";
-        } else if (halign == "r" || halign == "right") {
-            h_align = "r";
-        }
-    }
-
-    auto valign = input.getCmdOption("-va");
-    if (!valign.empty()){
-        if (valign == "t" || valign == "top") {
-            v_align = "t";
-        } else if (valign == "b" || valign == "bottom") {
-            v_align = "b";
-        }
-    }
-
     auto tname = input.getCmdOption("-t");
     if (!tname.empty()){
         definition_file = tname;
@@ -198,22 +180,16 @@ int main(int argc, char *argv[]) {
 
     Gtk::HBox favs_hbox;
     favs_hbox.set_name("bar");
-    if (h_align == "l") {
-        favs_hbox.pack_start(window.favs_grid, false, false);
-    } else if (h_align == "r") {
-        favs_hbox.pack_end(window.favs_grid, false, false);
-    } else {
-        favs_hbox.pack_start(window.favs_grid, true, false);
+    switch (config.halign) {
+        case HAlign::Left:  favs_hbox.pack_start(window.favs_grid, false, false); break;
+        case HAlign::Right: favs_hbox.pack_end(window.favs_grid, false, false); break;
+        default: favs_hbox.pack_start(window.favs_grid, true, false);
     }
-
     inner_vbox.pack_start(favs_hbox, true, false);
-
-    if (v_align == "t") {
-        outer_box.pack_start(inner_vbox, false, false);
-    } else if (v_align == "b") {
-        outer_box.pack_end(inner_vbox, false, false);
-    } else {
-        outer_box.pack_start(inner_vbox, Gtk::PACK_EXPAND_PADDING);
+    switch (config.valign) {
+        case VAlign::Top:    outer_box.pack_start(inner_vbox, false, false); break;
+        case VAlign::Bottom: outer_box.pack_end(inner_vbox, false, false); break;
+        default: outer_box.pack_start(inner_vbox, Gtk::PACK_EXPAND_PADDING);
     }
 
     window.add(outer_box);

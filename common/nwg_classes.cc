@@ -67,6 +67,13 @@ Config::Config(const InputParser& parser, std::string_view title, std::string_vi
         this->wm = detect_wm(screen->get_display(), screen);
     }
     Log::info("wm: ", this->wm);
+
+    auto halign_ = parser.getCmdOption("-ha");
+    if (halign_ == "l" || halign_ == "left") { halign = HAlign::Left; }
+    if (halign_ == "r" || halign_ == "right") { halign = HAlign::Right; }
+    auto valign_ = parser.getCmdOption("-va");
+    if (valign_ == "t" || valign_ == "top") { valign = VAlign::Top; }
+    if (valign_ == "b" || valign_ == "bottom") { valign = VAlign::Bottom; }
 }
 
 CommonWindow::CommonWindow(Config& config): title{config.title} {

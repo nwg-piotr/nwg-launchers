@@ -49,20 +49,6 @@ int main(int argc, char *argv[]) {
         std::exit(0);
     }
 
-    auto halign = input.getCmdOption("-ha");
-    if (halign == "l" || halign == "left") {
-        halign = "l";
-    } else if (halign == "r" || halign == "right") {
-        halign = "r";
-    }
-
-    auto valign = input.getCmdOption("-va");
-    if (valign == "t" || valign == "top") {
-        valign = "t";
-    } else if (valign == "b" || valign == "bottom") {
-        valign = "b";
-    }
-
     if (auto css_name = input.getCmdOption("-c"); !css_name.empty()) {
         custom_css_file = css_name;
     }
@@ -101,15 +87,17 @@ int main(int argc, char *argv[]) {
     MainWindow window{ config, all_commands };
     window.set_background_color(background_color);
     window.show_all_children();
-    switch (halign.empty() + valign.empty() * 2) {
+    switch (2 * (config.valign == VAlign::NotSpecified) + (config.halign == HAlign::NotSpecified )) {
         case 0:
-            window.show(hint::Sides{ { halign == "r", 50 }, { valign == "b", 50 } }); break;
+            window.show(hint::Sides{ { config.halign == HAlign::Right, 50 }, { config.valign == VAlign::Bottom, 50 } }); break;
         case 1:
-            window.show(hint::Side<hint::Vertical>{ valign == "b", 50 }); break;
+            window.show(hint::Side<hint::Vertical>{ config.valign == VAlign::Bottom, 50 }); break;
         case 2:
-            window.show(hint::Side<hint::Horizontal>{ halign == "r", 50 }); break;
+            window.show(hint::Side<hint::Horizontal>{ config.halign == HAlign::Right, 50 }); break;
         case 3:
             window.show(hint::Center); break;
+        default:
+            Log::error("wtf");
     }
     return app->run(window);
 }

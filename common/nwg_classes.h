@@ -59,6 +59,9 @@ struct LayerShellArgs {
 };
 #endif
 
+enum class HAlign: unsigned int { NotSpecified = 0, Left, Right };
+enum class VAlign: unsigned int { NotSpecified = 0, Top, Bottom };
+
 /* 
  * Stores configuration data
  */
@@ -67,6 +70,8 @@ struct Config {
     std::string        wm;
     std::string_view   title;
     std::string_view   role;
+    HAlign             halign{ HAlign::NotSpecified };
+    VAlign             valign{ VAlign::NotSpecified };
     
 #ifdef HAVE_GTK_LAYER_SHELL
     LayerShellArgs layer_shell_args;
