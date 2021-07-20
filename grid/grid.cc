@@ -79,15 +79,13 @@ int main(int argc, char *argv[]) {
         auto& icon_theme_ref = *icon_theme.get();
         auto icon_missing = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg");
 
-        Config config {
+        GridConfig config {
             input,
-            "~nwggrid",
-            "~nwggrid",
-            screen
+            screen,
+            config_dir
         };
-        GridConfig grid_config{ config, config_dir };
 
-        Log::info("Locale: ", grid_config.lang);
+        Log::info("Locale: ", config.lang);
 
         if (auto css_name = input.getCmdOption("-c"); !css_name.empty()){
             custom_css_file = css_name;
@@ -112,25 +110,25 @@ int main(int argc, char *argv[]) {
 
         // This will be read-only, to find n most clicked items (n = number of grid columns)
         std::vector<CacheEntry> favourites;
-        if (grid_config.favs) {
+        if (config.favs) {
             try {
-                auto cache = json_from_file(grid_config.cached_file);
+                auto cache = json_from_file(config.cached_file);
                 if (cache.size() > 0) {
                     Log::info(cache.size(), " cache entries loaded");
                 } else {
                     Log::info("No cache entries loaded");
                 }
-                auto n = std::min(grid_config.num_col, cache.size());
+                auto n = std::min(config.num_col, cache.size());
                 favourites = get_favourites(std::move(cache), n);
             }  catch (...) {
                 // TODO: only save cache if favs were changed
-                Log::error("Failed to read cache file '", grid_config.cached_file, "'");
+                Log::error("Failed to read cache file '", config.cached_file, "'");
             }
         }
 
         std::vector<std::string> pinned;
-        if (grid_config.pins) {
-            pinned = get_pinned(grid_config.pinned_file);
+        if (config.pins) {
+            pinned = get_pinned(config.pinned_file);
             if (pinned.size() > 0) {
                 Log::info(pinned.size(), " pinned entries loaded");
             } else {
@@ -190,7 +188,7 @@ int main(int argc, char *argv[]) {
                 auto&& rel_path = path.lexically_relative(dir);
                 auto&& id = desktop_id(rel_path);
                 if (auto [at, inserted] = desktop_ids.try_emplace(id, std::nullopt); inserted) {
-                    if (auto entry = desktop_entry(path, grid_config.lang, grid_config.term)) {
+                    if (auto entry = desktop_entry(path, config.lang, config.term)) {
                         at->second = execs.size(); // set index
                         execs.emplace_back(entry->exec);
                         desktop_entries.emplace_back(std::move(*entry));
@@ -219,7 +217,7 @@ int main(int argc, char *argv[]) {
         gettimeofday(&tp, NULL);
         long int bs_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-        MainWindow window{ grid_config, execs, stats };
+        MainWindow window{ config, execs, stats };
         window.set_background_color(background_color);
         window.show(hint::Fullscreen);
 

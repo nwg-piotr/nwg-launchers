@@ -19,15 +19,17 @@
 #include "nwg_tools.h"
 #include "grid.h"
 
-GridConfig::GridConfig(Config& config, const fs::path& config_dir): config{ config } {
-    favs = config.parser.cmdOptionExists("-f") && !config.parser.cmdOptionExists("-d");
-    pins = config.parser.cmdOptionExists("-p") && !config.parser.cmdOptionExists("-d");
-    if (auto forced_lang = config.parser.getCmdOption("-l"); !forced_lang.empty()){
+GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen, const fs::path& config_dir):
+    Config{ parser, "~nwggrid", "~nwggrid", screen }
+{
+    favs = parser.cmdOptionExists("-f") && !parser.cmdOptionExists("-d");
+    pins = parser.cmdOptionExists("-p") && !parser.cmdOptionExists("-d");
+    if (auto forced_lang = parser.getCmdOption("-l"); !forced_lang.empty()){
         lang = forced_lang;
     } else {
         lang = get_locale();
     }
-    if (auto cols = config.parser.getCmdOption("-n"); !cols.empty()) {
+    if (auto cols = parser.getCmdOption("-n"); !cols.empty()) {
         int n_c;
         auto [p, ec] = std::from_chars(cols.data(), cols.data() + cols.size(), n_c);
         if (ec == std::errc()) {
@@ -68,8 +70,8 @@ int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     auto& toplevel = *dynamic_cast<MainWindow*>(a->get_toplevel());
     return -cmp_(toplevel.stats_of(child_(a)).clicks, toplevel.stats_of(child_(b)).clicks);
 }
-MainWindow::MainWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss)
- : PlatformWindow(config.config), config{ config }, execs(es), stats(ss)
+MainWindow::MainWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss):
+    PlatformWindow{ config }, config{ config }, execs(es), stats(ss)
 {
     searchbox
         .signal_search_changed()

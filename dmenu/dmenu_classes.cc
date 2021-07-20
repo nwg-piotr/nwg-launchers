@@ -22,8 +22,8 @@
 #include "nwg_tools.h"
 #include "dmenu.h"
 
-DmenuConfig::DmenuConfig(Config& config):
-    config{ config },
+DmenuConfig::DmenuConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen):
+    Config{ parser, "~nwgdmenu", "~nwgdmenu", screen },
     settings_file{ get_settings_path() }
 {
     // For now the settings file only determines if case_sensitive was turned on.
@@ -34,10 +34,10 @@ DmenuConfig::DmenuConfig(Config& config):
     }
 
     // We will build dmenu out of commands found in $PATH if nothing has been passed by stdin
-    dmenu_run = config.parser.cmdOptionExists("-run") || isatty(STDIN_FILENO) == 1;
-    show_searchbox = !config.parser.cmdOptionExists("-n");
+    dmenu_run = parser.cmdOptionExists("-run") || isatty(STDIN_FILENO) == 1;
+    show_searchbox = !parser.cmdOptionExists("-n");
 
-    if (auto rw = config.parser.getCmdOption("-r"); !rw.empty()){
+    if (auto rw = parser.getCmdOption("-r"); !rw.empty()){
         int r;
         auto from = rw.data();
         auto to = from + rw.size();
@@ -70,11 +70,11 @@ inline auto build_commands_list = [](auto && dmenu, auto && commands, auto max) 
     }
 };
 
-MainWindow::MainWindow(DmenuConfig& dmenu_config, std::vector<Glib::ustring>& src):
-    PlatformWindow(dmenu_config.config),
+MainWindow::MainWindow(DmenuConfig& config, std::vector<Glib::ustring>& src):
+    PlatformWindow{ config },
     commands{ 1, false, Gtk::SELECTION_SINGLE },
     commands_source{ src },
-    config{ dmenu_config }
+    config{ config }
 {
     // different shells emit different events
     auto display_name = this->get_screen()->get_display()->get_name();

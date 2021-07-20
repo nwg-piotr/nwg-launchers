@@ -92,16 +92,13 @@ int main(int argc, char *argv[]) {
         provider->load_from_path(css_file);
     }
 
-    Config config {
+    DmenuConfig config {
         input,
-        "~nwgdmenu",
-        "~nwgdmenu",
         screen
     };
-    DmenuConfig dmenu_config { config };
 
-    auto all_commands = get_commands_list(dmenu_config);
-    MainWindow window{ dmenu_config, all_commands };
+    auto all_commands = get_commands_list(config);
+    MainWindow window{ config, all_commands };
     window.set_background_color(background_color);
     window.show_all_children();
     switch (halign.empty() + valign.empty() * 2) {

@@ -22,10 +22,8 @@ namespace fs = std::filesystem;
 #define ROWS_DEFAULT 20 // used in dmenu.cc/HELP_MESSAGE, don't turn into variable
 #endif
 
-struct DmenuConfig {
-    DmenuConfig(Config& config);
-
-    Config& config;
+struct DmenuConfig: public Config {
+    DmenuConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen);
 
     fs::path settings_file;
     int rows{ ROWS_DEFAULT };            // number of menu items to display

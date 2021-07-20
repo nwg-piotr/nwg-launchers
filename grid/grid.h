@@ -64,10 +64,9 @@ public:
     std::size_t        index;      // row index
 };
 
-struct GridConfig {
-    GridConfig(Config& config, const fs::path& config_dir);
+struct GridConfig: public Config {
+    GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen, const fs::path& config_dir);
 
-    Config& config;
     bool pins;                // whether to display pinned
     bool favs;                // whether to display favorites
     std::string term;         // user-preferred terminal
