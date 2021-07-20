@@ -14,9 +14,10 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
+#include <unistd.h> // isatty
+#include <charconv>
 #include <filesystem>
 #include <fstream>
-#include <charconv>
 
 #include "nwg_tools.h"
 #include "dmenu.h"

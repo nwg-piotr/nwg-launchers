@@ -7,13 +7,7 @@
  * License: GPL3
  * */
 
-#include <sys/time.h>
-#include <unistd.h>
-
-#include <algorithm>
-#include <fstream>
 #include <iostream>
-#include <charconv>
 
 #include "nwg_tools.h"
 #include "nwg_classes.h"
@@ -106,23 +100,7 @@ int main(int argc, char *argv[]) {
     };
     DmenuConfig dmenu_config { config };
 
-    std::vector<Glib::ustring> all_commands;
-    if (dmenu_config.dmenu_run) {
-        /* get a list of paths to all commands from all application dirs */
-        all_commands = list_commands();
-        Log::info(all_commands.size(), " commands found");
-
-        /* Sort case insensitive */
-        std::sort(all_commands.begin(), all_commands.end(), [](auto& a, auto& b) {
-            return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(), [](auto a, auto b) {
-                return std::tolower(a) < std::tolower(b);
-            });
-        });
-    } else {
-        for (std::string line; std::getline(std::cin, line);) {
-            all_commands.emplace_back(std::move(line));
-        }
-    }
+    auto all_commands = get_commands_list(dmenu_config);
     MainWindow window{ dmenu_config, all_commands };
     window.set_background_color(background_color);
     window.show_all_children();

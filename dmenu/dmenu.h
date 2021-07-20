@@ -8,6 +8,7 @@
 
 
 #include <filesystem>
+#include <vector>
 
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
@@ -26,7 +27,7 @@ struct DmenuConfig {
 
     Config& config;
 
-    std::filesystem::path settings_file;
+    fs::path settings_file;
     int rows{ ROWS_DEFAULT };            // number of menu items to display
     bool dmenu_run{ true };
     bool show_searchbox{ true };
@@ -52,13 +53,11 @@ class MainWindow : public PlatformWindow {
         Gtk::VBox         vbox;
         std::vector<Glib::ustring>& commands_source;
         bool case_sensitivity_changed = false;
-        bool never_focused = true;
-
         DmenuConfig&       config;
 };
 
 /*
  * Function declarations
  * */
-std::vector<Glib::ustring> list_commands();
-std::filesystem::path get_settings_path();
+std::vector<Glib::ustring> get_commands_list(const DmenuConfig& config);
+fs::path get_settings_path();
