@@ -29,20 +29,18 @@ gtk_layer_shell = dependency(
     'gtk-layer-shell-0',
     version: ['>= 0.5.0'],
     fallback: ['gtk-layer-shell-0', 'gtk-layer-shell'],
-    required: get_option('layer-shell'))
+    required: get_option('layer-shell')
+)
 if gtk_layer_shell.found()
     add_project_arguments('-DHAVE_GTK_LAYER_SHELL', language: 'cpp')
 endif
 
 ## nlohmann-json
-json = dependency('nlohmann_json', required: false)
-## If nlohmann-json is not installed on the system
-## we download the repository and use the single header file they have
-json_header_dir = []
-if not json.found()
-	subproject('nlohmann_json')
-	json_header_dir = include_directories('subprojects/nlohmann_json/single_include')
-endif
+json = dependency(
+    'nlohmann_json',
+    fallback: ['nlohmann_json', 'nlohmann_json_dep'],
+    required: true
+)
 
 # Generate configuration header
 conf_data = configuration_data()
