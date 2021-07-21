@@ -11,9 +11,9 @@
 
 #include <algorithm>
 #include <array>
-#include <charconv>
 #include <iostream>
 
+#include "charconv-compat.h"
 #include "nwg_classes.h"
 #include "nwg_tools.h"
 
@@ -234,8 +234,7 @@ LayerShellArgs::LayerShellArgs(const InputParser& parser) {
     if (auto zone = parser.getCmdOption("-layer-shell-exclusive-zone"); !zone.empty()) {
         this->exclusive_zone_is_auto = zone == "auto"sv;
         if (!this->exclusive_zone_is_auto) {
-            auto [p, ec] = std::from_chars(zone.data(), zone.data() + zone.size(), this->exclusive_zone);
-            if (ec != std::errc()) {
+            if (!parse_number(zone, this->exclusive_zone)) {
                 Log::error("Unable to decode layer-shell-exclusive-zone value");
                 std::exit(EXIT_FAILURE);
             }

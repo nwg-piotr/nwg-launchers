@@ -6,10 +6,10 @@
  * License: GPL3
  * */
 
-#include <filesystem>
 #include <string_view>
 #include <variant>
 
+#include "filesystem-compat.h"
 #include "nwg_tools.h"
 #include "grid.h"
 
@@ -18,11 +18,11 @@ CacheEntry::CacheEntry(std::string desktop_id, int clicks): desktop_id(std::move
 /*
  * Returns locations of .desktop files
  * */
-std::vector<std::filesystem::path> get_app_dirs() {
-    std::vector<std::filesystem::path> result;
+std::vector<fs::path> get_app_dirs() {
+    std::vector<fs::path> result;
     result.reserve(8);
 
-    std::filesystem::path home;
+    fs::path home;
     if (auto home_ = getenv("HOME")) {
         home = home_;
     }
@@ -51,7 +51,7 @@ std::vector<std::filesystem::path> get_app_dirs() {
     auto suffix = "flatpak/exports/share/applications";
     std::array flatpak_data_dirs {
         home / suffix,
-        std::filesystem::path{"/var/lib"} / suffix
+        fs::path{"/var/lib"} / suffix
     };
     for (auto&& fp_dir : flatpak_data_dirs) {
         if (std::find(result.begin(), result.end(), fp_dir) == result.end()) {
@@ -167,7 +167,7 @@ std::optional<DesktopEntry> desktop_entry(const fs::path& path, std::string_view
 /*
  * Returns vector of strings out of the pinned cache file content
  * */
-std::vector<std::string> get_pinned(const std::filesystem::path& pinned_file) {
+std::vector<std::string> get_pinned(const fs::path& pinned_file) {
     std::vector<std::string> lines;
     std::ifstream in{ pinned_file };
     if(!in) {

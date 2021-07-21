@@ -6,13 +6,13 @@
  * License: GPL3
  * */
 
-
-#include <filesystem>
+#pragma once
 #include <vector>
 
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
 
+#include "filesystem-compat.h"
 #include "nwgconfig.h"
 #include "nwg_classes.h"
 

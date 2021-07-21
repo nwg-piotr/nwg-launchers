@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include <filesystem>
 #include <string>
 #include <vector>
 #include <variant>
@@ -23,7 +22,7 @@
 #include <gtk-layer-shell.h>
 #endif
 
-namespace fs = std::filesystem;
+#include "filesystem-compat.h"
 
 template <typename ... Os>
 struct Overloaded: Os... { using Os::operator()...; };

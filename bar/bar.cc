@@ -9,8 +9,8 @@
 
 #include <sys/time.h>
 
-#include <charconv>
 
+#include "charconv-compat.h"
 #include "nwg_classes.h"
 #include "nwg_tools.h"
 #include "bar.h"
@@ -60,13 +60,9 @@ int main(int argc, char *argv[]) {
     auto background_color = input.get_background_color(0.9);
 
     int image_size = 72;
-    auto i_size = input.getCmdOption("-s");
-    if (!i_size.empty()) {
+    if (auto i_size = input.getCmdOption("-s"); !i_size.empty()) {
         int i_s;
-        auto from = i_size.data();
-        auto to = from + i_size.size();
-        auto [p, ec] = std::from_chars(from, to, i_s);
-        if (ec == std::errc()) {
+        if (parse_number(i_size, i_s)) {
             if (i_s >= 16 && i_s <= 256) {
                 image_size = i_s;
             } else {

@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include <filesystem>
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -20,6 +19,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "filesystem-compat.h"
 #include "nwg_classes.h"
 
 namespace ns = nlohmann;

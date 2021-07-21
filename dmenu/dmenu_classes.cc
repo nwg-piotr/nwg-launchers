@@ -15,10 +15,9 @@
  * */
 
 #include <unistd.h> // isatty
-#include <charconv>
-#include <filesystem>
 #include <fstream>
 
+#include "charconv-compat.h"
 #include "nwg_tools.h"
 #include "dmenu.h"
 
@@ -39,10 +38,7 @@ DmenuConfig::DmenuConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Scre
 
     if (auto rw = parser.getCmdOption("-r"); !rw.empty()){
         int r;
-        auto from = rw.data();
-        auto to = from + rw.size();
-        auto [p, ec] = std::from_chars(from, to, r);
-        if (ec == std::errc()) {
+        if (parse_number(rw, r)) {
             if (r > 0 && r <= 100) {
                 rows = r;
             } else {

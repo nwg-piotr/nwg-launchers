@@ -13,7 +13,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <filesystem>
 
 #include <gtkmm.h>
 #include <glibmm/ustring.h>

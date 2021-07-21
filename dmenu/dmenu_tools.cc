@@ -10,13 +10,14 @@
 #include <iostream>
 #include <fstream>
 
+#include "filesystem-compat.h"
 #include "nwg_tools.h"
 #include "dmenu.h"
 
 /*
  * Returns settings cache file path
  * */
-std::filesystem::path get_settings_path() {
+fs::path get_settings_path() {
     auto full_path = get_cache_home();
     full_path /= "nwg-dmenu-case";
     return full_path;

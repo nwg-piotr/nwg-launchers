@@ -8,7 +8,6 @@
 #pragma once
 
 #include <fstream>
-#include <filesystem>
 #include <optional>
 
 #include <gtkmm.h>
@@ -17,6 +16,7 @@
 #include <nlohmann/json.hpp>
 
 #include "nwgconfig.h"
+#include "filesystem-compat.h"
 #include "nwg_classes.h"
 
 namespace ns = nlohmann;
@@ -160,7 +160,7 @@ struct CacheEntry {
 /*
  * Function declarations
  * */
-std::vector<std::filesystem::path> get_app_dirs(void);
-std::vector<std::string>           get_pinned(const std::filesystem::path& pinned_file);
+std::vector<fs::path> get_app_dirs(void);
+std::vector<std::string>           get_pinned(const fs::path& pinned_file);
 std::vector<CacheEntry>            get_favourites(ns::json&&, int);
 std::optional<DesktopEntry> desktop_entry(const fs::path& path, std::string_view lang, std::string_view term);

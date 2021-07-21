@@ -18,8 +18,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
-#include <filesystem>
 
+#include "filesystem-compat.h"
 #include "nwgconfig.h"
 #include "nwg_tools.h"
 

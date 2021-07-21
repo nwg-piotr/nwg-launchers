@@ -15,7 +15,7 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
-#include <charconv>
+#include "charconv-compat.h"
 #include "nwg_tools.h"
 #include "grid.h"
 
@@ -35,8 +35,7 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
     }
     if (auto cols = parser.getCmdOption("-n"); !cols.empty()) {
         int n_c;
-        auto [p, ec] = std::from_chars(cols.data(), cols.data() + cols.size(), n_c);
-        if (ec == std::errc()) {
+        if (parse_number(cols, n_c)) {
             if (n_c > 0 && n_c < 100) {
                 num_col = n_c;
             } else {
@@ -59,8 +58,7 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
 
     if (auto i_size = parser.getCmdOption("-s"); !i_size.empty()){
         int i_s;
-        auto [p, ec] = std::from_chars(i_size.data(), i_size.data() + i_size.size(), i_s);
-        if (ec == std::errc()) {
+        if (parse_number(i_size, i_s)) {
             if (i_s >= 16 && i_s <= 256) {
                 icon_size = i_s;
             } else {
