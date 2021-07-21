@@ -1,6 +1,14 @@
 name: ubuntu
 
-on: [ push, pull_request ]
+on:
+  push:
+    paths:
+      - "**.cpp"
+      - "**.h"
+  pull_request:
+    paths:
+      - "**.cpp"
+      - "**.h"
 
 jobs:
   clang:
@@ -8,8 +16,16 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
-      run: sudo apt install meson pkgconf libgtkmm-3.0-dev nlohmann-json3-dev libgtk-layer-shell-dev
-    - name: Setup build
-      run: meson setup builddir
-    - name: Build
-      run: meson compile -C builddir
+      run: sudo apt install meson pkgconf libgtkmm-3.0-dev nlohmann-json3-dev libgtk-layer-shell-dev clang gcc
+    - name: Setup clang build
+      env:
+        CXX: clang++
+      run: meson setup clang_build
+    - name: Setup gcc build
+      env:
+        CXX: g++
+      run: meson setup gcc_build
+    - name: Build with clang
+      run: ninja -C clang_build
+    - name: Build with gcc
+      run: ninja -C gcc_build

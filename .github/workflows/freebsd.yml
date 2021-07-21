@@ -1,6 +1,14 @@
 name: freebsd
 
-on: [ push, pull_request ]
+on:
+  push:
+    paths:
+      - "**.cpp"
+      - "**.h"
+  pull_request:
+    paths:
+      - "**.cpp"
+      - "**.h"
 
 jobs:
   clang:
