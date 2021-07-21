@@ -23,7 +23,6 @@
 #include "nwgconfig.h"
 #include "nwg_classes.h"
 
-namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
 class BarBox : public AppBox {

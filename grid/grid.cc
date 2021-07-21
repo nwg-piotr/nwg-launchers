@@ -35,8 +35,6 @@ Options:\n\
 
 int main(int argc, char *argv[]) {
     try {
-        std::filesystem::path custom_css_file{ "style.css" };
-
         struct timeval tp;
         gettimeofday(&tp, NULL);
         long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
@@ -64,9 +62,17 @@ int main(int argc, char *argv[]) {
             Log::error("Failed to initialize GTK");
             return EXIT_FAILURE;
         }
+
+        GridConfig config {
+            input,
+            screen,
+            config_dir
+        };
+        Log::info("Locale: ", config.lang);
+
         Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
         {
-            auto css_file = setup_css_file("nwggrid", config_dir, custom_css_file);
+            auto css_file = setup_css_file("nwggrid", config_dir, config.css_filename);
             provider->load_from_path(css_file);
             Log::info("Using css file \'", css_file, "\'");
         }
@@ -77,17 +83,6 @@ int main(int argc, char *argv[]) {
         }
         auto& icon_theme_ref = *icon_theme.get();
         auto icon_missing = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg");
-
-        GridConfig config {
-            input,
-            screen,
-            config_dir
-        };
-        Log::info("Locale: ", config.lang);
-
-        if (auto css_name = input.getCmdOption("-c"); !css_name.empty()){
-            custom_css_file = css_name;
-        }
 
         // This will be read-only, to find n most clicked items (n = number of grid columns)
         std::vector<CacheEntry> favourites;

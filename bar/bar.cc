@@ -34,10 +34,7 @@ Options:\n\
 
 int main(int argc, char *argv[]) {
     std::string definition_file {"bar.json"};
-    std::string custom_css_file {"style.css"};
     std::string orientation {"h"};
-    std::string h_align {""};
-    std::string v_align {""};
 
     struct timeval tp;
     gettimeofday(&tp, NULL);
@@ -58,11 +55,6 @@ int main(int argc, char *argv[]) {
     auto tname = input.getCmdOption("-t");
     if (!tname.empty()){
         definition_file = tname;
-    }
-
-    auto css_name = input.getCmdOption("-c");
-    if (!css_name.empty()){
-        custom_css_file = css_name;
     }
 
     auto background_color = input.get_background_color(0.9);
@@ -122,13 +114,21 @@ int main(int argc, char *argv[]) {
     auto provider = Gtk::CssProvider::create();
     auto display = Gdk::Display::get_default();
     auto screen = display->get_default_screen();
+
+    Config config {
+        input,
+        "~nwgbar",
+        "~nwgbar",
+        screen
+    };
+
     if (!provider || !display || !screen) {
         Log::error("Failed to initialize GTK");
         return EXIT_FAILURE;
     }
     Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
     {
-        auto css_file = setup_css_file("nwgbar", config_dir, custom_css_file);
+        auto css_file = setup_css_file("nwgbar", config_dir, config.css_filename);
         provider->load_from_path(css_file);
         Log::info("Using css file \'", css_file, "\'");
     }
@@ -140,12 +140,7 @@ int main(int argc, char *argv[]) {
     auto& icon_theme_ref = *icon_theme.get();
     auto icon_missing = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg");
 
-    Config config {
-        input,
-        "~nwgbar",
-        "~nwgbar",
-        screen
-    };
+
     BarWindow window{ config };
     window.set_background_color(background_color);
 

@@ -19,7 +19,6 @@
 #include "nwgconfig.h"
 #include "nwg_classes.h"
 
-namespace fs = std::filesystem;
 namespace ns = nlohmann;
 
 /* Primitive version of C++20's std::span */

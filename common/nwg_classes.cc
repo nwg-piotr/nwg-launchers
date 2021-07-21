@@ -74,6 +74,10 @@ Config::Config(const InputParser& parser, std::string_view title, std::string_vi
     auto valign_ = parser.getCmdOption("-va");
     if (valign_ == "t" || valign_ == "top") { valign = VAlign::Top; }
     if (valign_ == "b" || valign_ == "bottom") { valign = VAlign::Bottom; }
+
+    if (auto css_name = parser.getCmdOption("-c"); !css_name.empty()) {
+        css_filename = css_name;
+    }
 }
 
 CommonWindow::CommonWindow(Config& config): title{config.title} {

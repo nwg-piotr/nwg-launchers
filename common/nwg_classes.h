@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <variant>
@@ -21,6 +22,8 @@
 #ifdef HAVE_GTK_LAYER_SHELL
 #include <gtk-layer-shell.h>
 #endif
+
+namespace fs = std::filesystem;
 
 template <typename ... Os>
 struct Overloaded: Os... { using Os::operator()...; };
@@ -72,6 +75,7 @@ struct Config {
     std::string_view   role;
     HAlign             halign{ HAlign::NotSpecified };
     VAlign             valign{ VAlign::NotSpecified };
+    fs::path           css_filename{ "style.css" };   // filename relative to config dir
     
 #ifdef HAVE_GTK_LAYER_SHELL
     LayerShellArgs layer_shell_args;

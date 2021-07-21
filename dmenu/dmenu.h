@@ -16,8 +16,6 @@
 #include "nwgconfig.h"
 #include "nwg_classes.h"
 
-namespace fs = std::filesystem;
-
 #ifndef ROWS_DEFAULT
 #define ROWS_DEFAULT 20 // used in dmenu.cc/HELP_MESSAGE, don't turn into variable
 #endif

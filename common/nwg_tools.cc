@@ -33,8 +33,8 @@ static std::string pid_file{};
 /*
  * Returns config dir
  * */
-std::filesystem::path get_config_dir(std::string_view app) {
-    std::filesystem::path path;
+fs::path get_config_dir(std::string_view app) {
+    fs::path path;
     char* val = getenv("XDG_CONFIG_HOME");
     if (!val) {
         val = getenv("HOME");
@@ -55,9 +55,9 @@ std::filesystem::path get_config_dir(std::string_view app) {
 /*
  * Returns path to cache directory
  * */
-std::filesystem::path get_cache_home() {
+fs::path get_cache_home() {
     char* home_ = getenv("XDG_CACHE_HOME");
-    std::filesystem::path home;
+    fs::path home;
     if (home_) {
         home = home_;
     } else {
@@ -136,16 +136,16 @@ std::string get_term(std::string_view config_dir) {
     auto terminal_file = concat(config_dir, "/terminal"sv);
 
     std::error_code ec;
-    auto term_file_exists = std::filesystem::is_regular_file(term_file, ec) && !ec;
+    auto term_file_exists = fs::is_regular_file(term_file, ec) && !ec;
     ec.clear();
-    auto terminal_file_exists = std::filesystem::is_regular_file(terminal_file, ec) && !ec;
+    auto terminal_file_exists = fs::is_regular_file(terminal_file, ec) && !ec;
     
     if (term_file_exists) {
         if (!terminal_file_exists) {
-            std::filesystem::rename(term_file, terminal_file);
+            fs::rename(term_file, terminal_file);
             terminal_file_exists = true;
         } else {
-            std::filesystem::remove(term_file);
+            fs::remove(term_file);
         }
     }
     
@@ -400,7 +400,7 @@ std::string get_locale() {
 /*
  * Returns file content as a string
  * */
-std::string read_file_to_string(const std::filesystem::path& filename) {
+std::string read_file_to_string(const fs::path& filename) {
     std::ifstream input(filename);
     std::stringstream sstr;
 
@@ -412,7 +412,7 @@ std::string read_file_to_string(const std::filesystem::path& filename) {
 /*
  * Saves a string to a file
  * */
-void save_string_to_file(std::string_view s, const std::filesystem::path& filename) {
+void save_string_to_file(std::string_view s, const fs::path& filename) {
     std::ofstream file(filename);
     file << s;
 }
@@ -448,7 +448,7 @@ std::string_view take_last_by(std::string_view str, std::string_view delimiter) 
 /*
  * Reads json from file
  * */
-ns::json json_from_file(const std::filesystem::path& path) {
+ns::json json_from_file(const fs::path& path) {
     ns::json json;
     std::ifstream{path} >> json;
     return json;
@@ -464,7 +464,7 @@ ns::json string_to_json(std::string_view jsonString) {
 /*
  * Saves json into file
  * */
-void save_json(const ns::json& json_obj, const std::filesystem::path& filename) {
+void save_json(const ns::json& json_obj, const fs::path& filename) {
     std::ofstream o(filename);
     o << std::setw(2) << json_obj << std::endl;
 }
@@ -524,24 +524,25 @@ std::string get_output(const std::string& cmd) {
  * if default css file (config_dir / style.css) does not exist, it is copied from DATA directory to config_dir
  * TODO: explain better
  */
-std::string setup_css_file(std::string_view name, const std::filesystem::path& config_dir, const std::filesystem::path& custom_css_file) {
+fs::path setup_css_file(std::string_view name, const fs::path& config_dir, const fs::path& custom_css_file) {
     // default and custom style sheet
     auto default_css_file = config_dir / "style.css";
     // css file to be used
     auto css_file = config_dir / custom_css_file;
     // copy default file if not found
-    if (!std::filesystem::exists(default_css_file)) {
+    if (!fs::exists(default_css_file)) {
         try {
-            std::filesystem::path sample_css_file { DATA_DIR_STR };
+            fs::path sample_css_file { DATA_DIR_STR };
             sample_css_file /= name;
             sample_css_file /= "style.css";
-            std::filesystem::copy_file(sample_css_file, default_css_file, std::filesystem::copy_options::overwrite_existing);
-        } catch (const std::filesystem::filesystem_error& error) {
+            fs::copy_file(sample_css_file, default_css_file, fs::copy_options::overwrite_existing);
+        } catch (const fs::filesystem_error& error) {
             Log::error("Failed copying default style.css: \'", error.what(), "\'");
         }
     }
 
-    if (!std::filesystem::is_regular_file(css_file)) {
+    if (!fs::is_regular_file(css_file)) {
+        Log::error("Unable to open user-specified css file '", css_file, "', using default");
         css_file = default_css_file;
     }
     return css_file;

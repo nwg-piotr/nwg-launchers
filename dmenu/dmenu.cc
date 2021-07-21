@@ -39,18 +39,12 @@ Delete        clear search box\n\
 Insert        switch case sensitivity\n";
 
 int main(int argc, char *argv[]) {
-    std::filesystem::path custom_css_file {"style.css"};
-
     create_pid_file_or_kill_pid("nwgdmenu");
 
     InputParser input(argc, argv);
     if (input.cmdOptionExists("-h")){
         std::cout << HELP_MESSAGE;
         std::exit(0);
-    }
-
-    if (auto css_name = input.getCmdOption("-c"); !css_name.empty()) {
-        custom_css_file = css_name;
     }
 
     auto background_color = input.get_background_color(0.3);
@@ -71,17 +65,16 @@ int main(int argc, char *argv[]) {
         Log::error("Failed to initialize GTK");
         return EXIT_FAILURE;
     }
-    Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
-    {
-        auto css_file = setup_css_file("nwgdmenu", config_dir, custom_css_file);
-        Log::info("Using css file \'", css_file, "\'");
-        provider->load_from_path(css_file);
-    }
-
     DmenuConfig config {
         input,
         screen
     };
+    Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+    {
+        auto css_file = setup_css_file("nwgdmenu", config_dir, config.css_filename);
+        Log::info("Using css file \'", css_file, "\'");
+        provider->load_from_path(css_file);
+    }
 
     auto all_commands = get_commands_list(config);
     DmenuWindow window{ config, all_commands };
