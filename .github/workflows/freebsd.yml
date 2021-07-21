@@ -6,11 +6,13 @@ on:
       - "**.cpp"
       - "**.h"
       - "**.yml"
+      - "**.build"
   pull_request:
     paths:
       - "**.cpp"
       - "**.h"
       - "**.yml"
+      - "**.build"
 
 jobs:
   clang:

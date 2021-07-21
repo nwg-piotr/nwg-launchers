@@ -25,7 +25,11 @@ endif
 gtkmm = dependency('gtkmm-3.0', required: true)
 
 ## gtk-layer-shell
-gtk_layer_shell = dependency('gtk-layer-shell-0', version: ['>= 0.5.0'], required: get_option('layer-shell'))
+gtk_layer_shell = dependency(
+    'gtk-layer-shell-0',
+    version: ['>= 0.5.0'],
+    fallback: ['gtk-layer-shell-0', 'gtk-layer-shell'],
+    required: get_option('layer-shell'))
 if gtk_layer_shell.found()
     add_project_arguments('-DHAVE_GTK_LAYER_SHELL', language: 'cpp')
 endif

@@ -6,19 +6,21 @@ on:
       - "**.cpp"
       - "**.h"
       - "**.yml"
+      - "**.build"
   pull_request:
     paths:
       - "**.cpp"
       - "**.h"
       - "**.yml"
+      - "**.build"
 
 jobs:
-  clang:
+  build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
-      run: sudo apt install meson pkgconf libgtkmm-3.0-dev nlohmann-json3-dev libgtk-layer-shell-dev clang gcc
+      run: sudo apt install meson pkgconf libgtkmm-3.0-dev nlohmann-json3-dev libgtk-layer-shell-dev clang gcc gobject-introspection libgirepository1.0-dev libwayland-dev
     - name: Setup clang build
       env:
         CXX: clang++
