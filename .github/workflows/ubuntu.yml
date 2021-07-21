@@ -1,0 +1,15 @@
+name: ubuntu
+
+on: [ push, pull_request ]
+
+jobs:
+  clang:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: sudo apt install meson pkgconf libgtkmm-3.0-dev nlohmann-json3-dev libgtk-layer-shell-dev
+    - name: Setup build
+      run: meson setup builddir
+    - name: Build
+      run: meson compile -C builddir
