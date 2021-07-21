@@ -5,10 +5,12 @@ on:
     paths:
       - "**.cpp"
       - "**.h"
+      - "**.yml"
   pull_request:
     paths:
       - "**.cpp"
       - "**.h"
+      - "**.yml"
 
 jobs:
   clang:
