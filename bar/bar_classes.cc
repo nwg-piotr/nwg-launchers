@@ -14,12 +14,55 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
+#include "charconv-compat.h"
+#include "nwg_tools.h"
 #include "bar.h"
 
+BarConfig::BarConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen):
+    Config{ parser, "~nwgbar", "~nwgbar", screen }
+{
+    if (parser.cmdOptionExists("-v")) {
+        orientation = Orientation::Vertical;
+    }
+    if (auto tname = parser.getCmdOption("-t"); !tname.empty()) {
+        definition_file = tname;
+    }
+    if (auto i_size = parser.getCmdOption("-s"); !i_size.empty()) {
+        int i_s;
+        if (parse_number(i_size, i_s)) {
+            if (i_s >= 16 && i_s <= 256) {
+                icon_size = i_s;
+            } else {
+                Log::error("Size must be in range 16 - 256\n");
+            }
+        } else {
+            Log::error("Image size should be valid integer in range 16 - 256\n");
+        }
+    }
+}
+
 BarWindow::BarWindow(Config& config): PlatformWindow(config) {
+    // outer_box -> inner_vbox -> favs_hbox -> favs_grid
     favs_grid.set_column_spacing(5);
     favs_grid.set_row_spacing(5);
     favs_grid.set_column_homogeneous(true);
+
+    outer_box.set_spacing(15);
+    favs_hbox.set_name("bar");
+    switch (config.halign) {
+        case HAlign::Left:  favs_hbox.pack_start(favs_grid, false, false); break;
+        case HAlign::Right: favs_hbox.pack_end(favs_grid, false, false); break;
+        default: favs_hbox.pack_start(favs_grid, true, false);
+    }
+    inner_vbox.pack_start(favs_hbox, true, false);
+    switch (config.valign) {
+        case VAlign::Top:    outer_box.pack_start(inner_vbox, false, false); break;
+        case VAlign::Bottom: outer_box.pack_end(inner_vbox, false, false); break;
+        default: outer_box.pack_start(inner_vbox, Gtk::PACK_EXPAND_PADDING);
+    }
+
+    add(outer_box);
+    show_all_children();
 }
 
 bool BarWindow::on_button_press_event(GdkEventButton* button) {

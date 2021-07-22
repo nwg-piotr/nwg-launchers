@@ -5,6 +5,7 @@
  * Project: https://github.com/nwg-piotr/nwg-launchers
  * License: GPL3
  * */
+#pragma once
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -24,6 +25,15 @@
 
 namespace ns = nlohmann;
 
+enum class Orientation: unsigned int { Horizontal = 0, Vertical };
+
+struct BarConfig: public Config {
+    int icon_size{ 72 };
+    Orientation orientation{ Orientation::Horizontal };
+    fs::path definition_file{ "bar.json" };
+    BarConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen);
+};
+
 class BarBox : public AppBox {
 public:
     BarBox(Glib::ustring, Glib::ustring, Glib::ustring);
@@ -35,6 +45,9 @@ class BarWindow : public PlatformWindow {
     public:
         BarWindow(Config&);
 
+        Gtk::Box  outer_box{ Gtk::ORIENTATION_VERTICAL };
+        Gtk::VBox inner_vbox;
+        Gtk::HBox favs_hbox;
         Gtk::Grid favs_grid;                    // Favourites grid above
         Gtk::Separator separator;               // between favs and all apps
         std::vector<BarBox> all_boxes {};        // attached to apps_grid unfiltered view

@@ -1,7 +1,7 @@
 #pragma once
 #include <string_view>
 
-#ifdef __cpp_lib_to_chars
+#if defined (__cpp_lib_to_chars) || __has_include(<charconv>)
 #include <charconv>
 
 template <typename T>
