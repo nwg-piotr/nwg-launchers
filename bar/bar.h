@@ -45,14 +45,11 @@ class BarWindow : public PlatformWindow {
     public:
         BarWindow(Config&);
 
-        Gtk::Box  outer_box{ Gtk::ORIENTATION_VERTICAL };
-        Gtk::VBox inner_vbox;
-        Gtk::HBox favs_hbox;
-        Gtk::Grid favs_grid;                    // Favourites grid above
+        Gtk::VBox outer_box;
+        Gtk::HBox inner_hbox;
+        Gtk::Grid grid;                         // Buttons grid
         Gtk::Separator separator;               // between favs and all apps
-        std::vector<BarBox> all_boxes {};        // attached to apps_grid unfiltered view
-        std::vector<BarBox> filtered_boxes {};   // attached to apps_grid filtered view
-        std::vector<BarBox> boxes {};            // attached to favs_grid
+        std::vector<BarBox> boxes {};           // attached to favs_grid
 
     private:
         //Override default signal handler:

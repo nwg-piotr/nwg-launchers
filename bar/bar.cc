@@ -122,16 +122,17 @@ int main(int argc, char *argv[]) {
     int column = 0;
     int row = 0;
 
-    window.favs_grid.freeze_child_notify();
+    window.grid.freeze_child_notify();
     for (auto& box : window.boxes) {
-        window.favs_grid.attach(box, column, row, 1, 1);
+        window.grid.attach(box, column, row, 1, 1);
         if (config.orientation == Orientation::Vertical) {
             row++;
         } else {
             column++;
         }
     }
-    window.favs_grid.thaw_child_notify();
+    window.grid.thaw_child_notify();
+    window.show_all_children();
     window.show(hint::Fullscreen);
 
     gettimeofday(&tp, NULL);

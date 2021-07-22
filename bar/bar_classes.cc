@@ -42,25 +42,22 @@ BarConfig::BarConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>&
 }
 
 BarWindow::BarWindow(Config& config): PlatformWindow(config) {
-    // outer_box -> inner_vbox -> favs_hbox -> favs_grid
-    favs_grid.set_column_spacing(5);
-    favs_grid.set_row_spacing(5);
-    favs_grid.set_column_homogeneous(true);
-
+    // outer_box -> inner_hbox -> grid
+    grid.set_column_spacing(5);
+    grid.set_row_spacing(5);
+    grid.set_column_homogeneous(true);
     outer_box.set_spacing(15);
-    favs_hbox.set_name("bar");
+    inner_hbox.set_name("bar");
     switch (config.halign) {
-        case HAlign::Left:  favs_hbox.pack_start(favs_grid, false, false); break;
-        case HAlign::Right: favs_hbox.pack_end(favs_grid, false, false); break;
-        default: favs_hbox.pack_start(favs_grid, true, false);
+        case HAlign::Left:  inner_hbox.pack_start(grid, false, false); break;
+        case HAlign::Right: inner_hbox.pack_end(grid, false, false); break;
+        default: inner_hbox.pack_start(grid, true, false);
     }
-    inner_vbox.pack_start(favs_hbox, true, false);
     switch (config.valign) {
-        case VAlign::Top:    outer_box.pack_start(inner_vbox, false, false); break;
-        case VAlign::Bottom: outer_box.pack_end(inner_vbox, false, false); break;
-        default: outer_box.pack_start(inner_vbox, Gtk::PACK_EXPAND_PADDING);
+        case VAlign::Top:    outer_box.pack_start(inner_hbox, false, false); break;
+        case VAlign::Bottom: outer_box.pack_end(inner_hbox, false, false); break;
+        default: outer_box.pack_start(inner_hbox, Gtk::PACK_EXPAND_PADDING);
     }
-
     add(outer_box);
     show_all_children();
 }
