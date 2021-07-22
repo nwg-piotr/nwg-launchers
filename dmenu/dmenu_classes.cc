@@ -99,8 +99,13 @@ DmenuWindow::DmenuWindow(DmenuConfig& config, std::vector<Glib::ustring>& src):
         auto iter = model->get_iter(path);
         Glib::ustring item;
         iter->get_value(0, item);
-        item += " &";
-        system(item.c_str());
+        try {
+            Glib::spawn_command_line_async(item);
+        } catch (const Glib::SpawnError& error) {
+            Log::error("Failed to run command: ", error.what());
+        } catch (const Glib::ShellError& error) {
+            Log::error("Failed to run command: ", error.what());
+        }
         this->close();
     });
     searchbox.set_name("searchbox");

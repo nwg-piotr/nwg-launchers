@@ -94,9 +94,12 @@ bool BarBox::on_button_press_event(GdkEventButton* event) {
 }
 
 void BarBox::on_activate() {
-    exec.append(" &");
-    const char *command = exec.c_str();
-    std::system(command);
-
+    try {
+        Glib::spawn_command_line_async(exec);
+    } catch (const Glib::SpawnError& error) {
+        Log::error("Failed to run command: ", error.what());
+    } catch (const Glib::ShellError& error) {
+        Log::error("Failed to run command: ", error.what());
+    }
     dynamic_cast<BarWindow*>(this->get_toplevel())->close();
 }

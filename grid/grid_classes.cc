@@ -435,12 +435,17 @@ void GridBox::on_enter() {
 void GridBox::on_activate() {
     auto& toplevel = *dynamic_cast<GridWindow*>(this->get_toplevel());
     toplevel.stats_of(*this).clicks++;
-    std::string cmd = toplevel.exec_of(*this);
-    cmd += " &";
+    auto& cmd = toplevel.exec_of(*this);
     // TODO: use special flag
     if (cmd.find(toplevel.config.term) == 0) {
         Log::info("Running: \'", cmd, "\'");
     }
-    std::system(cmd.data());
+    try {
+        Glib::spawn_command_line_async(cmd);
+    } catch (const Glib::SpawnError& error) {
+        Log::error("Failed to run command: ", error.what());
+    } catch (const Glib::ShellError& error) {
+        Log::error("Failed to run command: ", error.what());
+    }
     toplevel.close();
 }
