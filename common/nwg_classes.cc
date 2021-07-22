@@ -11,7 +11,6 @@
 
 #include <algorithm>
 #include <array>
-#include <iostream>
 
 #include "charconv-compat.h"
 #include "nwg_classes.h"

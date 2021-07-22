@@ -7,14 +7,6 @@
  * */
 #pragma once
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <fcntl.h>
-
-#include <iostream>
-#include <fstream>
-
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
 

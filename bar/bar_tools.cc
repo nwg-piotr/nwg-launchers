@@ -6,7 +6,6 @@
  * License: GPL3
  * */
 
-#include "nwg_tools.h"
 #include "bar.h"
 
 /*
@@ -21,12 +20,4 @@ std::vector<BarEntry> get_bar_entries(ns::json&& bar_json) {
                              std::move(json.at("icon")));
     }
     return entries;
-}
-
-void on_button_clicked(std::string cmd) {
-    cmd = cmd + " &";
-    const char *command = cmd.c_str();
-    std::system(command);
-
-    Gtk::Main::quit();
 }
