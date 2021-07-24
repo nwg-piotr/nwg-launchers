@@ -1,6 +1,7 @@
 # nwg-launchers
 
-[![Build Status](https://travis-ci.com/nwg-piotr/nwg-launchers.svg?branch=master)](https://travis-ci.com/nwg-piotr/nwg-launchers)
+[![Build Status](https://github.com/nwg-piotr/nwg-launchers/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/nwg-piotr/nwg-launchers/actions/workflows/ubuntu.yml) 
+[![Build Status](https://github.com/nwg-piotr/nwg-launchers/actions/workflows/freebsd.yml/badge.svg)](https://github.com/nwg-piotr/nwg-launchers/actions/workflows/freebsd.yml)
 
 ## This project is community-driven
 
@@ -34,8 +35,9 @@ latest release](https://github.com/nwg-piotr/nwg-launchers/releases/latest).
 ### Dependencies
 
 - `gtkmm3` (`libgtkmm-3.0-dev`)
-- `nlohmann-json` - optional, can be downloaded as a subproject
 - `meson` and `ninja` - build dependencies
+- `nlohmann-json` - will be downloaded as a subproject if not found on the system
+- `gtk-layer-shell` - optional, set to `auto` by default; will be downloaded as a subproject if explicitly enabled, but not found on the system
 
 ### Building
 
