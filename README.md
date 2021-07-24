@@ -1,6 +1,8 @@
 # nwg-launchers
 
-[![Build Status](https://travis-ci.com/nwg-piotr/nwg-launchers.svg?branch=master)](https://travis-ci.com/nwg-piotr/nwg-launchers)
+[![Build Status](https://github.com/nwg-piotr/nwg-launchers/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/nwg-piotr/nwg-launchers/actions/workflows/ubuntu.yml)
+
+[![Build Status](https://github.com/nwg-piotr/nwg-launchers/actions/workflows/freebsd.yml/badge.svg)](https://github.com/nwg-piotr/nwg-launchers/actions/workflows/freebsd.yml)
 
 ## This project is community-driven
 

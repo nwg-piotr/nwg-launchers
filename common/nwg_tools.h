@@ -66,4 +66,4 @@ namespace Log {
     void error(Ts && ... ts) { write(std::cerr, "ERROR: ", std::forward<Ts>(ts)...); }
     template <typename ... Ts>
     void plain(Ts && ... ts) { write(std::cerr, std::forward<Ts>(ts)...); }
-};
+}
