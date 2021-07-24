@@ -8,22 +8,11 @@
  * */
 
 #include <sys/time.h>
-#include <unistd.h>
-#include <sys/stat.h>
-
-#include <charconv>
+#include <iostream>
 
 #include "nwg_tools.h"
 #include "nwg_classes.h"
 #include "grid.h"
-
-bool pins = false;              // whether to display pinned
-bool favs = false;              // whether to display favorites
-std::string term {""};
-std::size_t num_col = 6;        // number of grid columns
-
-std::filesystem::path pinned_file;
-std::filesystem::path cache_file;
 
 const char* const HELP_MESSAGE =
 "GTK application grid: nwggrid " VERSION_STR " (c) 2020 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
@@ -46,95 +35,16 @@ Options:\n\
 
 int main(int argc, char *argv[]) {
     try {
-        std::filesystem::path custom_css_file{ "style.css" };
-
         struct timeval tp;
         gettimeofday(&tp, NULL);
         long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
         create_pid_file_or_kill_pid("nwggrid");
 
-        std::string lang ("");
-
-        InputParser input(argc, argv);
+        InputParser input{ argc, argv };
         if (input.cmdOptionExists("-h")){
             std::cout << HELP_MESSAGE;
             std::exit(0);
-        }
-        favs = input.cmdOptionExists("-f") && !input.cmdOptionExists("-d");
-        pins = input.cmdOptionExists("-p") && !input.cmdOptionExists("-d");
-        if (auto forced_lang = input.getCmdOption("-l"); !forced_lang.empty()){
-            lang = forced_lang;
-        } else {
-            lang = get_locale();
-        }
-        Log::info("Locale: ", lang);
-
-        if (auto cols = input.getCmdOption("-n"); !cols.empty()) {
-            int n_c;
-            auto [p, ec] = std::from_chars(cols.data(), cols.data() + cols.size(), n_c);
-            if (ec == std::errc()) {
-                if (n_c > 0 && n_c < 100) {
-                    num_col = n_c;
-                } else {
-                    Log::error("Columns must be in range 1 - 99\n");
-                }
-            } else {
-                Log::error("Invalid number of columns\n");
-            }
-        }
-
-        if (auto css_name = input.getCmdOption("-c"); !css_name.empty()){
-            custom_css_file = css_name;
-        }
-
-        auto background_color = input.get_background_color(0.9);
-
-        auto i_size = input.getCmdOption("-s");
-        if (!i_size.empty()){
-            int i_s;
-            auto [p, ec] = std::from_chars(i_size.data(), i_size.data() + i_size.size(), i_s);
-            if (ec == std::errc()) {
-                if (i_s >= 16 && i_s <= 256) {
-                    image_size = i_s;
-                } else {
-                    Log::error("Size must be in range 16 - 256\n");
-                }
-            } else {
-                Log::error("Invalid image size");
-            }
-        }
-
-
-        auto cache_home = get_cache_home();
-        // This will be read-only, to find n most clicked items (n = number of grid columns)
-        std::vector<CacheEntry> favourites;
-        if (favs) {
-            cache_file = cache_home / "nwg-fav-cache";
-            try {
-                auto cache = json_from_file(cache_file);
-                if (cache.size() > 0) {
-                    Log::info(cache.size(), " cache entries loaded");
-                } else {
-                    Log::info("No cache entries loaded");
-                }
-                auto n = std::min(num_col, cache.size());
-                favourites = get_favourites(std::move(cache), n);
-            }  catch (...) {
-                // TODO: only save cache if favs were changed
-                Log::error("Failed to read cache file '", cache_file, "'");
-            }
-        }
-
-        std::vector<std::string> pinned;
-        if (pins) {
-            pinned_file = cache_home / "nwg-pin-cache";
-            pinned = get_pinned(pinned_file);
-            if (pinned.size() > 0) {
-                Log::info(pinned.size(), " pinned entries loaded");
-            } else {
-                Log::info("No pinned entries found");
-            }
         }
 
         auto config_dir = get_config_dir("nwggrid");
@@ -143,22 +53,66 @@ int main(int argc, char *argv[]) {
             fs::create_directories(config_dir);
         }
 
-        term = get_term(config_dir.native());
+        auto app = Gtk::Application::create();
 
-        // default and custom style sheet
-        auto default_css_file = config_dir / "style.css";
-        // css file to be used
-        auto css_file = config_dir / custom_css_file;
-        // copy default file if not found
-        if (!fs::exists(default_css_file)) {
+        auto provider = Gtk::CssProvider::create();
+        auto display = Gdk::Display::get_default();
+        auto screen = display->get_default_screen();
+        if (!provider || !display || !screen) {
+            Log::error("Failed to initialize GTK");
+            return EXIT_FAILURE;
+        }
+
+        GridConfig config {
+            input,
+            screen,
+            config_dir
+        };
+        Log::info("Locale: ", config.lang);
+
+        Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+        {
+            auto css_file = setup_css_file("nwggrid", config_dir, config.css_filename);
+            provider->load_from_path(css_file);
+            Log::info("Using css file \'", css_file, "\'");
+        }
+        auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
+        if (!icon_theme) {
+            Log::error("Failed to load icon theme");
+            std::exit(EXIT_FAILURE);
+        }
+        auto& icon_theme_ref = *icon_theme.get();
+        auto icon_missing = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg");
+
+        // This will be read-only, to find n most clicked items (n = number of grid columns)
+        std::vector<CacheEntry> favourites;
+        if (config.favs) {
             try {
-                fs::copy_file(DATA_DIR_STR "/nwggrid/style.css", default_css_file, fs::copy_options::overwrite_existing);
-            } catch (...) {
-                Log::error("Failed copying default style.css");
+                auto cache = json_from_file(config.cached_file);
+                if (cache.size() > 0) {
+                    Log::info(cache.size(), " cache entries loaded");
+                } else {
+                    Log::info("No cache entries loaded");
+                }
+                auto n = std::min(config.num_col, cache.size());
+                favourites = get_favourites(std::move(cache), n);
+            }  catch (...) {
+                // TODO: only save cache if favs were changed
+                Log::error("Failed to read cache file '", config.cached_file, "'");
             }
         }
 
-        std::vector<std::filesystem::path> dirs;
+        std::vector<std::string> pinned;
+        if (config.pins) {
+            pinned = get_pinned(config.pinned_file);
+            if (pinned.size() > 0) {
+                Log::info(pinned.size(), " pinned entries loaded");
+            } else {
+                Log::info("No pinned entries found");
+            }
+        }
+
+        std::vector<fs::path> dirs;
         if (auto special_dirs = input.getCmdOption("-d"); !special_dirs.empty()) {
             using namespace std::string_view_literals;
             // use special dirs specified with -d argument (feature request #122)
@@ -167,7 +121,7 @@ int main(int argc, char *argv[]) {
             std::array status { "' [INVALID]\n"sv, "' [OK]\n"sv };
             for (auto && dir: dirs_) {
                 std::error_code ec;
-                auto is_dir = std::filesystem::is_directory(dir, ec) && !ec;
+                auto is_dir = fs::is_directory(dir, ec) && !ec;
                 Log::plain('\'', dir, status[is_dir]);
                 if (is_dir) {
                     dirs.emplace_back(dir);
@@ -210,7 +164,7 @@ int main(int argc, char *argv[]) {
                 auto&& rel_path = path.lexically_relative(dir);
                 auto&& id = desktop_id(rel_path);
                 if (auto [at, inserted] = desktop_ids.try_emplace(id, std::nullopt); inserted) {
-                    if (auto entry = desktop_entry(path, lang)) {
+                    if (auto entry = desktop_entry(path, config.lang, config.term)) {
                         at->second = execs.size(); // set index
                         execs.emplace_back(entry->exec);
                         desktop_entries.emplace_back(std::move(*entry));
@@ -239,38 +193,7 @@ int main(int argc, char *argv[]) {
         gettimeofday(&tp, NULL);
         long int bs_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-        auto app = Gtk::Application::create();
-
-        auto provider = Gtk::CssProvider::create();
-        auto display = Gdk::Display::get_default();
-        auto screen = display->get_default_screen();
-        if (!provider || !display || !screen) {
-            Log::error("Failed to initialize GTK");
-            return EXIT_FAILURE;
-        }
-        Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
-        auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
-        if (!icon_theme) {
-            Log::error("Failed to load icon theme");
-            std::exit(EXIT_FAILURE);
-        }
-        auto& icon_theme_ref = *icon_theme.get();
-        auto icon_missing = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg");
-
-        if (!std::filesystem::is_regular_file(css_file)) {
-            css_file = default_css_file;
-        }
-        provider->load_from_path(css_file);
-        Log::info("Using ", css_file, '\n');
-
-        Config config {
-            input,
-            "~nwggrid",
-            "~nwggrid",
-            screen
-        };
-        MainWindow window(config, execs, stats);
-        window.set_background_color(background_color);
+        GridWindow window{ config, execs, stats };
         window.show(hint::Fullscreen);
 
         gettimeofday(&tp, NULL);
@@ -278,7 +201,7 @@ int main(int argc, char *argv[]) {
 
         // The most expensive part
         for (std::size_t i = 0; i < desktop_entries.size(); i++) {
-            images[i] = app_image(icon_theme_ref, desktop_entries[i].icon, icon_missing);
+            images[i] = app_image(icon_theme_ref, desktop_entries[i].icon, icon_missing, config.icon_size);
         }
 
         gettimeofday(&tp, NULL);

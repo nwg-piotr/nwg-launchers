@@ -11,9 +11,8 @@
 
 #include <algorithm>
 #include <array>
-#include <charconv>
-#include <iostream>
 
+#include "charconv-compat.h"
 #include "nwg_classes.h"
 #include "nwg_tools.h"
 
@@ -67,6 +66,17 @@ Config::Config(const InputParser& parser, std::string_view title, std::string_vi
         this->wm = detect_wm(screen->get_display(), screen);
     }
     Log::info("wm: ", this->wm);
+
+    auto halign_ = parser.getCmdOption("-ha");
+    if (halign_ == "l" || halign_ == "left") { halign = HAlign::Left; }
+    if (halign_ == "r" || halign_ == "right") { halign = HAlign::Right; }
+    auto valign_ = parser.getCmdOption("-va");
+    if (valign_ == "t" || valign_ == "top") { valign = VAlign::Top; }
+    if (valign_ == "b" || valign_ == "bottom") { valign = VAlign::Bottom; }
+
+    if (auto css_name = parser.getCmdOption("-c"); !css_name.empty()) {
+        css_filename = css_name;
+    }
 }
 
 CommonWindow::CommonWindow(Config& config): title{config.title} {
@@ -126,9 +136,9 @@ AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment):
     exec{std::move(exec)},
     comment{std::move(comment)}
 {
-    if (name.length() > 25) {
-        name.resize(22);
-        name.append("...");
+    if (this->name.length() > 25) {
+        this->name.resize(22);
+        this->name.append("...");
     }
     this -> set_always_show_image(true);
 }
@@ -223,8 +233,7 @@ LayerShellArgs::LayerShellArgs(const InputParser& parser) {
     if (auto zone = parser.getCmdOption("-layer-shell-exclusive-zone"); !zone.empty()) {
         this->exclusive_zone_is_auto = zone == "auto"sv;
         if (!this->exclusive_zone_is_auto) {
-            auto [p, ec] = std::from_chars(zone.data(), zone.data() + zone.size(), this->exclusive_zone);
-            if (ec != std::errc()) {
+            if (!parse_number(zone, this->exclusive_zone)) {
                 Log::error("Unable to decode layer-shell-exclusive-zone value");
                 std::exit(EXIT_FAILURE);
             }

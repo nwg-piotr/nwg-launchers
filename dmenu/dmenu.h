@@ -6,27 +6,34 @@
  * License: GPL3
  * */
 
-#include <filesystem>
+#pragma once
+#include <vector>
 
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
 
+#include "filesystem-compat.h"
 #include "nwgconfig.h"
 #include "nwg_classes.h"
 
-namespace fs = std::filesystem;
+#ifndef ROWS_DEFAULT
+#define ROWS_DEFAULT 20 // used in dmenu.cc/HELP_MESSAGE, don't turn into variable
+#endif
 
-extern int rows;
-extern std::filesystem::path settings_file;
+struct DmenuConfig: public Config {
+    DmenuConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen);
 
-extern bool dmenu_run;
-extern bool show_searchbox;
-extern bool case_sensitive;
+    fs::path settings_file;
+    int rows{ ROWS_DEFAULT };            // number of menu items to display
+    bool dmenu_run{ true };
+    bool show_searchbox{ true };
+    bool case_sensitive{ true };
+};
 
-class MainWindow : public PlatformWindow {
+class DmenuWindow : public PlatformWindow {
     public:
-        MainWindow(Config&, std::vector<Glib::ustring>&);
-        ~MainWindow();
+        DmenuWindow(DmenuConfig&, std::vector<Glib::ustring>&);
+        ~DmenuWindow();
         void emplace_back(const Glib::ustring&);
 
         int get_height() override;
@@ -42,11 +49,11 @@ class MainWindow : public PlatformWindow {
         Gtk::VBox         vbox;
         std::vector<Glib::ustring>& commands_source;
         bool case_sensitivity_changed = false;
-        bool never_focused = true;
+        DmenuConfig&       config;
 };
 
 /*
  * Function declarations
  * */
-std::vector<Glib::ustring> list_commands();
-std::filesystem::path get_settings_path();
+std::vector<Glib::ustring> get_commands_list(const DmenuConfig& config);
+fs::path get_settings_path();

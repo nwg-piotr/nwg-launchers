@@ -5,15 +5,7 @@
  * Project: https://github.com/nwg-piotr/nwg-launchers
  * License: GPL3
  * */
-
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/file.h>
-#include <fcntl.h>
-
-#include <iostream>
-#include <fstream>
-#include <filesystem>
+#pragma once
 
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
@@ -23,8 +15,16 @@
 #include "nwgconfig.h"
 #include "nwg_classes.h"
 
-namespace fs = std::filesystem;
 namespace ns = nlohmann;
+
+enum class Orientation: unsigned int { Horizontal = 0, Vertical };
+
+struct BarConfig: public Config {
+    int icon_size{ 72 };
+    Orientation orientation{ Orientation::Horizontal };
+    fs::path definition_file{ "bar.json" };
+    BarConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen);
+};
 
 class BarBox : public AppBox {
 public:
@@ -33,15 +33,15 @@ public:
     void on_activate() override;
 };
 
-class MainWindow : public PlatformWindow {
+class BarWindow : public PlatformWindow {
     public:
-        MainWindow(Config&);
+        BarWindow(Config&);
 
-        Gtk::Grid favs_grid;                    // Favourites grid above
+        Gtk::VBox outer_box;
+        Gtk::HBox inner_hbox;
+        Gtk::Grid grid;                         // Buttons grid
         Gtk::Separator separator;               // between favs and all apps
-        std::vector<BarBox> all_boxes {};        // attached to apps_grid unfiltered view
-        std::vector<BarBox> filtered_boxes {};   // attached to apps_grid filtered view
-        std::vector<BarBox> boxes {};            // attached to favs_grid
+        std::vector<BarBox> boxes {};           // attached to favs_grid
 
     private:
         //Override default signal handler:

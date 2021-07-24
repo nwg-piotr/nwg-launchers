@@ -14,21 +14,61 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
+#include "charconv-compat.h"
+#include "nwg_tools.h"
 #include "bar.h"
 
-MainWindow::MainWindow(Config& config): PlatformWindow(config) {
-    favs_grid.set_column_spacing(5);
-    favs_grid.set_row_spacing(5);
-    favs_grid.set_column_homogeneous(true);
+BarConfig::BarConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen):
+    Config{ parser, "~nwgbar", "~nwgbar", screen }
+{
+    if (parser.cmdOptionExists("-v")) {
+        orientation = Orientation::Vertical;
+    }
+    if (auto tname = parser.getCmdOption("-t"); !tname.empty()) {
+        definition_file = tname;
+    }
+    if (auto i_size = parser.getCmdOption("-s"); !i_size.empty()) {
+        int i_s;
+        if (parse_number(i_size, i_s)) {
+            if (i_s >= 16 && i_s <= 256) {
+                icon_size = i_s;
+            } else {
+                Log::error("Size must be in range 16 - 256\n");
+            }
+        } else {
+            Log::error("Image size should be valid integer in range 16 - 256\n");
+        }
+    }
 }
 
-bool MainWindow::on_button_press_event(GdkEventButton* button) {
+BarWindow::BarWindow(Config& config): PlatformWindow(config) {
+    // outer_box -> inner_hbox -> grid
+    grid.set_column_spacing(5);
+    grid.set_row_spacing(5);
+    grid.set_column_homogeneous(true);
+    outer_box.set_spacing(15);
+    inner_hbox.set_name("bar");
+    switch (config.halign) {
+        case HAlign::Left:  inner_hbox.pack_start(grid, false, false); break;
+        case HAlign::Right: inner_hbox.pack_end(grid, false, false); break;
+        default: inner_hbox.pack_start(grid, true, false);
+    }
+    switch (config.valign) {
+        case VAlign::Top:    outer_box.pack_start(inner_hbox, false, false); break;
+        case VAlign::Bottom: outer_box.pack_end(inner_hbox, false, false); break;
+        default: outer_box.pack_start(inner_hbox, Gtk::PACK_EXPAND_PADDING);
+    }
+    add(outer_box);
+    show_all_children();
+}
+
+bool BarWindow::on_button_press_event(GdkEventButton* button) {
     (void)button;
     this->close();
     return true;
 }
 
-bool MainWindow::on_key_press_event(GdkEventKey* key_event) {
+bool BarWindow::on_key_press_event(GdkEventKey* key_event) {
     if (key_event -> keyval == GDK_KEY_Escape) {
         this->close();
     }
@@ -54,9 +94,12 @@ bool BarBox::on_button_press_event(GdkEventButton* event) {
 }
 
 void BarBox::on_activate() {
-    exec.append(" &");
-    const char *command = exec.c_str();
-    std::system(command);
-
-    dynamic_cast<MainWindow*>(this->get_toplevel())->close();
+    try {
+        Glib::spawn_command_line_async(exec);
+    } catch (const Glib::SpawnError& error) {
+        Log::error("Failed to run command: ", error.what());
+    } catch (const Glib::ShellError& error) {
+        Log::error("Failed to run command: ", error.what());
+    }
+    dynamic_cast<BarWindow*>(this->get_toplevel())->close();
 }

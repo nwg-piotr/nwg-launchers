@@ -5,10 +5,9 @@
  * Project: https://github.com/nwg-piotr/nwg-launchers
  * License: GPL3
  * */
+#pragma once
 
-#include <iostream>
 #include <fstream>
-#include <filesystem>
 #include <optional>
 
 #include <gtkmm.h>
@@ -17,19 +16,10 @@
 #include <nlohmann/json.hpp>
 
 #include "nwgconfig.h"
+#include "filesystem-compat.h"
 #include "nwg_classes.h"
 
-namespace fs = std::filesystem;
 namespace ns = nlohmann;
-
-extern bool pins;
-extern bool favs;
-
-extern std::size_t num_col;
-
-extern std::filesystem::path cache_file;
-extern std::filesystem::path pinned_file;
-extern std::string term;
 
 /* Primitive version of C++20's std::span */
 template <typename T>
@@ -73,10 +63,24 @@ public:
     std::size_t        index;      // row index
 };
 
-class MainWindow : public PlatformWindow {
+struct GridConfig: public Config {
+    GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen, const fs::path& config_dir);
+
+    bool pins;                // whether to display pinned
+    bool favs;                // whether to display favorites
+    std::string term;         // user-preferred terminal
+    std::string lang;         // user-preferred language
+    std::size_t num_col{ 6 }; // number of grid columns
+    fs::path pinned_file;     // file with pins
+    fs::path cached_file;     // file with favs
+    int icon_size{ 72 };
+    RGBA background_color;
+};
+
+class GridWindow : public PlatformWindow {
     public:
-        MainWindow(Config& config, Span<std::string> entries, Span<Stats> stats);
-        MainWindow(const MainWindow&) = delete;
+        GridWindow(GridConfig& config, Span<std::string> entries, Span<Stats> stats);
+        GridWindow(const GridWindow&) = delete;
 
         Gtk::SearchEntry searchbox;              // Search apps
         Gtk::Label description;                  // To display .desktop entry Comment field at the bottom
@@ -92,6 +96,7 @@ class MainWindow : public PlatformWindow {
         Gtk::HBox favs_hbox;
         Gtk::HBox apps_hbox;
         Gtk::ScrolledWindow scrolled_window;
+        GridConfig&           config;
 
         template <typename ... Args>
         GridBox& emplace_box(Args&& ... args);      // emplace box
@@ -119,6 +124,7 @@ class MainWindow : public PlatformWindow {
         std::vector<GridBox*> fav_boxes {};      // attached to favs_grid
         std::vector<GridBox*> pinned_boxes {};   // attached to pinned_grid
 
+
         Span<std::string> execs;
         Span<Stats>       stats;
 
@@ -132,7 +138,7 @@ class MainWindow : public PlatformWindow {
 };
 
 template <typename ... Args>
-GridBox& MainWindow::emplace_box(Args&& ... args) {
+GridBox& GridWindow::emplace_box(Args&& ... args) {
     auto& ab = this -> all_boxes.emplace_back(std::forward<Args>(args)...);
     auto* boxes = &apps_boxes;
     auto& stats = this -> stats_of(ab);
@@ -154,7 +160,7 @@ struct CacheEntry {
 /*
  * Function declarations
  * */
-std::vector<std::filesystem::path> get_app_dirs(void);
-std::vector<std::string>           get_pinned(const std::filesystem::path& pinned_file);
-std::vector<CacheEntry>            get_favourites(ns::json&&, int);
-std::optional<DesktopEntry>        desktop_entry(std::string&&, const std::string&);
+std::vector<fs::path>       get_app_dirs(void);
+std::vector<std::string>    get_pinned(const fs::path& pinned_file);
+std::vector<CacheEntry>     get_favourites(ns::json&&, int);
+std::optional<DesktopEntry> desktop_entry(const fs::path& path, std::string_view lang, std::string_view term);
