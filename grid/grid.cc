@@ -39,8 +39,6 @@ int main(int argc, char *argv[]) {
         gettimeofday(&tp, NULL);
         long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-        create_pid_file_or_kill_pid("nwggrid");
-
         InputParser input{ argc, argv };
         if (input.cmdOptionExists("-h")){
             std::cout << HELP_MESSAGE;
@@ -194,7 +192,6 @@ int main(int argc, char *argv[]) {
         long int bs_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
         GridWindow window{ config, execs, stats };
-        window.show(hint::Fullscreen);
 
         gettimeofday(&tp, NULL);
         long int images_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
@@ -238,9 +235,12 @@ int main(int argc, char *argv[]) {
         format("\tbs:      ", bs_ms, images_ms);
         format("\tcommons: ", commons_ms, bs_ms);
 
-        return app->run(window);
+        GridInstance instance{ *app.get(), window };
+        return app->run();
     } catch (const Glib::FileError& error) {
         Log::error(error.what());
-        return EXIT_FAILURE;
+    } catch (const std::runtime_error& error) {
+        Log::error(error.what());
     }
+    return EXIT_FAILURE;
 }

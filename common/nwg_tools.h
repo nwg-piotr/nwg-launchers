@@ -26,6 +26,7 @@ namespace ns = nlohmann;
 
 fs::path get_cache_home();
 fs::path get_config_dir(std::string_view);
+fs::path get_runtime_dir();
 
 std::string detect_wm(const Glib::RefPtr<Gdk::Display>&, const Glib::RefPtr<Gdk::Screen>&);
 
@@ -48,7 +49,15 @@ fs::path setup_css_file(std::string_view name, const fs::path& config_dir, const
 Gtk::Image* app_image(const Gtk::IconTheme&, const std::string&, const Glib::RefPtr<Gdk::Pixbuf>&, int icon_size);
 Geometry display_geometry(std::string_view, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);
 
-void create_pid_file_or_kill_pid(std::string);
+// Glibmm does not provide C++ wrappers over glibmm-unix extensions
+// so, to handle a signal, we define following plain functions
+// taking pointer to Instance as userdata and calling respective methods
+// on the said pointer
+// These functions always return G_SOURCE_CONTINUE
+int instance_on_sigterm(void*);
+int instance_on_sigusr1(void*);
+int instance_on_sighup(void*);
+int instance_on_sigint(void*);
 
 namespace Log {
     template <typename ... Ts>

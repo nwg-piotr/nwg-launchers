@@ -136,6 +136,18 @@ struct DesktopEntry {
     bool terminal;
 };
 
+struct Instance {
+    Gtk::Application& app;
+    fs::path pid_file;
+
+    Instance(Gtk::Application& app, std::string_view name);
+    virtual ~Instance();
+    virtual void on_sigterm();
+    virtual void on_sigusr1();
+    virtual void on_sighup();
+    virtual void on_sigint();
+};
+
 enum class SwayError {
     ConnectFailed,
     EnvNotSet,

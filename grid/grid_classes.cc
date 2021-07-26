@@ -152,14 +152,14 @@ GridWindow::GridWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss)
 bool GridWindow::on_button_press_event(GdkEventButton *event) {
     (void) event; // suppress warning
 
-    this->close();
+    this->hide();
     return true;
 }
 
 bool GridWindow::on_key_press_event(GdkEventKey* key_event) {
     switch (key_event->keyval) {
         case GDK_KEY_Escape:
-            this->close();
+            this->hide();
             break;
         case GDK_KEY_Delete:
             this -> searchbox.set_text("");
@@ -447,5 +447,13 @@ void GridBox::on_activate() {
     } catch (const Glib::ShellError& error) {
         Log::error("Failed to run command: ", error.what());
     }
-    toplevel.close();
+    toplevel.hide();
+}
+
+void GridInstance::on_sighup() {
+    Log::error("let's assume we reload something");
+}
+
+void GridInstance::on_sigusr1() {
+    window.show(hint::Fullscreen);
 }

@@ -9,8 +9,12 @@
  * License: GPL3
  * */
 
+#include <unistd.h>
+#include <glib-unix.h>
+
 #include <algorithm>
 #include <array>
+#include <fstream>
 
 #include "charconv-compat.h"
 #include "nwg_classes.h"
@@ -141,6 +145,61 @@ AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment):
         this->name.append("...");
     }
     this -> set_always_show_image(true);
+}
+
+Instance::Instance(Gtk::Application& app, std::string_view name): app{ app } {
+    // TODO: maybe use dbus if it is present?
+    pid_file = get_runtime_dir();
+    pid_file /= name;
+    pid_file += ".pid";
+
+    // kill any existing instances
+    // opening file worked - file exists
+    if (std::ifstream pid_stream{ pid_file }) {
+        // set to not throw exceptions
+        pid_stream.exceptions(std::ifstream::goodbit);
+        if (pid_t saved_pid; pid_stream >> saved_pid) {
+            Log::info("Another instance is running, trying to terminate it...");
+            if (saved_pid <= 0) {
+                throw std::runtime_error{ "getpid() returned non-positive value" };
+            }
+            if (kill(saved_pid, 0) != 0) {
+                throw std::runtime_error{ "process with pid specified in .pid file does not exist" };
+            }
+            if (kill(saved_pid, SIGTERM) != 0) {
+                throw std::runtime_error{ "failed to send SIGTERM to pid specified in .pid file" };
+            }
+            Log::plain("OK");
+        } else {
+            Log::error("Pid file exists, but empty");
+        }
+    }
+
+    // write instance pid
+    // TODO: flock maybe?
+    // TODO: open file only once
+    std::ofstream pid_stream{ pid_file, std::ios::trunc };
+    auto pid = getpid();
+    pid_stream << pid;
+    pid_stream.flush();
+
+    // using glib unix extensions instead of plain signals allows for arbitrary functions to be used
+    // when handling signals
+    g_unix_signal_add(SIGHUP, instance_on_sighup, this);
+    g_unix_signal_add(SIGINT, instance_on_sigint, this);
+    g_unix_signal_add(SIGUSR1, instance_on_sigusr1, this);
+    g_unix_signal_add(SIGTERM, instance_on_sigterm, this);
+}
+
+void Instance::on_sighup(){}
+void Instance::on_sigint(){ app.quit(); }
+void Instance::on_sigusr1() {}
+void Instance::on_sigterm(){ app.quit(); }
+
+Instance::~Instance() {
+    if (std::error_code err; !fs::remove(pid_file, err) && err) {
+        Log::error("Failed to remove pid file '", pid_file, "': ", err.message());
+    }
 }
 
 GenericShell::GenericShell(Config& config) {

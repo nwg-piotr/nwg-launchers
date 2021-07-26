@@ -157,6 +157,17 @@ struct CacheEntry {
     CacheEntry(std::string, int);
 };
 
+struct GridInstance: public Instance {
+    GridWindow& window;
+
+    GridInstance(Gtk::Application& app, GridWindow& window): Instance{ app, "nwggrid" }, window{ window } {
+        app.hold();
+    }
+    void on_sighup() override;
+    void on_sigusr1() override;
+    void on_sigterm() override;
+};
+
 /*
  * Function declarations
  * */

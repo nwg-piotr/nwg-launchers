@@ -39,55 +39,61 @@ Delete        clear search box\n\
 Insert        switch case sensitivity\n";
 
 int main(int argc, char *argv[]) {
-    create_pid_file_or_kill_pid("nwgdmenu");
+    try {
 
-    InputParser input(argc, argv);
-    if (input.cmdOptionExists("-h")){
-        std::cout << HELP_MESSAGE;
-        std::exit(0);
-    }
+        InputParser input(argc, argv);
+        if (input.cmdOptionExists("-h")){
+            std::cout << HELP_MESSAGE;
+            std::exit(0);
+        }
 
-    auto background_color = input.get_background_color(0.3);
+        auto background_color = input.get_background_color(0.3);
 
-    auto config_dir = get_config_dir("nwgdmenu");
-    if (!fs::is_directory(config_dir)) {
-        Log::info("Config dir not found, creating...");
-        fs::create_directories(config_dir);
-    }
+        auto config_dir = get_config_dir("nwgdmenu");
+        if (!fs::is_directory(config_dir)) {
+            Log::info("Config dir not found, creating...");
+            fs::create_directories(config_dir);
+        }
 
-    auto app = Gtk::Application::create();
-    
-    auto provider = Gtk::CssProvider::create();
-    auto display = Gdk::Display::get_default();
-    auto screen = display->get_default_screen();
-    if (!provider || !display || !screen) {
-        Log::error("Failed to initialize GTK");
-        return EXIT_FAILURE;
-    }
-    DmenuConfig config {
-        input,
-        screen
-    };
-    Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
-    {
-        auto css_file = setup_css_file("nwgdmenu", config_dir, config.css_filename);
-        Log::info("Using css file \'", css_file, "\'");
-        provider->load_from_path(css_file);
-    }
+        auto app = Gtk::Application::create();
 
-    auto all_commands = get_commands_list(config);
-    DmenuWindow window{ config, all_commands };
-    window.set_background_color(background_color);
-    window.show_all_children();
-    switch (2 * (config.valign == VAlign::NotSpecified) + (config.halign == HAlign::NotSpecified )) {
-        case 0:
-            window.show(hint::Sides{ { config.halign == HAlign::Right, 50 }, { config.valign == VAlign::Bottom, 50 } }); break;
-        case 1:
-            window.show(hint::Side<hint::Vertical>{ config.valign == VAlign::Bottom, 50 }); break;
-        case 2:
-            window.show(hint::Side<hint::Horizontal>{ config.halign == HAlign::Right, 50 }); break;
-        case 3:
-            window.show(hint::Center); break;
+        auto provider = Gtk::CssProvider::create();
+        auto display = Gdk::Display::get_default();
+        auto screen = display->get_default_screen();
+        if (!provider || !display || !screen) {
+            Log::error("Failed to initialize GTK");
+            return EXIT_FAILURE;
+        }
+        DmenuConfig config {
+            input,
+            screen
+        };
+        Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+        {
+            auto css_file = setup_css_file("nwgdmenu", config_dir, config.css_filename);
+            Log::info("Using css file \'", css_file, "\'");
+            provider->load_from_path(css_file);
+        }
+
+        auto all_commands = get_commands_list(config);
+        DmenuWindow window{ config, all_commands };
+        window.set_background_color(background_color);
+        window.show_all_children();
+        switch (2 * (config.valign == VAlign::NotSpecified) + (config.halign == HAlign::NotSpecified )) {
+            case 0:
+                window.show(hint::Sides{ { config.halign == HAlign::Right, 50 }, { config.valign == VAlign::Bottom, 50 } }); break;
+            case 1:
+                window.show(hint::Side<hint::Vertical>{ config.valign == VAlign::Bottom, 50 }); break;
+            case 2:
+                window.show(hint::Side<hint::Horizontal>{ config.halign == HAlign::Right, 50 }); break;
+            case 3:
+                window.show(hint::Center); break;
+        }
+        return app->run(window);
+    } catch (const Glib::FileError& error) {
+        Log::error(error.what());
+    } catch (const std::runtime_error& error) {
+        Log::error(error.what());
     }
-    return app->run(window);
+    return EXIT_FAILURE;
 }
