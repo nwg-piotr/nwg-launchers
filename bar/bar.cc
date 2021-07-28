@@ -97,25 +97,22 @@ int main(int argc, char *argv[]) {
             provider->load_from_path(css_file);
             Log::info("Using css file \'", css_file, "\'");
         }
-        auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
-        if (!icon_theme) {
-            Log::error("Failed to load icon theme");
-            return EXIT_FAILURE;
-        }
-        auto& icon_theme_ref = *icon_theme.get();
-        auto icon_missing = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg");
+        IconProvider icon_provider {
+            Gtk::IconTheme::get_for_screen(screen),
+            config.icon_size
+        };
 
         BarWindow window{ config };
         window.set_background_color(background_color);
 
         /* Create buttons */
         for (auto& entry : bar_entries) {
-            Gtk::Image* image = app_image(icon_theme_ref, entry.icon, icon_missing, config.icon_size);
+            auto image = icon_provider.load_icon(entry.icon);
             auto& ab = window.boxes.emplace_back(std::move(entry.name),
                                                  std::move(entry.exec),
                                                  std::move(entry.icon));
             ab.set_image_position(Gtk::POS_TOP);
-            ab.set_image(*image);
+            ab.set_image(image);
         }
 
         int column = 0;

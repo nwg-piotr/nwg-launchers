@@ -45,8 +45,6 @@ void decode_color(std::string_view, RGBA& color);
 
 std::string get_output(const std::string&);
 fs::path setup_css_file(std::string_view name, const fs::path& config_dir, const fs::path& custom_css_file);
-
-Gtk::Image* app_image(const Gtk::IconTheme&, const std::string&, const Glib::RefPtr<Gdk::Pixbuf>&, int icon_size);
 Geometry display_geometry(std::string_view, Glib::RefPtr<Gdk::Display>, Glib::RefPtr<Gdk::Window>);
 
 // Glibmm does not provide C++ wrappers over glibmm-unix extensions

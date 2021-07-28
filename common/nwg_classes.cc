@@ -17,6 +17,7 @@
 #include <fstream>
 
 #include "charconv-compat.h"
+#include "nwgconfig.h"
 #include "nwg_classes.h"
 #include "nwg_tools.h"
 
@@ -200,6 +201,33 @@ Instance::~Instance() {
     if (std::error_code err; !fs::remove(pid_file, err) && err) {
         Log::error("Failed to remove pid file '", pid_file, "': ", err.message());
     }
+}
+
+IconProvider::IconProvider(const Glib::RefPtr<Gtk::IconTheme>& theme, int icon_size):
+    icon_theme{ theme },
+    fallback{ Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg", icon_size, icon_size, true) },
+    icon_size{ icon_size }
+{
+    // intentionally left blank
+}
+
+Gtk::Image IconProvider::load_icon(const std::string& icon) const {
+    try {
+        if (icon.find_first_of("/") == icon.npos) {
+            return Gtk::Image{ icon_theme->load_icon(icon, icon_size, Gtk::ICON_LOOKUP_FORCE_SIZE) };
+        } else {
+            return Gtk::Image{ Gdk::Pixbuf::create_from_file(icon, icon_size, icon_size, true) };
+        }
+    } catch (const Glib::Error& error) {
+        Log::error("Failed to load icon '", icon, "': ", error.what());
+    }
+    try {
+        return Gtk::Image{ Gdk::Pixbuf::create_from_file("/usr/share/pixmaps/" + icon, icon_size, icon_size, true) };
+    } catch (const Glib::Error& error) {
+        Log::error("Failed to load icon '", icon, "': ", error.what());
+        Log::plain("falling back to placeholder");
+    }
+    return Gtk::Image{ fallback };
 }
 
 GenericShell::GenericShell(Config& config) {

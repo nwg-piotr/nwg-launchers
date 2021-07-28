@@ -148,6 +148,17 @@ struct Instance {
     virtual void on_sigint();
 };
 
+struct IconProvider {
+    Glib::RefPtr<Gtk::IconTheme> icon_theme;
+    Glib::RefPtr<Gdk::Pixbuf>    fallback;
+    int                          icon_size;
+
+    IconProvider(const Glib::RefPtr<Gtk::IconTheme>& theme, int icon_size);
+    // Returns Gtk::Image out of the icon name of file path
+    // the returned image is scaled to icon_size x icon_size
+    Gtk::Image load_icon(const std::string& icon) const;
+};
+
 enum class SwayError {
     ConnectFailed,
     EnvNotSet,

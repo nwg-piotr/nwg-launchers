@@ -74,13 +74,10 @@ int main(int argc, char *argv[]) {
             provider->load_from_path(css_file);
             Log::info("Using css file \'", css_file, "\'");
         }
-        auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
-        if (!icon_theme) {
-            Log::error("Failed to load icon theme");
-            std::exit(EXIT_FAILURE);
-        }
-        auto& icon_theme_ref = *icon_theme.get();
-        auto icon_missing = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg");
+        IconProvider icon_provider {
+            Gtk::IconTheme::get_for_screen(screen),
+            config.icon_size
+        };
 
         // This will be read-only, to find n most clicked items (n = number of grid columns)
         std::vector<CacheEntry> favourites;
@@ -133,94 +130,168 @@ int main(int argc, char *argv[]) {
         gettimeofday(&tp, NULL);
         long int commons_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-        // Maps desktop-ids to their table indices, nullopt stands for 'hidden'
-        std::unordered_map<std::string, std::optional<std::size_t>> desktop_ids;
+        gettimeofday(&tp, NULL);
+        long int bs_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-        // Table, only contains shown entries
-        std::vector<DesktopEntry> desktop_entries;
-        std::vector<std::string>  execs;
-        std::vector<Stats>        stats;
-        std::vector<Gtk::Image*>  images;
+        GridWindow window{ config };
 
-        auto desktop_id = [](auto& path) {
-            return path.string(); // actual desktop_id requires '/' to be replaced with '-'
-        };
+        gettimeofday(&tp, NULL);
+        long int images_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-        for (auto& dir : dirs) {
-            std::error_code ec;
-            auto dir_iter = fs::directory_iterator(dir, ec);
-            for (auto& entry : dir_iter) {
-                if (ec) {
-                    Log::error(ec.message());
-                    ec.clear();
-                    continue;
-                }
-                if (!entry.is_regular_file()) {
-                    continue;
-                }
-                auto& path = entry.path();
-                auto&& rel_path = path.lexically_relative(dir);
-                auto&& id = desktop_id(rel_path);
+        gettimeofday(&tp, NULL);
+        long int boxes_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+
+        struct EntriesTable {
+            GridConfig&    config;
+            // Maps desktop-ids to their table indices, nullopt stands for 'hidden'
+            std::unordered_map<std::string, std::optional<std::size_t>> desktop_ids;
+
+            // Table, only contains shown entries
+            std::vector<DesktopEntry> desktop_entries;
+            std::vector<std::string>  execs;
+            std::vector<Stats>        stats;
+            std::vector<Gtk::Image>   images;
+
+            Span<std::string> pinned;
+            Span<CacheEntry>  favourites;
+
+            EntriesTable(GridConfig& config, Span<std::string> pins, Span<CacheEntry> favs):
+                config{ config }, pinned{ pins }, favourites{ favs }
+            {
+                // intentionally left blank
+            }
+            void clear() {
+                desktop_ids.clear();
+                execs.clear();
+                stats.clear();
+                images.clear();
+                desktop_entries.clear();
+            }
+            void add_entry(std::string id, const fs::path& path) {
                 if (auto [at, inserted] = desktop_ids.try_emplace(id, std::nullopt); inserted) {
                     if (auto entry = desktop_entry(path, config.lang, config.term)) {
                         at->second = execs.size(); // set index
                         execs.emplace_back(entry->exec);
                         desktop_entries.emplace_back(std::move(*entry));
                         stats.emplace_back(0, 0, Stats::Common, Stats::Unpinned);
-                        images.emplace_back(nullptr);
                     }
                 }
             }
-        }
-
-        int pin_index = 0; // preserve pins order
-        for (auto& pin : pinned) {
-            if (auto result = desktop_ids.find(pin); result != desktop_ids.end() && result->second) {
-                stats[*result->second].pinned = Stats::Pinned;
-                stats[*result->second].position = pin_index;
-                pin_index++;
+            void mark_entries(const IconProvider& icons) {
+                int pin_index = 0; // preserve pins order
+                for (auto& pin : pinned) {
+                    if (auto result = desktop_ids.find(pin); result != desktop_ids.end() && result->second) {
+                        stats[*result->second].pinned = Stats::Pinned;
+                        stats[*result->second].position = pin_index;
+                        ++pin_index;
+                    }
+                }
+                for (auto& [fav, clicks] : favourites) {
+                    if (auto result = desktop_ids.find(fav); result != desktop_ids.end() && result->second) {
+                        stats[*result->second].clicks   = clicks;
+                        stats[*result->second].favorite = Stats::Favorite;
+                    }
+                }
+                // The most expensive part
+                for (auto && entry: desktop_entries) {
+                    images.emplace_back(icons.load_icon(entry.icon));
+                }
             }
-        }
-        for (auto& [fav, clicks] : favourites) {
-            if (auto result = desktop_ids.find(fav); result != desktop_ids.end() && result->second) {
-                stats[*result->second].clicks   = clicks;
-                stats[*result->second].favorite = Stats::Favorite;
+        };
+
+        struct EntriesProvider {
+            GridWindow&    window;
+            EntriesTable&  table;
+            const IconProvider& icons;
+
+            Span<fs::path> dirs;
+
+            EntriesProvider(GridWindow& window, EntriesTable& table, const IconProvider& icons, Span<fs::path> dirs):
+                window{ window },
+                table{ table },
+                icons{ icons },
+                dirs{ dirs }
+            {
+                reload();
             }
-        }
 
-        gettimeofday(&tp, NULL);
-        long int bs_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+            void reload() {
+                auto desktop_id = [](auto& path) {
+                    return path.string(); // actual desktop_id requires '/' to be replaced with '-'
+                };
 
-        GridWindow window{ config, execs, stats };
+                window.clear_boxes();
+                table.clear();
 
-        gettimeofday(&tp, NULL);
-        long int images_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-        // The most expensive part
-        for (std::size_t i = 0; i < desktop_entries.size(); i++) {
-            images[i] = app_image(icon_theme_ref, desktop_entries[i].icon, icon_missing, config.icon_size);
-        }
-
-        gettimeofday(&tp, NULL);
-        long int boxes_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-        for (auto& [desktop_id, pos_] : desktop_ids) {
-            if (pos_) {
-                auto pos = *pos_;
-                auto& entry = desktop_entries[pos];
-                auto& ab = window.emplace_box(std::move(entry.name),
-                                              std::move(entry.comment),
-                                              desktop_id,
-                                              pos);
-                ab.set_image_position(Gtk::POS_TOP);
-                ab.set_image(*images[pos]);
+                for (auto& dir : dirs) {
+                    std::error_code ec;
+                    fs::directory_iterator dir_iter{ dir, ec };
+                    for (auto& entry : dir_iter) {
+                        if (ec) {
+                            Log::error(ec.message());
+                            ec.clear();
+                            continue;
+                        }
+                        if (!entry.is_regular_file()) {
+                            continue;
+                        }
+                        auto& path = entry.path();
+                        auto&& rel_path = path.lexically_relative(dir);
+                        auto&& id = desktop_id(rel_path);
+                        table.add_entry(id, path);
+                    }
+                }
+                table.mark_entries(icons);
+                window.set_data(table.execs, table.stats);
+                for (auto& [desktop_id, pos_] : table.desktop_ids) {
+                    if (pos_) {
+                        auto pos = *pos_;
+                        auto& entry = table.desktop_entries[pos];
+                        auto& ab = window.emplace_box(std::move(entry.name),
+                                                      std::move(entry.comment),
+                                                      desktop_id,
+                                                      pos);
+                        ab.set_image_position(Gtk::POS_TOP);
+                        ab.set_image(table.images[pos]);
+                    }
+                }
+                window.build_grids();
             }
-        }
+        };
+
+        struct DirectoriesWatcher {
+            EntriesProvider& entries_provider;
+            std::vector<Glib::RefPtr<Gio::FileMonitor>> monitors;
+
+            DirectoriesWatcher(EntriesProvider& entries_provider, Span<fs::path> dirs): entries_provider{ entries_provider } {
+                for (auto && dir: dirs) {
+                    try {
+                        auto file = Gio::File::create_for_path(dir);
+                        auto & monitor = monitors.emplace_back(file->monitor_directory());
+                        monitor->signal_changed().connect([this](auto && file1, auto && file2, auto && event) {
+                            switch (event) {
+                                case Gio::FILE_MONITOR_EVENT_CHANGED:
+                            //    Gio::FILE_MONITOR_EVENT_MOVED_IN:
+                            //    Gio::FILE_MONITOR_EVENT_MOVED_OUT:
+                                case Gio::FILE_MONITOR_EVENT_DELETED:
+                                    this->entries_provider.reload();
+                                    break;
+                                default:break;
+                            }
+                        });
+                    } catch (const Gio::Error& error) {
+                        Log::error("Failed to monitor directory '", dir, "': ", error.what());
+                    }
+                }
+            }
+        };
+
+        EntriesTable    table{ config, pinned, favourites };
+        EntriesProvider entries_provider{ window, table, icon_provider, dirs };
+        DirectoriesWatcher directories_watcher{ entries_provider, dirs };
 
         gettimeofday(&tp, NULL);
         long int grids_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-        window.build_grids();
 
         gettimeofday(&tp, NULL);
         long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;

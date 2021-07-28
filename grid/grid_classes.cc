@@ -85,8 +85,8 @@ int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     auto& toplevel = *dynamic_cast<GridWindow*>(a->get_toplevel());
     return -cmp_(toplevel.stats_of(child_(a)).clicks, toplevel.stats_of(child_(b)).clicks);
 }
-GridWindow::GridWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss):
-    PlatformWindow{ config }, config{ config }, execs(es), stats(ss)
+GridWindow::GridWindow(GridConfig& config):
+    PlatformWindow{ config }, config{ config }
 {
     searchbox
         .signal_search_changed()
@@ -259,6 +259,27 @@ void GridWindow::refresh_separators() {
     if (p && a) {
         separator.show();
     }
+}
+
+// TODO: Ugly hack, will be removed later
+void GridWindow::clear_boxes() {
+    apps_grid.foreach([this](auto& child) {
+        apps_grid.remove(child);
+        dynamic_cast<Gtk::FlowBoxChild*>(&child)->remove();
+    });
+    favs_grid.foreach([this](auto& child) {
+        favs_grid.remove(child);
+        dynamic_cast<Gtk::FlowBoxChild*>(&child)->remove();
+    });
+    pinned_grid.foreach([this](auto& child) {
+        pinned_grid.remove(child);
+        dynamic_cast<Gtk::FlowBoxChild*>(&child)->remove();
+    });
+    filtered_boxes.clear();
+    fav_boxes.clear();
+    pinned_boxes.clear();
+    apps_boxes.clear();
+    all_boxes.clear();
 }
 
 void GridWindow::build_grids() {

@@ -370,35 +370,6 @@ Geometry display_geometry(std::string_view wm, Glib::RefPtr<Gdk::Display> displa
 }
 
 /*
- * Returns Gtk::Image out of the icon name of file path
- * */
-Gtk::Image* app_image(
-    const Gtk::IconTheme& icon_theme,
-    const std::string& icon,
-    const Glib::RefPtr<Gdk::Pixbuf>& fallback,
-    int icon_size
-) {
-    Glib::RefPtr<Gdk::Pixbuf> pixbuf;
-
-    try {
-        if (icon.find_first_of("/") == std::string::npos) {
-            pixbuf = icon_theme.load_icon(icon, icon_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
-        } else {
-            pixbuf = Gdk::Pixbuf::create_from_file(icon, icon_size, icon_size, true);
-        }
-    } catch (...) {
-        try {
-            pixbuf = Gdk::Pixbuf::create_from_file("/usr/share/pixmaps/" + icon, icon_size, icon_size, true);
-        } catch (...) {
-            pixbuf = fallback;
-        }
-    }
-    auto image = Gtk::manage(new Gtk::Image(pixbuf));
-
-    return image;
-}
-
-/*
  * Returns current locale
  * */
 std::string get_locale() {

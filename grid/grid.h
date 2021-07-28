@@ -24,10 +24,15 @@ namespace ns = nlohmann;
 /* Primitive version of C++20's std::span */
 template <typename T>
 struct Span {
+    Span(): _ref{ nullptr }, _n{ 0 } {}
     Span(const Span& s) = default;
-    Span(std::vector<T>& t): _ref(t.data()) { }
+    Span(std::vector<T>& t): _ref{ t.data() }, _n{ t.size() } { }
     T& operator [](std::size_t n) { return _ref[n]; }
-    T* _ref;
+    T*          _ref;
+    std::size_t _n;
+
+    T* begin() { return _ref; }
+    T* end() { return _ref + _n; }
 };
 
 struct Stats {
@@ -79,7 +84,7 @@ struct GridConfig: public Config {
 
 class GridWindow : public PlatformWindow {
     public:
-        GridWindow(GridConfig& config, Span<std::string> entries, Span<Stats> stats);
+        GridWindow(GridConfig& config);
         GridWindow(const GridWindow&) = delete;
 
         Gtk::SearchEntry searchbox;              // Search apps
@@ -101,10 +106,16 @@ class GridWindow : public PlatformWindow {
         template <typename ... Args>
         GridBox& emplace_box(Args&& ... args);      // emplace box
 
+        void clear_boxes();
         void build_grids();
         void toggle_pinned(GridBox& box);
         void set_description(const Glib::ustring&);
         void save_cache();
+
+        void set_data(Span<std::string> execs, Span<Stats> stats) {
+            this->execs = execs;
+            this->stats = stats;
+        }
 
         std::string& exec_of(const GridBox& box) {
             return execs[box.index];
@@ -165,7 +176,6 @@ struct GridInstance: public Instance {
     }
     void on_sighup() override;
     void on_sigusr1() override;
-    void on_sigterm() override;
 };
 
 /*

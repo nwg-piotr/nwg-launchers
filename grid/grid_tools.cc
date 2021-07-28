@@ -169,21 +169,19 @@ std::optional<DesktopEntry> desktop_entry(const fs::path& path, std::string_view
  * */
 std::vector<std::string> get_pinned(const fs::path& pinned_file) {
     std::vector<std::string> lines;
-    std::ifstream in{ pinned_file };
-    if(!in) {
+    if (std::ifstream in{ pinned_file }) {
+        for (std::string str; std::getline(in, str);) {
+            // add non-empty lines to the vector
+            if (!str.empty()) {
+                lines.emplace_back(std::move(str));
+            }
+        }
+    } else {
         Log::info("Could not find ", pinned_file, ", creating!");
         save_string_to_file("", pinned_file);
-        return lines;
     }
-    for (std::string str; std::getline(in, str);) {
-        // add non-empty lines to the vector
-        if (!str.empty()) {
-            lines.emplace_back(std::move(str));
-        }
-    }
-    in.close();
     return lines;
- }
+}
 
 /*
  * Returns n cache items sorted by clicks; n should be the number of grid columns
@@ -195,7 +193,7 @@ std::vector<CacheEntry> get_favourites(ns::json&& cache, int number) {
         sorted_cache.emplace_back(it.key(), it.value());
     }
     // actually sort by the number of clicks
-    sort(sorted_cache.begin(), sorted_cache.end(), [](const CacheEntry& lhs, const CacheEntry& rhs) {
+    std::sort(sorted_cache.begin(), sorted_cache.end(), [](const CacheEntry& lhs, const CacheEntry& rhs) {
         return lhs.clicks > rhs.clicks;
     });
     // Trim to the number of columns, as we need just 1 row of favourites
