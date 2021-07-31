@@ -85,6 +85,11 @@ int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     auto& toplevel = *dynamic_cast<GridWindow*>(a->get_toplevel());
     return -cmp_(toplevel.stats_of(child_(a)).clicks, toplevel.stats_of(child_(b)).clicks);
 }
+
+static Gtk::Widget* make_widget(const Glib::RefPtr<Glib::Object>& object) {
+    return dynamic_cast<GridBox*>(object.get());
+}
+
 GridWindow::GridWindow(GridConfig& config):
     PlatformWindow{ config }, config{ config }
 {
@@ -106,9 +111,18 @@ GridWindow::GridWindow(GridConfig& config):
     setup_grid(favs_grid);
     setup_grid(pinned_grid);
 
-    pinned_grid.set_sort_func(&by_position);
-    apps_grid.set_sort_func(&by_name);
-    favs_grid.set_sort_func(&by_clicks);
+    apps_boxes = Boxes::create();
+    pinned_boxes = Boxes::create();
+    fav_boxes = Boxes::create();
+
+//    pinned_grid.set_sort_func(&by_position);
+//    apps_grid.set_sort_func(&by_name);
+//    favs_grid.set_sort_func(&by_clicks);
+
+    Gtk::FlowBox::SlotCreateWidget<Glib::Object> make_widget_{ &make_widget };
+    pinned_grid.bind_model(pinned_boxes, make_widget_);
+    favs_grid.bind_model(fav_boxes, make_widget_);
+    apps_grid.bind_model(apps_boxes, make_widget_);
 
     description.set_ellipsize(Pango::ELLIPSIZE_END);
     description.set_text("");
@@ -204,15 +218,15 @@ inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container, a
 
 /* Populate grid with widgets from container */
 inline auto build_grid = [](auto& grid, auto& container, auto num_col) {
-    for (auto child : container) {
-        grid.add(*child);
-        child->get_parent()->set_can_focus(false); // FlowBoxChild shouldn't consume focus
-    }
+    //for (auto child : container) {
+     //   grid.add(*child);
+     //   child->get_parent()->set_can_focus(false); // FlowBoxChild shouldn't consume focus
+    //}
     refresh_max_children_per_line(grid, container, num_col);
 };
 
 /* Called each time `search_entry` changes, rebuilds `apps_grid` according to search criteria */
-void GridWindow::filter_view() {
+void GridWindow::filter_view() {/*
     auto clean_grid = [](auto& grid) {
         grid.foreach([&grid](auto& child) {
             grid.remove(child);
@@ -243,16 +257,16 @@ void GridWindow::filter_view() {
     }
     this -> refresh_separators();
     this -> focus_first_box();
-    apps_grid.thaw_child_notify();
+    apps_grid.thaw_child_notify();*/
 }
 
 /* Sets separators' visibility according to grid status */
 void GridWindow::refresh_separators() {
     auto set_shown = [](auto c, auto& s) { if (c) s.show(); else s.hide(); };
-    auto p = !pinned_boxes.empty();
-    auto f = !fav_boxes.empty();
-    auto a1 = !filtered_boxes.empty() && is_filtered;
-    auto a2 = !apps_boxes.empty() && !is_filtered;
+    auto p = !pinned_boxes->empty();
+    auto f = !fav_boxes->empty();
+    auto a1 = true; //!filtered_boxes.empty() && is_filtered;
+    auto a2 = !apps_boxes->empty() && !is_filtered;
     auto a = a1 || a2;
     set_shown(p && f, separator1);
     set_shown(f && a, separator);
@@ -263,23 +277,24 @@ void GridWindow::refresh_separators() {
 
 // TODO: Ugly hack, will be removed later
 void GridWindow::clear_boxes() {
-    apps_grid.foreach([this](auto& child) {
-        apps_grid.remove(child);
-        dynamic_cast<Gtk::FlowBoxChild*>(&child)->remove();
-    });
-    favs_grid.foreach([this](auto& child) {
-        favs_grid.remove(child);
-        dynamic_cast<Gtk::FlowBoxChild*>(&child)->remove();
-    });
-    pinned_grid.foreach([this](auto& child) {
-        pinned_grid.remove(child);
-        dynamic_cast<Gtk::FlowBoxChild*>(&child)->remove();
-    });
-    filtered_boxes.clear();
-    fav_boxes.clear();
-    pinned_boxes.clear();
-    apps_boxes.clear();
-    all_boxes.clear();
+    //apps_grid.foreach([this](auto& child) {
+    //    apps_grid.remove(child);
+    //    dynamic_cast<Gtk::FlowBoxChild*>(&child)->remove();
+    //});
+    //favs_grid.foreach([this](auto& child) {
+    //    favs_grid.remove(child);
+    //    dynamic_cast<Gtk::FlowBoxChild*>(&child)->remove();
+    //});
+    //pinned_grid.foreach([this](auto& child) {
+    //    pinned_grid.remove(child);
+    //    dynamic_cast<Gtk::FlowBoxChild*>(&child)->remove();
+    //});
+    //filtered_boxes.clear();
+    //fav_boxes.clear();
+    //pinned_boxes.clear();
+    //apps_boxes.clear();
+    //all_boxes.clear();
+    monotonic_index = 0;
 }
 
 void GridWindow::build_grids() {
@@ -288,11 +303,11 @@ void GridWindow::build_grids() {
     this -> apps_grid.freeze_child_notify();
 
     auto num_col = config.num_col;
-    build_grid(this->pinned_grid, this->pinned_boxes, num_col);
-    build_grid(this->favs_grid, this->fav_boxes, num_col);
-    build_grid(this->apps_grid, this->apps_boxes, num_col);
+    build_grid(this->pinned_grid, *pinned_boxes.get(), num_col);
+    build_grid(this->favs_grid, *fav_boxes.get(), num_col);
+    build_grid(this->apps_grid, *apps_boxes.get(), num_col);
 
-    this -> monotonic_index = this->pinned_boxes.size();
+    this -> monotonic_index = this->pinned_boxes->size();
 
     this -> pinned_grid.show_all_children();
     this -> favs_grid.show_all_children();
@@ -357,19 +372,33 @@ void GridWindow::toggle_pinned(GridBox& box) {
         std::swap(from, to);
         std::swap(from_grid, to_grid);
     }
-    auto to_remove = std::remove(from->begin(), from->end(), &box);;
-    from->erase(to_remove);
-    to->push_back(&box);
+    box.reference();
+    box.reference();
+    box.reference();
+    (*from)->erase(box);
+    // FlowBox { ... FlowBoxChild { box } ... }
+    // it is necessary to remove box from FlowBoxChild
+    // and then FlowBoxChild from FlowBox
+    // as it doesn't get deleted for some reason
+    if (auto parent = box.get_parent()) {
+        parent->remove(box);
+        if (auto grid = parent->get_parent()) {
+            grid->remove(*parent);
+        }
+    }
+    box.unparent();
+    (*to)->push_back(&box);
     auto num_col = config.num_col;
-    refresh_max_children_per_line(*from_grid, *from, num_col);
-    refresh_max_children_per_line(*to_grid, *to, num_col);
+    refresh_max_children_per_line(*from_grid, *(*from).get(), num_col);
+    refresh_max_children_per_line(*to_grid, *(*to).get(), num_col);
 
     // get_parent is important
     // FlowBox { ... FlowBoxChild { box } ... }
     // box is not child to FlowBox
     // but its parent, FlowBoxChild is
     // so we need to reparent FlowBoxChild, not the box itself
-    box.get_parent()->reparent(*to_grid);
+    /*box.get_parent()->reparent(*to_grid);*/
+
     // refresh filter if needed
     if (is_filtered) {
         this->filter_view();
@@ -384,11 +413,11 @@ void GridWindow::toggle_pinned(GridBox& box) {
  * */
 void GridWindow::save_cache() {
     if (pins_changed) {
-        std::sort(pinned_boxes.begin(), pinned_boxes.end(), [this](auto* a, auto* b) {
+        std::sort(pinned_boxes->begin(), pinned_boxes->end(), [this](auto* a, auto* b) {
             return this->stats_of(*a).position < this->stats_of(*b).position;
         });
         std::ofstream out{ config.pinned_file, std::ios::trunc };
-        for (auto* pin : this->pinned_boxes) {
+        for (auto* pin : *pinned_boxes.get()) {
             out << *pin->desktop_id << '\n';
         }
     }

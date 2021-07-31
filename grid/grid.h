@@ -82,6 +82,48 @@ struct GridConfig: public Config {
     RGBA background_color;
 };
 
+class Boxes: public Gio::ListModel, public Glib::Object {
+    std::vector<GridBox*> boxes;
+protected:
+    Boxes(): Glib::ObjectBase(typeid(Boxes)), Gio::ListModel() {}
+    GType get_item_type_vfunc() override {
+        return GridBox::get_type();
+    }
+    guint get_n_items_vfunc() override {
+        return boxes.size();
+    }
+    gpointer get_item_vfunc(guint position) override {
+        if (position < boxes.size()) {
+            return boxes[position]->gobj();
+        }
+        return nullptr;
+    }
+public:
+    static auto create() {
+        auto ptr = new Boxes{};
+        ptr->reference();
+        return Glib::RefPtr<Boxes>(ptr);
+    }
+    decltype(auto) begin() { return boxes.begin(); }
+    decltype(auto) end() { return boxes.end(); }
+
+    void push_back(GridBox* box) {
+        boxes.push_back(box);
+        items_changed(boxes.size() - 1, 0, 1);
+    }
+    void erase(GridBox& box) {
+        Log::info("before erasure size=", boxes.size());
+        auto to_erase = std::remove(boxes.begin(), boxes.end(), &box);
+        auto pos = std::distance(boxes.begin(), to_erase);
+        Log::info("erasing pos=", pos);
+        boxes.erase(to_erase);
+        items_changed(pos, 1, 0);
+        Log::info("after erasure size=", boxes.size());
+    }
+    auto size() const { return boxes.size(); }
+    auto empty() const { return boxes.empty(); }
+};
+
 class GridWindow : public PlatformWindow {
     public:
         GridWindow(GridConfig& config);
@@ -129,11 +171,14 @@ class GridWindow : public PlatformWindow {
         bool on_delete_event(GdkEventAny*) override;
         bool on_button_press_event(GdkEventButton*) override;
     private:
-        std::list<GridBox>    all_boxes {};      // stores all applications buttons
-        std::vector<GridBox*> apps_boxes {};     // all common boxes
-        std::vector<GridBox*> filtered_boxes {}; // common boxes meeting search criteria
-        std::vector<GridBox*> fav_boxes {};      // attached to favs_grid
-        std::vector<GridBox*> pinned_boxes {};   // attached to pinned_grid
+        std::list<GridBox>  all_boxes {};      // stores all applications buttons
+        Glib::RefPtr<Boxes> apps_boxes;
+        Glib::RefPtr<Boxes> fav_boxes;
+        Glib::RefPtr<Boxes> pinned_boxes;
+        //std::vector<GridBox*> apps_boxes {};     // all common boxes
+        //std::vector<GridBox*> filtered_boxes {}; // common boxes meeting search criteria
+        //std::vector<GridBox*> fav_boxes {};      // attached to favs_grid
+        //std::vector<GridBox*> pinned_boxes {};   // attached to pinned_grid
 
 
         Span<std::string> execs;
@@ -151,6 +196,8 @@ class GridWindow : public PlatformWindow {
 template <typename ... Args>
 GridBox& GridWindow::emplace_box(Args&& ... args) {
     auto& ab = this -> all_boxes.emplace_back(std::forward<Args>(args)...);
+    ab.reference();
+    ab.reference();
     auto* boxes = &apps_boxes;
     auto& stats = this -> stats_of(ab);
     if (stats.pinned) {
@@ -158,7 +205,7 @@ GridBox& GridWindow::emplace_box(Args&& ... args) {
     } else if (stats.favorite) {
         boxes = &fav_boxes;
     }
-    boxes->push_back(&ab);
+    (*boxes)->push_back(&ab);
     return ab;
 }
 

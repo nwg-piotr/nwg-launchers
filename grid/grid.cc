@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
             fs::create_directories(config_dir);
         }
 
-        auto app = Gtk::Application::create();
+        auto app = Gtk::Application::create(argc, argv);
 
         auto provider = Gtk::CssProvider::create();
         auto display = Gdk::Display::get_default();
