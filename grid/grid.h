@@ -83,8 +83,9 @@ struct GridConfig: public Config {
 };
 
 class Boxes: public Gio::ListModel, public Glib::Object {
-    std::vector<GridBox*> boxes;
 protected:
+    std::vector<GridBox*> boxes;
+
     Boxes(): Glib::ObjectBase(typeid(Boxes)), Gio::ListModel() {}
     GType get_item_type_vfunc() override {
         return GridBox::get_type();
@@ -99,19 +100,16 @@ protected:
         return nullptr;
     }
 public:
-    static auto create() {
-        auto ptr = new Boxes{};
-        ptr->reference();
-        return Glib::RefPtr<Boxes>(ptr);
-    }
     decltype(auto) begin() { return boxes.begin(); }
     decltype(auto) end() { return boxes.end(); }
+    auto size() const { return boxes.size(); }
+    auto empty() const { return boxes.empty(); }
 
-    void push_back(GridBox* box) {
+    virtual void push_back(GridBox* box) {
         boxes.push_back(box);
         items_changed(boxes.size() - 1, 0, 1);
     }
-    void erase(GridBox& box) {
+    virtual void erase(GridBox& box) {
         Log::info("before erasure size=", boxes.size());
         auto to_erase = std::remove(boxes.begin(), boxes.end(), &box);
         auto pos = std::distance(boxes.begin(), to_erase);
@@ -120,8 +118,43 @@ public:
         items_changed(pos, 1, 0);
         Log::info("after erasure size=", boxes.size());
     }
-    auto size() const { return boxes.size(); }
-    auto empty() const { return boxes.empty(); }
+
+    static auto create() {
+        auto ptr = new Boxes{};
+        ptr->reference();
+        return Glib::RefPtr<Boxes>{ ptr };
+    }
+};
+
+class SortedBoxes: public Boxes {
+protected:
+    using Boxes::Boxes;
+    virtual bool cmp_less(GridBox* a, GridBox* b) = 0;
+public:
+    void push_back(GridBox* box) override {
+        auto iter = std::find_if(boxes.begin(), boxes.end(), [this,box](auto* other) {
+            return !cmp_less(box, other);
+        });
+        auto pos = std::distance(boxes.begin(), iter);
+        boxes.insert(iter, box);
+        items_changed(pos, 0, 1); // pos - 1 maybe? insert inserts before the iterator
+    }
+};
+
+class AppBoxes: public SortedBoxes {
+    using SortedBoxes::SortedBoxes;
+protected:
+    bool cmp_less(GridBox* a, GridBox* b) override {
+        return a->name.compare(b->name) < 0;
+    }
+public:
+    static auto create_app_boxes() {
+        auto ptr = new AppBoxes{};
+        Log::info("is list model? ", G_IS_LIST_MODEL(ptr->gobj()));
+        ptr->reference();
+        ptr->reference();
+        return Glib::RefPtr<Boxes>{ static_cast<Boxes*>(ptr) };
+    }
 };
 
 class GridWindow : public PlatformWindow {
@@ -171,15 +204,10 @@ class GridWindow : public PlatformWindow {
         bool on_delete_event(GdkEventAny*) override;
         bool on_button_press_event(GdkEventButton*) override;
     private:
-        std::list<GridBox>  all_boxes {};      // stores all applications buttons
-        Glib::RefPtr<Boxes> apps_boxes;
-        Glib::RefPtr<Boxes> fav_boxes;
-        Glib::RefPtr<Boxes> pinned_boxes;
-        //std::vector<GridBox*> apps_boxes {};     // all common boxes
-        //std::vector<GridBox*> filtered_boxes {}; // common boxes meeting search criteria
-        //std::vector<GridBox*> fav_boxes {};      // attached to favs_grid
-        //std::vector<GridBox*> pinned_boxes {};   // attached to pinned_grid
-
+        std::list<GridBox>  all_boxes {}; // stores all applications buttons
+        Glib::RefPtr<Boxes> apps_boxes;   // common boxes (possibly filtered)
+        Glib::RefPtr<Boxes> fav_boxes;    // favourites (most clicked)
+        Glib::RefPtr<Boxes> pinned_boxes; // boxes pinned by user
 
         Span<std::string> execs;
         Span<Stats>       stats;
@@ -198,7 +226,8 @@ GridBox& GridWindow::emplace_box(Args&& ... args) {
     auto& ab = this -> all_boxes.emplace_back(std::forward<Args>(args)...);
     ab.reference();
     ab.reference();
-    auto* boxes = &apps_boxes;
+    auto apps_boxes_ = Glib::RefPtr<Boxes>::cast_static(apps_boxes);
+    auto* boxes = &apps_boxes_;
     auto& stats = this -> stats_of(ab);
     if (stats.pinned) {
         boxes = &pinned_boxes;

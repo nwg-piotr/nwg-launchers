@@ -111,7 +111,7 @@ GridWindow::GridWindow(GridConfig& config):
     setup_grid(favs_grid);
     setup_grid(pinned_grid);
 
-    apps_boxes = Boxes::create();
+    apps_boxes = AppBoxes::create_app_boxes();
     pinned_boxes = Boxes::create();
     fav_boxes = Boxes::create();
 
@@ -359,7 +359,8 @@ void GridWindow::toggle_pinned(GridBox& box) {
     this->monotonic_index += !is_pinned;
 
     auto* from_grid = &this->apps_grid;
-    auto* from = &this->apps_boxes;
+    auto apps_boxes_ = Glib::RefPtr<Boxes>::cast_static(apps_boxes);
+    auto* from = &apps_boxes_;
 
     if (stats.favorite) {
         from_grid = &this->favs_grid;
