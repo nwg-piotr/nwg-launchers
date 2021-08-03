@@ -82,11 +82,34 @@ struct GridConfig: public Config {
     RGBA background_color;
 };
 
-class Boxes: public Gio::ListModel, public Glib::Object {
+class AbstractBoxes {
 protected:
     std::vector<GridBox*> boxes;
+public:
+    virtual ~AbstractBoxes() = default;
 
-    Boxes(): Glib::ObjectBase(typeid(Boxes)), Gio::ListModel() {}
+    decltype(auto) begin() { return boxes.begin(); }
+    decltype(auto) end() { return boxes.end(); }
+    auto & front() { return boxes.front(); }
+    auto size() const { return boxes.size(); }
+    auto empty() const { return boxes.empty(); }
+
+    virtual void add(GridBox& box) = 0;
+    virtual void erase(GridBox& box) = 0;
+};
+
+class BoxesModel: public AbstractBoxes, public Gio::ListModel, public Glib::Object {
+public:
+    virtual ~BoxesModel() = default;
+    virtual void erase(GridBox& box) override {
+        box.reference();
+        auto to_erase = std::remove(boxes.begin(), boxes.end(), &box);
+        auto pos = std::distance(boxes.begin(), to_erase);
+        boxes.erase(to_erase);
+        items_changed(pos, 1, 0);
+    }
+protected:
+    BoxesModel(): Glib::ObjectBase(typeid(BoxesModel)), Gio::ListModel() {}
     GType get_item_type_vfunc() override {
         return GridBox::get_type();
     }
@@ -99,63 +122,125 @@ protected:
         }
         return nullptr;
     }
-public:
-    decltype(auto) begin() { return boxes.begin(); }
-    decltype(auto) end() { return boxes.end(); }
-    auto size() const { return boxes.size(); }
-    auto empty() const { return boxes.empty(); }
+};
 
-    virtual void push_back(GridBox* box) {
-        boxes.push_back(box);
-        items_changed(boxes.size() - 1, 0, 1);
-    }
-    virtual void erase(GridBox& box) {
-        Log::info("before erasure size=", boxes.size());
-        auto to_erase = std::remove(boxes.begin(), boxes.end(), &box);
-        auto pos = std::distance(boxes.begin(), to_erase);
-        Log::info("erasing pos=", pos);
-        boxes.erase(to_erase);
-        items_changed(pos, 1, 0);
-        Log::info("after erasure size=", boxes.size());
-    }
-
+/* CRTP class providing T::create() -> RefPtr<T> */
+template <typename T> struct Create {
     static auto create() {
-        auto ptr = new Boxes{};
+        auto* ptr = new T{};
+        // refptr(ptr) constructor does not increase reference count, but ~refptr does decrease
+        // resulting in refcount < 0
         ptr->reference();
-        return Glib::RefPtr<Boxes>{ ptr };
+        return Glib::RefPtr<T>{ ptr };
     }
 };
 
-class SortedBoxes: public Boxes {
+inline auto container_add_sorted = [](auto && container, auto && elem, auto && cmp_less) {
+    auto iter = std::find_if(container.begin(), container.end(), [&](auto & other) {
+        return !cmp_less(elem, other);
+    });
+    auto pos = std::distance(container.begin(), iter);
+    container.insert(iter, elem);
+    return pos;
+};
+
+class PinnedBoxes: public BoxesModel, public Create<PinnedBoxes> {
+    friend struct Create<PinnedBoxes>; // permit Create to access a protected constructor
 protected:
-    using Boxes::Boxes;
-    virtual bool cmp_less(GridBox* a, GridBox* b) = 0;
+    int monotonic_index = 0;
+    PinnedBoxes(): Glib::ObjectBase(typeid(PinnedBoxes)) {}
 public:
-    void push_back(GridBox* box) override {
-        auto iter = std::find_if(boxes.begin(), boxes.end(), [this,box](auto* other) {
-            return !cmp_less(box, other);
+    void add(GridBox& box) override {
+        // TODO: compare by monotonic_index
+        auto pos = container_add_sorted(boxes, &box, [](auto* a, auto* b) {
+            return a->name.compare(b->name) > 0;
         });
-        auto pos = std::distance(boxes.begin(), iter);
-        boxes.insert(iter, box);
+        // monotonic index increases each time an entry is pinned
+        // ensuring it will appear last
+        ++monotonic_index;
         items_changed(pos, 0, 1); // pos - 1 maybe? insert inserts before the iterator
     }
 };
 
-class AppBoxes: public SortedBoxes {
-    using SortedBoxes::SortedBoxes;
+class FavBoxes: public BoxesModel, public Create<FavBoxes> {
+    friend struct Create<FavBoxes>; // permit Create to access a protected constructor
 protected:
-    bool cmp_less(GridBox* a, GridBox* b) override {
-        return a->name.compare(b->name) < 0;
-    }
+    FavBoxes(): Glib::ObjectBase(typeid(FavBoxes)) {}
 public:
-    static auto create_app_boxes() {
-        auto ptr = new AppBoxes{};
-        Log::info("is list model? ", G_IS_LIST_MODEL(ptr->gobj()));
-        ptr->reference();
-        ptr->reference();
-        return Glib::RefPtr<Boxes>{ static_cast<Boxes*>(ptr) };
+    void add(GridBox& box) override {
+        auto pos = container_add_sorted(boxes, &box, [](auto* a, auto* b) {
+            return a->name.compare(b->name) > 0;
+        });
+        items_changed(pos, 0, 1); // pos - 1 maybe? insert inserts before the iterator
     }
 };
+
+class AppBoxes: public BoxesModel, public Create<AppBoxes> {
+    friend struct Create<AppBoxes>; // permit Create to access a protected constructor
+private:
+    std::vector<GridBox*> all_boxes; // unsorted & unfiltered boxes
+    Glib::ustring search_criteria;
+protected:
+    AppBoxes(): Glib::ObjectBase(typeid(AppBoxes)) {}
+    void add_if_matches(GridBox* box) {
+        if (box->name.casefold().find(search_criteria) != Glib::ustring::npos) {
+            container_add_sorted(boxes, box, [](auto* a, auto* b) {
+                return a->name.compare(b->name) > 0;
+            });
+        }
+    }
+public:
+    void add(GridBox& box) override {
+        // TODO: ensure the box does not exist before insertion for all *Boxes classes
+        all_boxes.push_back(&box);
+        if (search_criteria.length() == 0 || (box.name.casefold().find(search_criteria) != Glib::ustring::npos)) {
+            auto pos = container_add_sorted(boxes, &box, [](auto* a, auto* b) {
+                return a->name.compare(b->name) > 0;
+            });
+            items_changed(pos, 0, 1);
+        }
+    }
+    void erase(GridBox& box) override {
+        box.reference(); // TODO: is it really needed?
+        // erase from filtered boxes
+        BoxesModel::erase(box);
+        // erase from all boxes
+        auto to_erase_2 = std::remove(all_boxes.begin(), all_boxes.end(), &box);
+        all_boxes.erase(to_erase_2);
+    }
+    void filter(const Glib::ustring& criteria) {
+        auto criteria_ = criteria.casefold();
+        if (search_criteria != criteria_) {
+            search_criteria = criteria_;
+            // TODO: only update actually removed/inserted entries
+            auto old_size = boxes.size();
+            if (search_criteria.length() > 0) {
+                for (auto && box: boxes) {
+                    box->reference();
+                }
+                boxes.clear();
+                for (auto && box: all_boxes) {
+                    box->reference();
+                    add_if_matches(box);
+                }
+            } else {
+                boxes = all_boxes;
+                std::sort(boxes.begin(), boxes.end(), [](auto* a, auto* b) {
+                    return a->name.compare(b->name) < 0;
+                });
+                for (auto && box: all_boxes) {
+                    box->reference();
+                    box->reference();
+                }
+            }
+            items_changed(0, old_size, boxes.size());
+        }
+    }
+    bool is_filtered() {
+        return search_criteria.length() > 0;
+    }
+};
+
 
 class GridWindow : public PlatformWindow {
     public:
@@ -181,11 +266,11 @@ class GridWindow : public PlatformWindow {
         template <typename ... Args>
         GridBox& emplace_box(Args&& ... args);      // emplace box
 
-        void clear_boxes();
         void build_grids();
         void toggle_pinned(GridBox& box);
         void set_description(const Glib::ustring&);
         void save_cache();
+        void run_box(GridBox& box);
 
         void set_data(Span<std::string> execs, Span<Stats> stats) {
             this->execs = execs;
@@ -205,16 +290,15 @@ class GridWindow : public PlatformWindow {
         bool on_button_press_event(GdkEventButton*) override;
     private:
         std::list<GridBox>  all_boxes {}; // stores all applications buttons
-        Glib::RefPtr<Boxes> apps_boxes;   // common boxes (possibly filtered)
-        Glib::RefPtr<Boxes> fav_boxes;    // favourites (most clicked)
-        Glib::RefPtr<Boxes> pinned_boxes; // boxes pinned by user
+        Glib::RefPtr<AppBoxes> apps_boxes;   // common boxes (possibly filtered)
+        Glib::RefPtr<FavBoxes> fav_boxes;    // favourites (most clicked)
+        Glib::RefPtr<PinnedBoxes> pinned_boxes; // boxes pinned by user
 
         Span<std::string> execs;
         Span<Stats>       stats;
 
-        int  monotonic_index;       // to keep pins in order, see grid_classes.cc comment
         bool pins_changed = false;
-        bool is_filtered = false;
+        bool favs_changed = false;
 
         void focus_first_box();
         void filter_view();
@@ -226,15 +310,14 @@ GridBox& GridWindow::emplace_box(Args&& ... args) {
     auto& ab = this -> all_boxes.emplace_back(std::forward<Args>(args)...);
     ab.reference();
     ab.reference();
-    auto apps_boxes_ = Glib::RefPtr<Boxes>::cast_static(apps_boxes);
-    auto* boxes = &apps_boxes_;
+    AbstractBoxes* boxes = apps_boxes.get();
     auto& stats = this -> stats_of(ab);
     if (stats.pinned) {
-        boxes = &pinned_boxes;
+        boxes = pinned_boxes.get();
     } else if (stats.favorite) {
-        boxes = &fav_boxes;
+        boxes = fav_boxes.get();
     }
-    (*boxes)->push_back(&ab);
+    boxes->add(ab);
     return ab;
 }
 

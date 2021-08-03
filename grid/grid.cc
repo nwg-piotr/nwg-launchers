@@ -220,7 +220,6 @@ int main(int argc, char *argv[]) {
                     return path.string(); // actual desktop_id requires '/' to be replaced with '-'
                 };
 
-                window.clear_boxes();
                 table.clear();
 
                 for (auto& dir : dirs) {
@@ -269,6 +268,8 @@ int main(int argc, char *argv[]) {
                         auto file = Gio::File::create_for_path(dir);
                         auto & monitor = monitors.emplace_back(file->monitor_directory());
                         monitor->signal_changed().connect([this](auto && file1, auto && file2, auto && event) {
+                            (void)file1;
+                            (void)file2;
                             switch (event) {
                                 case Gio::FILE_MONITOR_EVENT_CHANGED:
                             //    Gio::FILE_MONITOR_EVENT_MOVED_IN:
@@ -307,6 +308,7 @@ int main(int argc, char *argv[]) {
         format("\tcommons: ", commons_ms, bs_ms);
 
         GridInstance instance{ *app.get(), window };
+        app->signal_shutdown().connect([&]() { window.save_cache(); });
         return app->run();
     } catch (const Glib::FileError& error) {
         Log::error(error.what());
