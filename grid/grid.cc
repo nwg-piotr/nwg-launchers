@@ -143,8 +143,10 @@ int main(int argc, char *argv[]) {
 
         struct EntriesTable {
             GridConfig&    config;
+            // we will reference strings with string_views, so we don't want invalidations
+            std::list<std::string> desktop_ids_store;
             // Maps desktop-ids to their table indices, nullopt stands for 'hidden'
-            std::unordered_map<std::string, std::optional<std::size_t>> desktop_ids;
+            std::unordered_map<std::string_view, std::optional<std::size_t>> desktop_ids;
 
             // Table, only contains shown entries
             std::vector<DesktopEntry> desktop_entries;
@@ -168,8 +170,11 @@ int main(int argc, char *argv[]) {
                 desktop_entries.clear();
             }
             void add_entry(std::string id, const fs::path& path) {
-                if (auto [at, inserted] = desktop_ids.try_emplace(id, std::nullopt); inserted) {
+                std::list<std::string> node;
+                auto && id_ = node.emplace_front(std::move(id));
+                if (auto [at, inserted] = desktop_ids.try_emplace(id_, std::nullopt); inserted) {
                     if (auto entry = desktop_entry(path, config.lang, config.term)) {
+                        desktop_ids_store.splice(desktop_ids_store.begin(), node);
                         at->second = execs.size(); // set index
                         execs.emplace_back(entry->exec);
                         desktop_entries.emplace_back(std::move(*entry));
@@ -308,7 +313,6 @@ int main(int argc, char *argv[]) {
         format("\tcommons: ", commons_ms, bs_ms);
 
         GridInstance instance{ *app.get(), window };
-        app->signal_shutdown().connect([&]() { window.save_cache(); });
         return app->run();
     } catch (const Glib::FileError& error) {
         Log::error(error.what());

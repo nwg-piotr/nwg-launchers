@@ -99,6 +99,7 @@ GridWindow::GridWindow(GridConfig& config):
     pinned_boxes = PinnedBoxes::create();
     fav_boxes = FavBoxes::create();
 
+    // doesn't compile with lambda due to sigc bug, must use free function
     Gtk::FlowBox::SlotCreateWidget<Glib::Object> make_widget_{ &make_widget };
     pinned_grid.bind_model(pinned_boxes, make_widget_);
     favs_grid.bind_model(fav_boxes, make_widget_);
@@ -279,7 +280,6 @@ void GridWindow::toggle_pinned(GridBox& box) {
     auto is_pinned = stats.pinned == Stats::Pinned;
     stats.pinned = Stats::PinTag{ !is_pinned };
 
-
     auto* from_grid = &this->apps_grid;
     AbstractBoxes* from = apps_boxes.get();
 
@@ -328,7 +328,7 @@ void GridWindow::save_cache() {
     if (config.pins && pins_changed) {
         if (std::ofstream out{ config.pinned_file, std::ios::trunc }) {
             for (auto* pin : *pinned_boxes.get()) {
-                out << *pin->desktop_id << '\n';
+                out << pin->desktop_id << '\n';
             }
         } else {
             Log::error("failed to save pins to file '", config.pinned_file, "'");
@@ -347,8 +347,7 @@ void GridWindow::save_cache() {
             // only save positives, substract min to keep clicks low, but preserve order
             for (auto& box : this->all_boxes) {
                 if (auto clicks = stats_of(box).clicks - min + 1; clicks > 0) {
-                    Log::info("saving desktop_id=", *box.desktop_id, ", ", clicks);
-                    favs_cache[*box.desktop_id] = clicks;
+                    favs_cache.emplace(box.desktop_id, clicks);
                 }
             }
             save_json(favs_cache, config.cached_file);
@@ -382,8 +381,8 @@ void GridWindow::run_box(GridBox& box) {
     hide();
 }
 
-GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::string& id, std::size_t index)
-: name(std::move(name)), comment(std::move(comment)), desktop_id(&id), index(index) {
+GridBox::GridBox(Glib::ustring name, Glib::ustring comment, std::string_view id, std::size_t index)
+: name(std::move(name)), comment(std::move(comment)), desktop_id{ id }, index(index) {
     // As we sort dynamically by actual names, we need to avoid shortening them, or long names will remain unsorted.
     // See the issue: https://github.com/nwg-piotr/nwg-launchers/issues/128
     auto display_name = this->name;
@@ -430,4 +429,14 @@ void GridInstance::on_sighup() {
 
 void GridInstance::on_sigusr1() {
     window.show(hint::Fullscreen);
+}
+
+void GridInstance::on_sigint() {
+    window.save_cache();
+    Instance::on_sigint();
+}
+
+void GridInstance::on_sigterm() {
+    window.save_cache();
+    Instance::on_sigterm();
 }

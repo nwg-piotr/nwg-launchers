@@ -55,17 +55,22 @@ struct Stats {
 class GridBox : public Gtk::Button {
 public:
     /* name, comment, desktop-id, index */
-    GridBox(Glib::ustring, Glib::ustring, const std::string& id, std::size_t);
+    GridBox(Glib::ustring, Glib::ustring, std::string_view id, std::size_t);
     ~GridBox() = default;
     bool on_button_press_event(GdkEventButton*) override;
     bool on_focus_in_event(GdkEventFocus*) override;
     void on_enter() override;
     void on_activate() override;
 
-    Glib::ustring      name;
-    Glib::ustring      comment;
-    const std::string* desktop_id; // ptr to desktop-id, never null
-    std::size_t        index;      // row index
+    Glib::ustring    name;
+    Glib::ustring    comment;
+    std::string_view desktop_id; // ptr to desktop-id, never null
+    std::size_t      index;      // row index
+};
+
+struct Entry {
+    std::string_view desktop_id;
+    Stats            stats;
 };
 
 struct GridConfig: public Config {
@@ -333,8 +338,13 @@ struct GridInstance: public Instance {
     GridInstance(Gtk::Application& app, GridWindow& window): Instance{ app, "nwggrid" }, window{ window } {
         app.hold();
     }
-    void on_sighup() override;
-    void on_sigusr1() override;
+    /* Instance::on_sig{int,term} call Application::quit, which in turn emit shutdown signal
+     * However, window.save_cache bound to said event doesn't get called for some reason
+     * So we call it ourselves before calling Application::quit */
+    void on_sighup() override;  // reload
+    void on_sigint() override;  // save & exit
+    void on_sigterm() override;  // save & exit
+    void on_sigusr1() override; // show
 };
 
 /*
