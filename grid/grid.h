@@ -52,10 +52,19 @@ struct Stats {
       : clicks(c), position(i), favorite(f), pinned(p) { }
 };
 
+struct Entry {
+    std::string_view desktop_id;
+    std::string      exec;
+    Stats            stats;
+
+    // TODO: should we store it separately?
+    DesktopEntry desktop_entry;
+};
+
 class GridBox : public Gtk::Button {
 public:
     /* name, comment, desktop-id, index */
-    GridBox(Glib::ustring, Glib::ustring, std::string_view id, std::size_t);
+    GridBox(Glib::ustring, Glib::ustring, const std::shared_ptr<Entry>&);
     ~GridBox() = default;
     bool on_button_press_event(GdkEventButton*) override;
     bool on_focus_in_event(GdkEventFocus*) override;
@@ -64,13 +73,8 @@ public:
 
     Glib::ustring    name;
     Glib::ustring    comment;
-    std::string_view desktop_id; // ptr to desktop-id, never null
-    std::size_t      index;      // row index
-};
 
-struct Entry {
-    std::string_view desktop_id;
-    Stats            stats;
+    std::shared_ptr<Entry> entry;
 };
 
 struct GridConfig: public Config {
@@ -277,16 +281,11 @@ class GridWindow : public PlatformWindow {
         void save_cache();
         void run_box(GridBox& box);
 
-        void set_data(Span<std::string> execs, Span<Stats> stats) {
-            this->execs = execs;
-            this->stats = stats;
-        }
-
         std::string& exec_of(const GridBox& box) {
-            return execs[box.index];
+            return box.entry->exec;
         }
         Stats& stats_of(const GridBox& box) {
-            return stats[box.index];
+            return box.entry->stats;
         }
     protected:
         //Override default signal handler:
@@ -298,9 +297,6 @@ class GridWindow : public PlatformWindow {
         Glib::RefPtr<AppBoxes> apps_boxes;   // common boxes (possibly filtered)
         Glib::RefPtr<FavBoxes> fav_boxes;    // favourites (most clicked)
         Glib::RefPtr<PinnedBoxes> pinned_boxes; // boxes pinned by user
-
-        Span<std::string> execs;
-        Span<Stats>       stats;
 
         bool pins_changed = false;
         bool favs_changed = false;

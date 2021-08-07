@@ -145,13 +145,11 @@ int main(int argc, char *argv[]) {
             GridConfig&    config;
             // we will reference strings with string_views, so we don't want invalidations
             std::list<std::string> desktop_ids_store;
-            // Maps desktop-ids to their table indices, nullopt stands for 'hidden'
-            std::unordered_map<std::string_view, std::optional<std::size_t>> desktop_ids;
+            // Maps desktop-ids to their table indices, empty stands for 'hidden'
+            std::unordered_map<std::string_view, std::shared_ptr<Entry>> desktop_ids;
 
             // Table, only contains shown entries
             std::vector<DesktopEntry> desktop_entries;
-            std::vector<std::string>  execs;
-            std::vector<Stats>        stats;
             std::vector<Gtk::Image>   images;
 
             Span<std::string> pinned;
@@ -164,42 +162,41 @@ int main(int argc, char *argv[]) {
             }
             void clear() {
                 desktop_ids.clear();
-                execs.clear();
-                stats.clear();
                 images.clear();
                 desktop_entries.clear();
             }
             void add_entry(std::string id, const fs::path& path) {
                 std::list<std::string> node;
                 auto && id_ = node.emplace_front(std::move(id));
-                if (auto [at, inserted] = desktop_ids.try_emplace(id_, std::nullopt); inserted) {
+                if (auto [at, inserted] = desktop_ids.try_emplace(id_); inserted) {
                     if (auto entry = desktop_entry(path, config.lang, config.term)) {
+                        // save the node to the store
                         desktop_ids_store.splice(desktop_ids_store.begin(), node);
-                        at->second = execs.size(); // set index
-                        execs.emplace_back(entry->exec);
-                        desktop_entries.emplace_back(std::move(*entry));
-                        stats.emplace_back(0, 0, Stats::Common, Stats::Unpinned);
+                        at->second.reset(new Entry{
+                            id_,
+                            entry->exec, // TODO: destruct DesktopEntry to pieces so that we could safely move exec here
+                            Stats{ 0, 0, Stats::Common, Stats::Unpinned },
+                            std::move(*entry)
+                        });
+                    } else {
+                        Log::warn("'", path, "' is not valid .desktop file");
                     }
                 }
             }
-            void mark_entries(const IconProvider& icons) {
+            void mark_entries() {
                 int pin_index = 0; // preserve pins order
                 for (auto& pin : pinned) {
                     if (auto result = desktop_ids.find(pin); result != desktop_ids.end() && result->second) {
-                        stats[*result->second].pinned = Stats::Pinned;
-                        stats[*result->second].position = pin_index;
+                        result->second->stats.pinned   = Stats::Pinned;
+                        result->second->stats.position = pin_index;
                         ++pin_index;
                     }
                 }
                 for (auto& [fav, clicks] : favourites) {
                     if (auto result = desktop_ids.find(fav); result != desktop_ids.end() && result->second) {
-                        stats[*result->second].clicks   = clicks;
-                        stats[*result->second].favorite = Stats::Favorite;
+                        result->second->stats.clicks   = clicks;
+                        result->second->stats.favorite = Stats::Favorite;
                     }
-                }
-                // The most expensive part
-                for (auto && entry: desktop_entries) {
-                    images.emplace_back(icons.load_icon(entry.icon));
                 }
             }
         };
@@ -245,18 +242,16 @@ int main(int argc, char *argv[]) {
                         table.add_entry(id, path);
                     }
                 }
-                table.mark_entries(icons);
-                window.set_data(table.execs, table.stats);
-                for (auto& [desktop_id, pos_] : table.desktop_ids) {
-                    if (pos_) {
-                        auto pos = *pos_;
-                        auto& entry = table.desktop_entries[pos];
-                        auto& ab = window.emplace_box(std::move(entry.name),
-                                                      std::move(entry.comment),
-                                                      desktop_id,
-                                                      pos);
+                table.mark_entries();
+                for (auto& [desktop_id, entry_] : table.desktop_ids) {
+                    if (entry_) {
+                        auto & entry = *entry_;
+                        auto& ab = window.emplace_box(std::move(entry.desktop_entry.name),
+                                                      std::move(entry.desktop_entry.comment),
+                                                      entry_);
+                        auto icon = icons.load_icon(entry.desktop_entry.icon);
                         ab.set_image_position(Gtk::POS_TOP);
-                        ab.set_image(table.images[pos]);
+                        ab.set_image(icon);
                     }
                 }
                 window.build_grids();

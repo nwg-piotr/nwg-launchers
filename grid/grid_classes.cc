@@ -328,7 +328,7 @@ void GridWindow::save_cache() {
     if (config.pins && pins_changed) {
         if (std::ofstream out{ config.pinned_file, std::ios::trunc }) {
             for (auto* pin : *pinned_boxes.get()) {
-                out << pin->desktop_id << '\n';
+                out << pin->entry->desktop_id << '\n';
             }
         } else {
             Log::error("failed to save pins to file '", config.pinned_file, "'");
@@ -347,7 +347,7 @@ void GridWindow::save_cache() {
             // only save positives, substract min to keep clicks low, but preserve order
             for (auto& box : this->all_boxes) {
                 if (auto clicks = stats_of(box).clicks - min + 1; clicks > 0) {
-                    favs_cache.emplace(box.desktop_id, clicks);
+                    favs_cache.emplace(box.entry->desktop_id, clicks);
                 }
             }
             save_json(favs_cache, config.cached_file);
@@ -381,8 +381,8 @@ void GridWindow::run_box(GridBox& box) {
     hide();
 }
 
-GridBox::GridBox(Glib::ustring name, Glib::ustring comment, std::string_view id, std::size_t index)
-: name(std::move(name)), comment(std::move(comment)), desktop_id{ id }, index(index) {
+GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::shared_ptr<Entry>& entry)
+: name(std::move(name)), comment(std::move(comment)), entry{ entry } {
     // As we sort dynamically by actual names, we need to avoid shortening them, or long names will remain unsorted.
     // See the issue: https://github.com/nwg-piotr/nwg-launchers/issues/128
     auto display_name = this->name;
