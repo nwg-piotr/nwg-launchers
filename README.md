@@ -292,6 +292,10 @@ To start nwgdmenu from a key binding, use the `-run` argument, e.g.:
 </keybind>
 ```
 
+### wlr-layer-shell protocol
+
+From 0.5.0 the nwg-launchers support wlr-layer-shell protocol (via gtk-layer-shell), and use it where preferred. The default layer is `OVERLAY` and the default exclusive zone is `auto`, but you can change it using command line arguments. Notably, you may want to set exclusive zone to `-1` to show nwggrid or nwgbar on top of panels (waybar, wf-panel, etc).
+
 ### Tips & tricks
 
 ### Hide unwanted icons in nwggrid
