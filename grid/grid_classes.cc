@@ -84,7 +84,7 @@ GridWindow::GridWindow(GridConfig& config):
     searchbox.set_sensitive(true);
     searchbox.set_name("searchbox");
 
-    auto setup_grid = [](auto& grid) {
+    auto setup_grid = [&](auto& grid) {
         grid.set_column_spacing(5);
         grid.set_row_spacing(5);
         grid.set_homogeneous(true);
@@ -192,7 +192,7 @@ inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container, a
     auto size = container.size();
     decltype(size) cols = num_col;
     if (auto min = std::min(cols, size)) { // suppress gtk warnings about size=0
-        flowbox.set_min_children_per_line(std::min(size, cols));
+        //flowbox.set_min_children_per_line(std::min(size, cols));
         flowbox.set_max_children_per_line(std::min(size, cols));
     }
 };
@@ -385,9 +385,18 @@ void GridWindow::remove_box_by_desktop_id(std::string_view desktop_id) {
     auto cmp = [desktop_id](auto && box) { return box.entry->desktop_id == desktop_id; };
     if (auto iter = std::find_if(all_boxes.begin(), all_boxes.end(), cmp); iter != all_boxes.end()) {
         auto && box = *iter;
+        // delete references to the widget from models
         pinned_boxes->erase(box);
         fav_boxes->erase(box);
         apps_boxes->erase(box);
+        // remove flowboxchild
+        box.reference();
+        if (auto parent = dynamic_cast<Gtk::FlowBoxChild*>(box.get_parent())) {
+            if (auto flowbox = parent->get_parent()) {
+                flowbox->remove(*parent);
+            }
+        }
+        // delete the actual widget
         all_boxes.erase(iter);
     }
 }

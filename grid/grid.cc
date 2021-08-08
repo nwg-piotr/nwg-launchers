@@ -37,14 +37,17 @@ struct EntriesModel {
     GridConfig& config;
     GridWindow& window;
 
+    // TODO: think of saner way to load icons
+    IconProvider& icons;
+
     Span<std::string> pins;
     Span<CacheEntry>  favs;
 
     std::list<std::shared_ptr<Entry>> entries;
     using Index = std::list<std::shared_ptr<Entry>>::iterator;
 
-    EntriesModel(GridConfig& config, GridWindow& window, Span<std::string> pins, Span<CacheEntry> favs):
-        config{ config }, window{ window }, pins{ pins }, favs{ favs }
+    EntriesModel(GridConfig& config, GridWindow& window, IconProvider& icons, Span<std::string> pins, Span<CacheEntry> favs):
+        config{ config }, window{ window }, icons{ icons }, pins{ pins }, favs{ favs }
     {
         // intentionally left blank
     }
@@ -54,11 +57,16 @@ struct EntriesModel {
         entries.push_front(std::shared_ptr<Entry>{ new Entry{ std::forward<Ts>(args)... } });
         auto & entry = entries.front();
         mark_entry(*entry);
-        window.emplace_box(
+        auto && box = window.emplace_box(
             entry->desktop_entry.name,
             entry->desktop_entry.comment,
             entry
         );
+        box.set_image_position(Gtk::POS_TOP);
+        auto image = new Gtk::Image{ icons.load_icon(entry->desktop_entry.icon) };
+        box.set_image(*image);
+        window.build_grids();
+
         return entries.begin();
     }
     template <typename ... Ts>
@@ -342,7 +350,7 @@ int main(int argc, char *argv[]) {
         gettimeofday(&tp, NULL);
         long int boxes_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-        EntriesModel   table{ config, window, pinned, favourites };
+        EntriesModel   table{ config, window, icon_provider, pinned, favourites };
         EntriesManager entries_provider{ dirs, table, config };
 
         gettimeofday(&tp, NULL);
