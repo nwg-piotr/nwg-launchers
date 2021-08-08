@@ -212,6 +212,9 @@ IconProvider::IconProvider(const Glib::RefPtr<Gtk::IconTheme>& theme, int icon_s
 }
 
 Gtk::Image IconProvider::load_icon(const std::string& icon) const {
+    if (icon.empty()) {
+        return Gtk::Image{ fallback };
+    }
     try {
         if (icon.find_first_of("/") == icon.npos) {
             return Gtk::Image{ icon_theme->load_icon(icon, icon_size, Gtk::ICON_LOOKUP_FORCE_SIZE) };

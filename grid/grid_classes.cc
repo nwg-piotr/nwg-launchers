@@ -381,6 +381,17 @@ void GridWindow::run_box(GridBox& box) {
     hide();
 }
 
+void GridWindow::remove_box_by_desktop_id(std::string_view desktop_id) {
+    auto cmp = [desktop_id](auto && box) { return box.entry->desktop_id == desktop_id; };
+    if (auto iter = std::find_if(all_boxes.begin(), all_boxes.end(), cmp); iter != all_boxes.end()) {
+        auto && box = *iter;
+        pinned_boxes->erase(box);
+        fav_boxes->erase(box);
+        apps_boxes->erase(box);
+        all_boxes.erase(iter);
+    }
+}
+
 GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::shared_ptr<Entry>& entry)
 : name(std::move(name)), comment(std::move(comment)), entry{ entry } {
     // As we sort dynamically by actual names, we need to avoid shortening them, or long names will remain unsorted.

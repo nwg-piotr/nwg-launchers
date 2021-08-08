@@ -44,12 +44,13 @@ struct Stats {
         Unpinned = 0,
         Pinned = 1,
     };
-    int    clicks;
-    int    position;
-    FavTag favorite;
-    PinTag pinned;
+    int    clicks{ 0 };
+    int    position{ 0 };
+    FavTag favorite{ Common };
+    PinTag pinned{ Unpinned };
     Stats(int c, int i, FavTag f, PinTag p)
       : clicks(c), position(i), favorite(f), pinned(p) { }
+    Stats() = default;
 };
 
 struct Entry {
@@ -111,11 +112,12 @@ class BoxesModel: public AbstractBoxes, public Gio::ListModel, public Glib::Obje
 public:
     virtual ~BoxesModel() = default;
     virtual void erase(GridBox& box) override {
-        box.reference();
-        auto to_erase = std::remove(boxes.begin(), boxes.end(), &box);
-        auto pos = std::distance(boxes.begin(), to_erase);
-        boxes.erase(to_erase);
-        items_changed(pos, 1, 0);
+        if (auto to_erase = std::remove(boxes.begin(), boxes.end(), &box); to_erase != boxes.end()) {
+            box.reference();
+            auto pos = std::distance(boxes.begin(), to_erase);
+            boxes.erase(to_erase, boxes.end());
+            items_changed(pos, 1, 0);
+        }
     }
 protected:
     BoxesModel(): Glib::ObjectBase(typeid(BoxesModel)), Gio::ListModel() {}
@@ -214,8 +216,9 @@ public:
         // erase from filtered boxes
         BoxesModel::erase(box);
         // erase from all boxes
-        auto to_erase_2 = std::remove(all_boxes.begin(), all_boxes.end(), &box);
-        all_boxes.erase(to_erase_2);
+        if (auto to_erase_2 = std::remove(all_boxes.begin(), all_boxes.end(), &box); to_erase_2 != all_boxes.end()) {
+            all_boxes.erase(to_erase_2);
+        }
     }
     void filter(const Glib::ustring& criteria) {
         auto criteria_ = criteria.casefold();
@@ -274,6 +277,7 @@ class GridWindow : public PlatformWindow {
 
         template <typename ... Args>
         GridBox& emplace_box(Args&& ... args);      // emplace box
+        void remove_box_by_desktop_id(std::string_view desktop_id);
 
         void build_grids();
         void toggle_pinned(GridBox& box);
