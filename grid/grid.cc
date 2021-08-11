@@ -72,8 +72,9 @@ struct EntriesModel {
     template <typename ... Ts>
     void update_entry(Index index, Ts && ... args) {
         index->reset(new Entry{ std::forward<Ts>(args)... });
-        mark_entry(**index);
-        // TODO: emit notification
+        auto && entry = **index;
+        mark_entry(entry);
+        window.update_box_by_id(entry.desktop_id);
     }
     void erase_entry(Index index) {
         auto && entry = *index;

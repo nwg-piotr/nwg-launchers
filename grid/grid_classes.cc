@@ -381,9 +381,15 @@ void GridWindow::run_box(GridBox& box) {
     hide();
 }
 
+inline auto with_box_by_id = [](auto && container, auto && desktop_id, auto && foo) {
+    auto cmp = [&desktop_id](auto && box) { return box.entry->desktop_id == desktop_id; };
+    if (auto iter = std::find_if(container.begin(), container.end(), cmp); iter != container.end()) {
+        foo(iter);
+    }
+};
+
 void GridWindow::remove_box_by_desktop_id(std::string_view desktop_id) {
-    auto cmp = [desktop_id](auto && box) { return box.entry->desktop_id == desktop_id; };
-    if (auto iter = std::find_if(all_boxes.begin(), all_boxes.end(), cmp); iter != all_boxes.end()) {
+    with_box_by_id(all_boxes, desktop_id, [this](auto && iter) {
         auto && box = *iter;
         // delete references to the widget from models
         pinned_boxes->erase(box);
@@ -398,8 +404,18 @@ void GridWindow::remove_box_by_desktop_id(std::string_view desktop_id) {
         }
         // delete the actual widget
         all_boxes.erase(iter);
-    }
+    });
 }
+
+void GridWindow::update_box_by_id(std::string_view desktop_id) {
+    with_box_by_id(all_boxes, desktop_id, [this](auto && iter) {
+        auto && box = *iter;
+        pinned_boxes->mark_updated(box);
+        fav_boxes->mark_updated(box);
+        apps_boxes->mark_updated(box);
+    });
+}
+
 
 GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::shared_ptr<Entry>& entry)
 : name(std::move(name)), comment(std::move(comment)), entry{ entry } {

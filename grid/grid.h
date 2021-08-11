@@ -119,6 +119,12 @@ public:
             items_changed(pos, 1, 0);
         }
     }
+    virtual void mark_updated(GridBox& box) {
+        if (auto iter = std::find(boxes.begin(), boxes.end(), &box); iter != boxes.end()) {
+            auto pos = std::distance(boxes.begin(), iter);
+            items_changed(pos, 1, 1);
+        }
+    }
 protected:
     BoxesModel(): Glib::ObjectBase(typeid(BoxesModel)), Gio::ListModel() {}
     GType get_item_type_vfunc() override {
@@ -278,6 +284,7 @@ class GridWindow : public PlatformWindow {
         template <typename ... Args>
         GridBox& emplace_box(Args&& ... args);      // emplace box
         void remove_box_by_desktop_id(std::string_view desktop_id);
+        void update_box_by_id(std::string_view desktop_id);
 
         void build_grids();
         void toggle_pinned(GridBox& box);
