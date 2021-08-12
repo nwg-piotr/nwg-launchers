@@ -33,6 +33,9 @@ Options:\n\
 -layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
 -layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
 
+
+// Table containing entries
+// internally is a thin wrapper over list<entry>
 struct EntriesModel {
     GridConfig& config;
     GridWindow& window;
@@ -43,8 +46,9 @@ struct EntriesModel {
     Span<std::string> pins;
     Span<CacheEntry>  favs;
 
-    std::list<std::shared_ptr<Entry>> entries;
-    using Index = std::list<std::shared_ptr<Entry>>::iterator;
+    // list because entries should not get invalidated when inserting/erasing
+    std::list<Entry> entries;
+    using Index = typename decltype(entries)::iterator;
 
     EntriesModel(GridConfig& config, GridWindow& window, IconProvider& icons, Span<std::string> pins, Span<CacheEntry> favs):
         config{ config }, window{ window }, icons{ icons }, pins{ pins }, favs{ favs }
@@ -54,16 +58,15 @@ struct EntriesModel {
 
     template <typename ... Ts>
     Index emplace_entry(Ts && ... args) {
-        entries.push_front(std::shared_ptr<Entry>{ new Entry{ std::forward<Ts>(args)... } });
+        entries.emplace_front(std::forward<Ts>(args)...);
         auto & entry = entries.front();
-        mark_entry(*entry);
+        set_entry_stats(entry);
         auto && box = window.emplace_box(
-            entry->desktop_entry.name,
-            entry->desktop_entry.comment,
+            entry.desktop_entry.name,
+            entry.desktop_entry.comment,
             entry
         );
-        box.set_image_position(Gtk::POS_TOP);
-        auto image = new Gtk::Image{ icons.load_icon(entry->desktop_entry.icon) };
+        auto image = Gtk::manage(new Gtk::Image{ icons.load_icon(entry.desktop_entry.icon) });
         box.set_image(*image);
         window.build_grids();
 
@@ -71,20 +74,22 @@ struct EntriesModel {
     }
     template <typename ... Ts>
     void update_entry(Index index, Ts && ... args) {
-        index->reset(new Entry{ std::forward<Ts>(args)... });
-        auto && entry = **index;
-        mark_entry(entry);
+        *index = Entry{ std::forward<Ts>(args)... };
+        auto && entry = *index;
+        set_entry_stats(entry);
         window.update_box_by_id(entry.desktop_id);
     }
     void erase_entry(Index index) {
         auto && entry = *index;
-        window.remove_box_by_desktop_id(entry->desktop_id);
+        window.remove_box_by_desktop_id(entry.desktop_id);
         entries.erase(index);
+        window.build_grids();
     }
     auto & row(Index index) {
         return *index;
     }
-    void mark_entry(Entry& entry) {
+private:
+    void set_entry_stats(Entry& entry) {
         if (auto result = std::find(pins.begin(), pins.end(), entry.desktop_id); result != pins.end()) {
             entry.stats.pinned = Stats::Pinned;
         }
@@ -130,6 +135,7 @@ struct EntriesManager {
             auto && monitor = monitors.emplace_back(monitored_dir->monitor_directory());
             // TODO: should I disconnect on exit to make sure there is no dangling reference?
             monitor->signal_changed().connect([this,monitored_dir,dir_index](auto && file1, auto && file2, auto event) {
+                (void)file2;
                 auto && id = monitored_dir->get_relative_path(file1);
                 // TODO: only call if the file is not overwritten
                 switch (event) {
@@ -222,17 +228,17 @@ struct EntriesManager {
         );
         if (inserted) {
             desktop_ids_store.splice(desktop_ids_store.begin(), id_node);
-            auto entry = desktop_entry(file, config.lang, config.term);
+            auto desktop_entry_ = desktop_entry(file, config.lang, config.term);
             // TODO: handle load errors
-            if (entry) {
+            if (desktop_entry_) {
                 Log::warn("Loaded .desktop file '", file, "' with id '", id_, "'");
                 auto && meta = iter->second;
                 meta.state = Metadata::Ok;
                 meta.index = table.emplace_entry(
                     id_,
-                    entry->exec,
+                    desktop_entry_->exec,
                     Stats{},
-                    std::move(*entry)
+                    std::move(*desktop_entry_)
                 );
             } else {
                 Log::warn("Invalid .desktop file '", file, "'");
@@ -340,35 +346,24 @@ int main(int argc, char *argv[]) {
         gettimeofday(&tp, NULL);
         long int commons_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-        gettimeofday(&tp, NULL);
-        long int bs_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
         GridWindow window{ config };
 
         gettimeofday(&tp, NULL);
-        long int images_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-        gettimeofday(&tp, NULL);
-        long int boxes_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+        long int window_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
         EntriesModel   table{ config, window, icon_provider, pinned, favourites };
         EntriesManager entries_provider{ dirs, table, config };
 
         gettimeofday(&tp, NULL);
-        long int grids_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-        gettimeofday(&tp, NULL);
-        long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+        long int model_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
         auto format = [](auto&& title, auto from, auto to) {
             Log::plain(title, to - from, "ms");
         };
-        format("Total: ", start_ms, end_ms);
-        format("\tgrids:   ", grids_ms, end_ms);
-        format("\tboxes:   ", boxes_ms, grids_ms);
-        format("\timages:  ", images_ms, boxes_ms);
-        format("\tbs:      ", bs_ms, images_ms);
-        format("\tcommons: ", commons_ms, bs_ms);
+        format("Total: ", start_ms, model_ms);
+        format("\tcommon: ", start_ms, commons_ms);
+        format("\twindow: ", commons_ms, window_ms);
+        format("\tmodels: ", window_ms, model_ms);
 
         GridInstance instance{ *app.get(), window };
         return app->run();

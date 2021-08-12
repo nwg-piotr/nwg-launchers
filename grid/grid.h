@@ -60,12 +60,18 @@ struct Entry {
 
     // TODO: should we store it separately?
     DesktopEntry desktop_entry;
+
+    Entry(std::string_view id, std::string_view exec, Stats stats, DesktopEntry entry):
+        desktop_id{ id }, exec{ exec }, stats{ stats }, desktop_entry{ std::move(entry) }
+    {
+        // intentionally left blank
+    }
 };
 
 class GridBox : public Gtk::Button {
 public:
     /* name, comment, desktop-id, index */
-    GridBox(Glib::ustring, Glib::ustring, const std::shared_ptr<Entry>&);
+    GridBox(Glib::ustring, Glib::ustring, Entry& entry);
     ~GridBox() = default;
     bool on_button_press_event(GdkEventButton*) override;
     bool on_focus_in_event(GdkEventFocus*) override;
@@ -75,7 +81,7 @@ public:
     Glib::ustring    name;
     Glib::ustring    comment;
 
-    std::shared_ptr<Entry> entry;
+    Entry* entry;
 };
 
 struct GridConfig: public Config {
@@ -112,10 +118,10 @@ class BoxesModel: public AbstractBoxes, public Gio::ListModel, public Glib::Obje
 public:
     virtual ~BoxesModel() = default;
     virtual void erase(GridBox& box) override {
-        if (auto to_erase = std::remove(boxes.begin(), boxes.end(), &box); to_erase != boxes.end()) {
+        if (auto iter = std::find(boxes.begin(), boxes.end(), &box); iter != boxes.end()) {
+            auto pos = std::distance(boxes.begin(), iter);
+            boxes.erase(iter);
             box.reference();
-            auto pos = std::distance(boxes.begin(), to_erase);
-            boxes.erase(to_erase, boxes.end());
             items_changed(pos, 1, 0);
         }
     }
@@ -168,14 +174,15 @@ protected:
     PinnedBoxes(): Glib::ObjectBase(typeid(PinnedBoxes)) {}
 public:
     void add(GridBox& box) override {
-        // TODO: compare by monotonic_index
+        box.entry->stats.pinned = Stats::Pinned;
+        box.entry->stats.position = monotonic_index;
         auto pos = container_add_sorted(boxes, &box, [](auto* a, auto* b) {
-            return a->name.compare(b->name) > 0;
+            return a->entry->stats.position < b->entry->stats.position;
         });
         // monotonic index increases each time an entry is pinned
         // ensuring it will appear last
         ++monotonic_index;
-        items_changed(pos, 0, 1); // pos - 1 maybe? insert inserts before the iterator
+        items_changed(pos, 0, 1);
     }
 };
 
@@ -185,10 +192,12 @@ protected:
     FavBoxes(): Glib::ObjectBase(typeid(FavBoxes)) {}
 public:
     void add(GridBox& box) override {
+        box.entry->stats.favorite = Stats::Favorite;
+        box.entry->stats.clicks = 1;
         auto pos = container_add_sorted(boxes, &box, [](auto* a, auto* b) {
-            return a->name.compare(b->name) > 0;
+            return a->entry->stats.clicks < b->entry->stats.clicks;
         });
-        items_changed(pos, 0, 1); // pos - 1 maybe? insert inserts before the iterator
+        items_changed(pos, 0, 1);
     }
 };
 

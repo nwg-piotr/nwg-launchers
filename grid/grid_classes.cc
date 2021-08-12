@@ -233,6 +233,7 @@ void GridWindow::refresh_separators() {
     // can it be fixed?
     set_shown(p && f, separator1);
     set_shown((f || p) && a, separator);
+    Log::info(p, ' ', f, ' ', a);
 }
 
 void GridWindow::build_grids() {
@@ -296,26 +297,26 @@ void GridWindow::toggle_pinned(GridBox& box) {
     }
     box.reference(); // reference count decreases when unparenting
     box.reference(); // TODO: this reference is required (errors otherwise), but why?
+    box.reference();
     from->erase(box);
     // FlowBox { ... FlowBoxChild { box } ... }
     // it is necessary to remove box from FlowBoxChild
     // and then FlowBoxChild from FlowBox
     // as it doesn't get deleted for some reason
     if (auto parent = box.get_parent()) {
+        //if (auto grid = parent->get_parent()) {
+        //    grid->remove(*parent);
+        //}
+        from_grid->remove(*parent);
         parent->remove(box);
-        if (auto grid = parent->get_parent()) {
-            grid->remove(*parent);
-        }
     }
     to->add(box);
     auto num_col = config.num_col;
     refresh_max_children_per_line(*from_grid, *from, num_col);
     refresh_max_children_per_line(*to_grid, *to, num_col);
 
-    // refresh filter if needed
-    if (!apps_boxes->is_filtered()) {
-        refresh_separators();
-    }
+    // refresh filters
+    refresh_separators();
 }
 
 
@@ -417,8 +418,8 @@ void GridWindow::update_box_by_id(std::string_view desktop_id) {
 }
 
 
-GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::shared_ptr<Entry>& entry)
-: name(std::move(name)), comment(std::move(comment)), entry{ entry } {
+GridBox::GridBox(Glib::ustring name, Glib::ustring comment, Entry& entry)
+: name(std::move(name)), comment(std::move(comment)), entry{ &entry } {
     // As we sort dynamically by actual names, we need to avoid shortening them, or long names will remain unsorted.
     // See the issue: https://github.com/nwg-piotr/nwg-launchers/issues/128
     auto display_name = this->name;
@@ -428,6 +429,7 @@ GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::shared_pt
     }
     this->set_always_show_image(true);
     this->set_label(display_name);
+    this->set_image_position(Gtk::POS_TOP);
 }
 
 bool GridBox::on_button_press_event(GdkEventButton* event) {

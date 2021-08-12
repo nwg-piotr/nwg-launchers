@@ -33,6 +33,8 @@
 
 # Project files
 *.geany
+*.kdev4
 
 subprojects/nlohmann_json
+subprojects/gtk-layer-shell-0
 builddir
