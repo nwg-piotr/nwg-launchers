@@ -33,6 +33,7 @@ struct Span {
 
     T* begin() { return _ref; }
     T* end() { return _ref + _n; }
+    std::size_t size() { return _n; }
 };
 
 struct Stats {
@@ -72,6 +73,7 @@ class GridBox : public Gtk::Button {
 public:
     /* name, comment, desktop-id, index */
     GridBox(Glib::ustring, Glib::ustring, Entry& entry);
+    GridBox(GridBox&&) = default;
     ~GridBox() = default;
     bool on_button_press_event(GdkEventButton*) override;
     bool on_focus_in_event(GdkEventFocus*) override;
@@ -128,6 +130,8 @@ public:
     virtual void mark_updated(GridBox& box) {
         if (auto iter = std::find(boxes.begin(), boxes.end(), &box); iter != boxes.end()) {
             auto pos = std::distance(boxes.begin(), iter);
+            box.reference();
+            box.reference();
             items_changed(pos, 1, 1);
         }
     }
@@ -292,8 +296,8 @@ class GridWindow : public PlatformWindow {
 
         template <typename ... Args>
         GridBox& emplace_box(Args&& ... args);      // emplace box
+        void update_box_by_id(std::string_view desktop_id, GridBox&&);
         void remove_box_by_desktop_id(std::string_view desktop_id);
-        void update_box_by_id(std::string_view desktop_id);
 
         void build_grids();
         void toggle_pinned(GridBox& box);

@@ -233,7 +233,6 @@ void GridWindow::refresh_separators() {
     // can it be fixed?
     set_shown(p && f, separator1);
     set_shown((f || p) && a, separator);
-    Log::info(p, ' ', f, ' ', a);
 }
 
 void GridWindow::build_grids() {
@@ -408,15 +407,17 @@ void GridWindow::remove_box_by_desktop_id(std::string_view desktop_id) {
     });
 }
 
-void GridWindow::update_box_by_id(std::string_view desktop_id) {
-    with_box_by_id(all_boxes, desktop_id, [this](auto && iter) {
+void GridWindow::update_box_by_id(std::string_view desktop_id, GridBox && new_box) {
+    with_box_by_id(all_boxes, desktop_id, [this,&new_box](auto && iter) {
         auto && box = *iter;
+        // there is no GridBox::operator=, hence placement new
+        // TODO: emplace new node, remove old node, update pointers in models instead
+        new (&box) GridBox{ std::move(new_box) };
         pinned_boxes->mark_updated(box);
         fav_boxes->mark_updated(box);
         apps_boxes->mark_updated(box);
     });
 }
-
 
 GridBox::GridBox(Glib::ustring name, Glib::ustring comment, Entry& entry)
 : name(std::move(name)), comment(std::move(comment)), entry{ &entry } {
