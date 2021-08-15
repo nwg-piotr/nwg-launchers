@@ -373,4 +373,3 @@ struct GridInstance: public Instance {
 std::vector<fs::path>       get_app_dirs(void);
 std::vector<std::string>    get_pinned(const fs::path& pinned_file);
 std::vector<CacheEntry>     get_favourites(ns::json&&, int);
-std::optional<DesktopEntry> desktop_entry(const fs::path& path, std::string_view lang, std::string_view term);

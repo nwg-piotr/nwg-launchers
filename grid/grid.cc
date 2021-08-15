@@ -13,6 +13,7 @@
 #include "nwg_tools.h"
 #include "nwg_classes.h"
 #include "grid.h"
+#include "on_desktop_entry.h"
 
 const char* const HELP_MESSAGE =
 "GTK application grid: nwggrid " VERSION_STR " (c) 2020 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
@@ -74,8 +75,7 @@ struct EntriesModel {
 
     template <typename ... Ts>
     Index emplace_entry(Ts && ... args) {
-        entries.emplace_front(std::forward<Ts>(args)...);
-        auto & entry = entries.front();
+        auto & entry = entries.emplace_front(std::forward<Ts>(args)...);
         set_entry_stats(entry);
         auto && box = window.emplace_box(
             entry.desktop_entry.name,
@@ -163,7 +163,11 @@ struct EntriesManager {
     EntriesModel& table;
     GridConfig&   config;
 
-    EntriesManager(Span<fs::path> dirs, EntriesModel& table, GridConfig& config): table{ table }, config{ config } {
+    DesktopEntryConfig desktop_entry_config;
+
+    EntriesManager(Span<fs::path> dirs, EntriesModel& table, GridConfig& config):
+        table{ table }, config{ config }, desktop_entry_config{ config.lang, config.term }
+    {
         // set monitors
         monitors.reserve(dirs.size());
         for (auto && dir: dirs) {
@@ -207,50 +211,63 @@ struct EntriesManager {
         }
     }
     void on_file_changed(std::string id, const Glib::RefPtr<Gio::File>& file, int priority) {
+        auto && path = file->get_path();
         if (auto result = desktop_ids_info.find(id); result != desktop_ids_info.end()) {
             auto && meta = result->second;
             if (meta.priority < priority) {
-                Log::info("entry '", file->get_path(), "' with id '", id, "', priority ", priority, "changed but overriden, ignored");
+                // changed file is overridden, no need to do anything
                 return;
             }
-            Log::info("entry '", file->get_path(), "' with id '", id, "', priority ", priority, " changed");
             meta.priority = priority;
-            auto entry = desktop_entry(file->get_path(), config.lang, config.term);
-            if (entry) {
-                if (meta.state == Metadata::Ok) {
-                    // entry was ok, now ok -> update
-                    table.update_entry(
-                        result->second.index,
-                        result->first,
-                        entry->exec,
-                        Stats{},
-                        std::move(*entry)
-                    );
-                } else {
-                    // entry wasn't ok, now ok -> load
-                    try_load_entry_(std::move(id), file->get_path(), priority);
+            on_desktop_entry(path, desktop_entry_config, Overloaded {
+                // successfully reloaded the new entry
+                [&meta=meta,this,&result](OnDesktopEntry::Ok, DesktopEntry && desktop_entry) {
+                    if (meta.state == Metadata::Ok) {
+                        // entry was ok, now ok -> update contents
+                        table.update_entry(
+                            result->second.index,
+                            result->first,
+                            desktop_entry.exec,
+                            Stats{},
+                            std::move(desktop_entry)
+                        );
+                    } else {
+                        // entry wasn't ok, but now ok -> add it to table it
+                        meta.index = table.emplace_entry(
+                            result->first,
+                            desktop_entry.exec,
+                            Stats{},
+                            std::move(desktop_entry)
+                        );
+                        meta.state = Metadata::Ok;
+                    }
+                },
+                // reloaded entry is hidden
+                [&meta=meta,this](OnDesktopEntry::Hidden){
+                    if (meta.state == Metadata::Ok) {
+                        table.erase_entry(meta.index);
+                    }
+                    meta.state = Metadata::Hidden;
+                },
+                // failed to reload entry
+                [&meta=meta,&path=path,this](OnDesktopEntry::Error){
+                    Log::error("Failed to load desktop file'", path, "'");
+                    if (meta.state == Metadata::Ok) {
+                        table.erase_entry(meta.index);
+                    }
+                    meta.state = Metadata::Invalid;
                 }
-            } else {
-                // entry isn't ok, erase it if it was ok
-                // TODO: account for loading failed
-                if (meta.state == Metadata::Ok) {
-                    table.erase_entry(meta.index);
-                }
-                meta.state = Metadata::Hidden;
-            }
+            });
         } else {
             // there was not such entry, add it
-            Log::info("entry '", file->get_path(), "' with id '", id, "', priority ", priority, " added");
-            try_load_entry_(std::move(id), file->get_path(), priority);
+            try_load_entry_(std::move(id), path, priority);
         }
     }
     void on_file_deleted(std::string id, int priority) {
         if (auto result = desktop_ids_info.find(id); result != desktop_ids_info.end()) {
             if (result->second.priority < priority) {
-                Log::info("deleting entry with id '", id, "' ignored (overwritten)");
                 return;
             }
-            Log::info("deleting entry with id '", id, "' and priotity ", priority);
             if (result->second.state == Metadata::Ok) {
                 table.erase_entry(result->second.index);
             }
@@ -279,19 +296,21 @@ private:
             // the entry was inserted, therefore we need to add the node to the store
             // to keep the view valid
             desktop_ids_store.splice(desktop_ids_store.begin(), id_node);
-            // nullopt means "hidden"
-            // TODO: it may fail to read the file, we have to report it atleast
-            auto desktop_entry_ = desktop_entry(file, config.lang, config.term);
-            if (desktop_entry_) {
-                auto && meta = iter->second;
-                meta.state = Metadata::Ok;
-                meta.index = table.emplace_entry(
-                    id_,
-                    desktop_entry_->exec,
-                    Stats{},
-                    std::move(*desktop_entry_)
-                );
-            }
+            // load it
+            on_desktop_entry(file, desktop_entry_config, Overloaded {
+                [&,this,iter=iter](OnDesktopEntry::Ok, auto && desktop_entry){
+                    auto && meta = iter->second;
+                    meta.state = Metadata::Ok;
+                    meta.index = table.emplace_entry(
+                        id_,
+                        desktop_entry.exec,
+                        Stats{},
+                        std::move(desktop_entry)
+                    );
+                },
+                [&](OnDesktopEntry::Error){ Log::error("Failed to load desktop file '", file, "'"); },
+                [](OnDesktopEntry::Hidden){ }
+            });
         } else {
             Log::info(".desktop file '", file, "' with id '", id_, "' overridden, ignored");
         }
