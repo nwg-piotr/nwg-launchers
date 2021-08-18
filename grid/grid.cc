@@ -36,14 +36,19 @@ Options:\n\
 
 inline bool looks_like_desktop_file(const Glib::RefPtr<Gio::File>& file) {
     fs::path path{ file->get_path() };
-    // can desktop files be symlinks? the standard does not say anything
-    return path.extension() == ".desktop" && file->query_file_type() == Gio::FILE_TYPE_REGULAR;
+    return path.extension() == ".desktop";
 }
 inline bool looks_like_desktop_file(const fs::directory_entry& entry) {
     auto && path = entry.path();
-    return path.extension() == ".desktop" && entry.is_regular_file();
+    return path.extension() == ".desktop";
 }
-
+inline bool can_be_loaded(const Glib::RefPtr<Gio::File>& file) {
+    auto file_type = file->query_file_type();
+    return file_type == Gio::FILE_TYPE_REGULAR;
+}
+inline bool can_be_loaded(const fs::directory_entry& entry) {
+    return entry.is_regular_file();
+}
 inline auto desktop_id(const Glib::RefPtr<Gio::File>& file, const Glib::RefPtr<Gio::File>& dir) {
     return dir->get_relative_path(file);
 }
@@ -180,11 +185,33 @@ struct EntriesManager {
                 (void)file2; // silence warning
                 if (looks_like_desktop_file(file1)) {
                     auto && id = desktop_id(file1, monitored_dir);
-                    // TODO: only call if the file is not overwritten
                     switch (event) {
-                        case Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT: on_file_changed(id, file1, dir_index); break;
-                        case Gio::FILE_MONITOR_EVENT_DELETED:           on_file_deleted(id, dir_index);        break;
-                        default:break;
+                        // ignored in favor of CHANGES_DONE_HINT
+                        case Gio::FILE_MONITOR_EVENT_CHANGED: break;
+                        case Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT:
+                            if (can_be_loaded(file1)) {
+                                on_file_changed(id, file1, dir_index);
+                            }
+                            break;
+                        case Gio::FILE_MONITOR_EVENT_DELETED:
+                            on_file_deleted(id, dir_index);
+                            break;
+                        // ignore because CREATED is emitted when the file is created but not written to
+                        // copying/moving emit two signals: CREATED and then CHANGED
+                        case Gio::FILE_MONITOR_EVENT_CREATED:
+                        // TODO: it seems we can safely ignored but I guess we should doublecheck
+                        case Gio::FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED: break;
+                        // TODO: should we set WATCH_MOVES?
+                        // we don't set WATCH_MOVES so these three should not be emitted
+                        case Gio::FILE_MONITOR_EVENT_RENAMED:
+                        case Gio::FILE_MONITOR_EVENT_MOVED_IN:
+                        case Gio::FILE_MONITOR_EVENT_MOVED_OUT: Log::warn("WATCH_MOVES flag is set but not handled"); break;
+                        // we don't set SEND_MOVED (deprecated)
+                        case Gio::FILE_MONITOR_EVENT_MOVED: Log::warn("SEND_MOVED flag is deprecated and thus shouldn't be used"); break;
+                        // TODO: handle unmounting, e.g. for all files in directory when pre-unmounting erase their entries
+                        case Gio::FILE_MONITOR_EVENT_PRE_UNMOUNT:
+                        case Gio::FILE_MONITOR_EVENT_UNMOUNTED: Log::warn("Unmounting is not supported yet"); break;
+                        // no default statement so we could see a compiler warning if new flag is added in the future
                     };
                 }
             });
@@ -201,7 +228,7 @@ struct EntriesManager {
                     ec.clear();
                     continue;
                 }
-                if (looks_like_desktop_file(entry)) {
+                if (looks_like_desktop_file(entry) && can_be_loaded(entry)) {
                     auto && path = entry.path();
                     auto && id = desktop_id(path, dir);
                     try_load_entry_(id, path, dir_index);
@@ -274,6 +301,8 @@ struct EntriesManager {
             desktop_ids_info.erase(result);
             auto iter = std::find(desktop_ids_store.begin(), desktop_ids_store.end(), id);
             desktop_ids_store.erase(iter);
+        } else {
+            Log::error("on_file_deleted: no entry with id '", id, "'");
         }
     }
 private:

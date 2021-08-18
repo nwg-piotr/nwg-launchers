@@ -233,7 +233,9 @@ public:
         }
     }
     void erase(GridBox& box) override {
-        box.reference(); // TODO: is it really needed?
+        // erasing from filtered boxes will decrease reference count by 1, destroying object
+        // but we want it alive to remove it from all_boxes and then to destroy it ourselves
+        box.reference();
         // erase from filtered boxes
         BoxesModel::erase(box);
         // erase from all boxes
