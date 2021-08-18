@@ -127,11 +127,13 @@ public:
             items_changed(pos, 1, 0);
         }
     }
-    virtual void mark_updated(GridBox& box) {
-        if (auto iter = std::find(boxes.begin(), boxes.end(), &box); iter != boxes.end()) {
+    virtual void update(GridBox& from, GridBox& to) {
+        if (auto iter = std::find(boxes.begin(), boxes.end(), &from); iter != boxes.end()) {
             auto pos = std::distance(boxes.begin(), iter);
-            box.reference();
-            box.reference();
+            // two references required, but why?
+            to.reference();
+            to.reference();
+            *iter = &to;
             items_changed(pos, 1, 1);
         }
     }

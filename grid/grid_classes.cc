@@ -410,12 +410,11 @@ void GridWindow::remove_box_by_desktop_id(std::string_view desktop_id) {
 void GridWindow::update_box_by_id(std::string_view desktop_id, GridBox && new_box) {
     with_box_by_id(all_boxes, desktop_id, [this,&new_box](auto && iter) {
         auto && box = *iter;
-        // there is no GridBox::operator=, hence placement new
-        // TODO: emplace new node, remove old node, update pointers in models instead
-        new (&box) GridBox{ std::move(new_box) };
-        pinned_boxes->mark_updated(box);
-        fav_boxes->mark_updated(box);
-        apps_boxes->mark_updated(box);
+        auto && new_box_ref = all_boxes.emplace_front(std::move(new_box));
+        pinned_boxes->update(box, new_box_ref);
+        fav_boxes->update(box, new_box_ref);
+        apps_boxes->update(box, new_box_ref);
+        all_boxes.erase(iter);
     });
 }
 
