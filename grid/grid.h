@@ -62,8 +62,8 @@ struct Entry {
     // TODO: should we store it separately?
     DesktopEntry desktop_entry;
 
-    Entry(std::string_view id, std::string_view exec, Stats stats, DesktopEntry entry):
-        desktop_id{ id }, exec{ exec }, stats{ stats }, desktop_entry{ std::move(entry) }
+    Entry(std::string_view id, Stats stats, DesktopEntry entry):
+        desktop_id{ id }, exec{ std::move(entry.exec) }, stats{ stats }, desktop_entry{ std::move(entry) }
     {
         // intentionally left blank
     }

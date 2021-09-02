@@ -254,7 +254,6 @@ struct EntriesManager {
                         table.update_entry(
                             result->second.index,
                             result->first,
-                            desktop_entry.exec,
                             Stats{},
                             std::move(desktop_entry)
                         );
@@ -262,7 +261,6 @@ struct EntriesManager {
                         // entry wasn't ok, but now ok -> add it to table it
                         meta.index = table.emplace_entry(
                             result->first,
-                            desktop_entry.exec,
                             Stats{},
                             std::move(desktop_entry)
                         );
@@ -332,7 +330,6 @@ private:
                     meta.state = Metadata::Ok;
                     meta.index = table.emplace_entry(
                         id_,
-                        desktop_entry.exec,
                         Stats{},
                         std::move(desktop_entry)
                     );
