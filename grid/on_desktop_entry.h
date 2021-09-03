@@ -6,7 +6,6 @@
 #include "filesystem-compat.h"
 
 namespace OnDesktopEntry {
-    struct Ok{}     Ok_;
     struct Error{}  Error_;
     struct Hidden{} Hidden_;
 }
@@ -136,5 +135,5 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
     if (entry.terminal) {
         entry.exec = concat(config.term, " ", entry.exec);
     }
-    f(OnDesktopEntry::Ok_, std::move(entry));
+    f(std::move(entry));
 }

@@ -9,6 +9,7 @@
 
 #include <sys/time.h>
 #include <iostream>
+#include <fstream>
 
 #include "nwg_tools.h"
 #include "nwg_classes.h"
@@ -248,7 +249,7 @@ struct EntriesManager {
             meta.priority = priority;
             on_desktop_entry(path, desktop_entry_config, Overloaded {
                 // successfully reloaded the new entry
-                [&meta=meta,this,&result](OnDesktopEntry::Ok, DesktopEntry && desktop_entry) {
+                [&meta=meta,this,&result](DesktopEntry && desktop_entry) {
                     if (meta.state == Metadata::Ok) {
                         // entry was ok, now ok -> update contents
                         table.update_entry(
@@ -325,7 +326,7 @@ private:
             desktop_ids_store.splice(desktop_ids_store.begin(), id_node);
             // load it
             on_desktop_entry(file, desktop_entry_config, Overloaded {
-                [&,this,iter=iter](OnDesktopEntry::Ok, auto && desktop_entry){
+                [&,this,iter=iter](DesktopEntry && desktop_entry){
                     auto && meta = iter->second;
                     meta.state = Metadata::Ok;
                     meta.index = table.emplace_entry(

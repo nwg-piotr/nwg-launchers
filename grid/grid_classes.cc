@@ -15,6 +15,8 @@
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
 
+#include <fstream>
+
 #include "charconv-compat.h"
 #include "nwg_tools.h"
 #include "grid.h"

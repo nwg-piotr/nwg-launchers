@@ -7,9 +7,6 @@
  * */
 #pragma once
 
-#include <fstream>
-#include <optional>
-
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
 
@@ -56,6 +53,7 @@ struct Stats {
 
 struct Entry {
     std::string_view desktop_id;
+    // no point making it string_view as Glib::spawn_command_async takes const string&
     std::string      exec;
     Stats            stats;
 

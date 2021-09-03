@@ -8,6 +8,7 @@
 
 #include <string_view>
 #include <variant>
+#include <fstream>
 
 #include "filesystem-compat.h"
 #include "nwg_tools.h"
