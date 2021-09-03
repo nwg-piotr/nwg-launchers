@@ -32,6 +32,7 @@ Options:\n\
 -l <ln>          force use of <ln> language\n\
 -wm <wmname>     window manager name (if can not be detected)\n\
 -oneshot         run in the foreground, exit when window is closed\n\
+                 you should not use this option unless you are running nwggrid-server directly\n\
 [requires layer-shell]:\n\
 -layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
 -layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
@@ -463,10 +464,21 @@ int main(int argc, char *argv[]) {
 
         GridInstance instance{ *app.get(), window };
         return app->run();
-    } catch (const Glib::FileError& error) {
-        Log::error(error.what());
-    } catch (const std::runtime_error& error) {
-        Log::error(error.what());
+    } catch (const Glib::Error& err) {
+        // Glib::ustring performs conversion with respect to locale settings
+        // it might throw (and it does [on my machine])
+        // so let's try our best
+        auto ustr = err.what();
+        try {
+            Log::error(ustr);
+        } catch (const Glib::ConvertError& err) {
+            Log::plain("[message conversion failed]");
+            Log::error(std::string_view{ ustr.data(), ustr.bytes() });
+        } catch (...) {
+            Log::error("Failed to print error message due to unknown error");
+        }
+    } catch (const std::exception& err) {
+        Log::error(err.what());
     }
     return EXIT_FAILURE;
 }
