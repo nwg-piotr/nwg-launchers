@@ -30,7 +30,8 @@ Options:\n\
 -s <size>        button image size (default: 72)\n\
 -c <name>        css file name (default: style.css)\n\
 -l <ln>          force use of <ln> language\n\
--wm <wmname>     window manager name (if can not be detected)\n\n\
+-wm <wmname>     window manager name (if can not be detected)\n\
+-oneshot         run in the foreground, exit when window is closed\n\
 [requires layer-shell]:\n\
 -layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
 -layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
@@ -362,7 +363,7 @@ int main(int argc, char *argv[]) {
             fs::create_directories(config_dir);
         }
 
-        auto app = Gtk::Application::create(argc, argv);
+        auto app = Gtk::Application::create();
 
         auto provider = Gtk::CssProvider::create();
         auto display = Gdk::Display::get_default();

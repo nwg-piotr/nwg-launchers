@@ -96,6 +96,7 @@ struct GridConfig: public Config {
     fs::path cached_file;     // file with favs
     int icon_size{ 72 };
     RGBA background_color;
+    bool oneshot{ false };    // run in foreground, exit when window is closed
 };
 
 class AbstractBoxes {
@@ -358,7 +359,17 @@ struct GridInstance: public Instance {
     GridWindow& window;
 
     GridInstance(Gtk::Application& app, GridWindow& window): Instance{ app, "nwggrid" }, window{ window } {
-        app.hold();
+        // TODO: should we make it two classes instead? +it's better have show/hide in GridInstance::run
+        // or something similar
+        if (window.config.oneshot) {
+            app.hold();
+            window.show(hint::Fullscreen);
+            window.signal_hide().connect([&](){
+                app.release();
+            });
+        } else {
+            app.hold();
+        }
     }
     /* Instance::on_sig{int,term} call Application::quit, which in turn emit shutdown signal
      * However, window.save_cache bound to said event doesn't get called for some reason

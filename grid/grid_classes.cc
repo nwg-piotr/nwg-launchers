@@ -70,6 +70,7 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
             Log::error("Invalid image size");
         }
     }
+    oneshot = parser.cmdOptionExists("-oneshot");
 }
 
 static Gtk::Widget* make_widget(const Glib::RefPtr<Glib::Object>& object) {
