@@ -1,6 +1,6 @@
 /*
  * GTK-based application grid
- * Copyright (c) 2020 Piotr Miller
+ * Copyright (c) 2021 Piotr Miller
  * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
@@ -28,7 +28,6 @@ int main(int argc, char* argv[]) {
         using namespace std::string_view_literals;
         // TODO: maybe use dbus if it is present?
         auto pid_file = get_pid_file("nwggrid.pid");
-        Log::info("Using pid file ", pid_file);
 
         if (argc >= 2) {
             std::string_view argv1{ argv[1] };
@@ -39,6 +38,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (argv1 == "-client"sv) {
+                Log::info("Using pid file ", pid_file);
                 Log::info("Running in client mode");
                 if (argc != 2) {
                     Log::warn("Arguments after '-client' must be passed to nwggrid-server");
@@ -54,6 +54,8 @@ int main(int argc, char* argv[]) {
                 return EXIT_SUCCESS;
             }
         }
+
+        Log::info("Using pid file ", pid_file);
         std::vector<std::string> arguments;
         arguments.emplace_back(INSTALL_PREFIX_STR "/bin/nwggrid-server");
         arguments.emplace_back("-oneshot");

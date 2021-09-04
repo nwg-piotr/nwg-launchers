@@ -1,5 +1,5 @@
 /* GTK-based dmenu
- * Copyright (c) 2020 Piotr Miller
+ * Copyright (c) 2021 Piotr Miller
  * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers

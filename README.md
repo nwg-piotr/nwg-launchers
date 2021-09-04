@@ -84,11 +84,27 @@ This only works with the `-p` argument:
 
 [![Swappshot-Mon-Mar-23-205030-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205030-2020.th.png)](https://scrot.cloud/image/jb3k) [![Swappshot-Mon-Mar-23-205157-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205157-2020.th.png)](https://scrot.cloud/image/jOWg) [![Swappshot-Mon-Mar-23-205248-2020.th.png](https://scrot.cloud/images/2020/03/23/Swappshot-Mon-Mar-23-205248-2020.th.png)](https://scrot.cloud/image/joh5)
 
+Starting with version 0.6.0 nwggrid can be run in server mode which drastically improves responsiveness.
+First, start a server with `nwggrid-server` command.
+When it's up and running, run `nwggrid -client` to show the grid.
+
 ### Usage
 
 ```
 $ nwggrid -h
-GTK application grid: nwggrid 0.4.1 (c) 2020 Piotr Miller, Sergey Smirnykh & Contributors
+GTK application grid: nwggrid 0.6.0 (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors
+
+Usage:
+    nwggrid -client      sends -SIGUSR1 to nwggrid-server, requires nwggrid-server running
+    nwggrid [ARGS...]    launches nwggrid-server -oneshot ARGS...
+
+See also:
+    nwggrid-server -h
+```
+
+```
+$ nwggrid-server -h
+GTK application grid: nwggrid 0.6.0 (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors
 
 Options:
 -h               show this help message and exit
@@ -102,6 +118,11 @@ Options:
 -c <name>        css file name (default: style.css)
 -l <ln>          force use of <ln> language
 -wm <wmname>     window manager name (if can not be detected)
+-oneshot         run in the foreground, exit when window is closed
+                 generally you should not use this option, use simply `nwggrid` instead
+[requires layer-shell]:
+-layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},         default: OVERLAY
+-layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto
 ```
 
 ### Terminal applications
@@ -133,7 +154,7 @@ This command creates a horizontal or vertical button bar, out of a template file
 
 ```
 $ nwgbar -h
-GTK button bar: nwgbar 0.4.1 (c) Piotr Miller & Contributors 2020
+GTK button bar: nwgbar 0.6.0 (c) Piotr Miller & Contributors 2021
 
 Options:
 -h               show this help message and exit
@@ -146,6 +167,10 @@ Options:
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)
 -s <size>        button image size (default: 72)
 -wm <wmname>     window manager name (if can not be detected)
+
+[requires layer-shell]:
+-layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY
+-layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto
 ```
 
 ### Custom background
@@ -229,7 +254,7 @@ This program provides 2 commands:
 
 ```
 $ nwgdmenu -h
-GTK dynamic menu: nwgdmenu 0.4.1 (c) Piotr Miller & Contributors 2020
+GTK dynamic menu: nwgdmenu 0.6.0 (c) Piotr Miller & Contributors 2021
 
 <input> | nwgdmenu - displays newline-separated stdin input as a GTK menu
 nwgdmenu - creates a GTK menu out of commands found in $PATH
@@ -244,7 +269,11 @@ Options:
 -o <opacity>     background opacity (0.0 - 1.0, default 0.3)
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)
 -wm <wmname>     window manager name (if can not be detected)
--run             ignore stdin, always build from commands in $PATH(1)
+-run             ignore stdin, always build from commands in $PATH
+
+[requires layer-shell]:
+-layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY
+-layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto
 
 Hotkeys:
 Delete        clear search box

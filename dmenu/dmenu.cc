@@ -1,6 +1,6 @@
 /*
  * GTK-based dmenu
- * Copyright (c) 2020 Piotr Miller
+ * Copyright (c) 2021 Piotr Miller
  * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
@@ -17,7 +17,7 @@
 #define STR(x) STR_EXPAND(x)
 
 const char* const HELP_MESSAGE =
-"GTK dynamic menu: nwgdmenu " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
+"GTK dynamic menu: nwgdmenu " VERSION_STR " (c) Piotr Miller & Contributors 2021\n\n\
 <input> | nwgdmenu - displays newline-separated stdin input as a GTK menu\n\
 nwgdmenu - creates a GTK menu out of commands found in $PATH\n\n\
 Options:\n\

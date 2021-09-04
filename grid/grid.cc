@@ -1,6 +1,6 @@
 /*
  * GTK-based application grid
- * Copyright (c) 2020 Piotr Miller
+ * Copyright (c) 2021 Piotr Miller
  * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
@@ -17,7 +17,7 @@
 #include "on_desktop_entry.h"
 
 const char* const HELP_MESSAGE =
-"GTK application grid: nwggrid " VERSION_STR " (c) 2020 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
+"GTK application grid: nwggrid " VERSION_STR " (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
 \
 Options:\n\
 -h               show this help message and exit\n\

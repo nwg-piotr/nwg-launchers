@@ -1,6 +1,6 @@
 /*
  * GTK-based button bar
- * Copyright (c) 2020 Piotr Miller
+ * Copyright (c) 2021 Piotr Miller
  * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
@@ -14,7 +14,7 @@
 #include "bar.h"
 
 const char* const HELP_MESSAGE =
-"GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2020\n\n\
+"GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2021\n\n\
 Options:\n\
 -h               show this help message and exit\n\
 -v               arrange buttons vertically\n\
