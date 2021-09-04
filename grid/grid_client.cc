@@ -26,8 +26,6 @@ See also:\n\
 int main(int argc, char* argv[]) {
     try {
         using namespace std::string_view_literals;
-        // TODO: maybe use dbus if it is present?
-        auto pid_file = get_pid_file("nwggrid.pid");
 
         if (argc >= 2) {
             std::string_view argv1{ argv[1] };
@@ -38,6 +36,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (argv1 == "-client"sv) {
+                auto pid_file = get_pid_file("nwggrid.pid");
                 Log::info("Using pid file ", pid_file);
                 Log::info("Running in client mode");
                 if (argc != 2) {
@@ -55,16 +54,23 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        Log::info("Using pid file ", pid_file);
         std::vector<std::string> arguments;
         arguments.emplace_back(INSTALL_PREFIX_STR "/bin/nwggrid-server");
         arguments.emplace_back("-oneshot");
         for (int i = 1; i < argc; ++i) {
             arguments.emplace_back(argv[i]);
         }
-        Glib::spawn_async(
+        Glib::Pid pid;
+        Glib::SlotSpawnChildSetup setup;
+        Glib::spawn_async_with_pipes(
             Glib::get_current_dir(), // working dir
-            arguments
+            arguments,
+            Glib::SPAWN_DEFAULT | Glib::SPAWN_CHILD_INHERITS_STDIN,
+            setup,
+            &pid,
+            nullptr,
+            nullptr,
+            nullptr
         );
         return EXIT_SUCCESS;
     } catch (const Glib::Error& err) {

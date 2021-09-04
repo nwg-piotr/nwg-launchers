@@ -359,17 +359,7 @@ struct GridInstance: public Instance {
     GridWindow& window;
 
     GridInstance(Gtk::Application& app, GridWindow& window): Instance{ app, "nwggrid" }, window{ window } {
-        // TODO: should we make it two classes instead? +it's better have show/hide in GridInstance::run
-        // or something similar
-        if (window.config.oneshot) {
-            app.hold();
-            window.show(hint::Fullscreen);
-            window.signal_hide().connect([&](){
-                app.release();
-            });
-        } else {
-            app.hold();
-        }
+        // intentionally left blank
     }
     /* Instance::on_sig{int,term} call Application::quit, which in turn emit shutdown signal
      * However, window.save_cache bound to said event doesn't get called for some reason

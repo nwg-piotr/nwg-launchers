@@ -346,6 +346,48 @@ private:
     }
 };
 
+/* Base class for application drivers, simply calls Application::run */
+struct ApplicationDriver {
+    Glib::RefPtr<Gtk::Application> app;
+
+    ApplicationDriver(const Glib::RefPtr<Gtk::Application>& app): app{ app } {
+        // intentionally left blank
+    }
+    virtual ~ApplicationDriver() = default;
+    virtual int run() { return app->run(); }
+};
+
+/* Keeps the application alive when the window is closed, registers & deregisters */
+struct ServerDriver: public ApplicationDriver {
+    GridInstance instance;
+
+    ServerDriver(const Glib::RefPtr<Gtk::Application>& app, GridWindow& window):
+        ApplicationDriver{ app },
+        instance{ *app.get(), window }
+    {
+        app->hold();
+    }
+};
+
+/* Does not register application instance, exits once the window is closed */
+struct OneshotDriver: public ApplicationDriver {
+    GridWindow& window;
+
+    OneshotDriver(const Glib::RefPtr<Gtk::Application>& app, GridWindow& window):
+        ApplicationDriver{ app },
+        window{ window }
+    {
+        app->hold();
+    }
+    int run() override {
+        window.show(hint::Fullscreen);
+        window.signal_hide().connect([this](){
+            this->app->release();
+        });
+        return ApplicationDriver::run();
+    }
+};
+
 int main(int argc, char *argv[]) {
     try {
         struct timeval tp;
@@ -462,8 +504,13 @@ int main(int argc, char *argv[]) {
         format("\twindow: ", commons_ms, window_ms);
         format("\tmodels: ", window_ms, model_ms);
 
-        GridInstance instance{ *app.get(), window };
-        return app->run();
+        std::unique_ptr<ApplicationDriver> driver;
+        if (config.oneshot) {
+            driver.reset(new OneshotDriver{ app, window });
+        } else {
+            driver.reset(new ServerDriver{ app, window });
+        }
+        return driver->run();
     } catch (const Glib::Error& err) {
         // Glib::ustring performs conversion with respect to locale settings
         // it might throw (and it does [on my machine])
