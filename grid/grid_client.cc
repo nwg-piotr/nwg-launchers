@@ -1,3 +1,11 @@
+/*
+ * GTK-based application grid
+ * Copyright (c) 2020 Piotr Miller
+ * e-mail: nwg.piotr@gmail.com
+ * Website: http://nwg.pl
+ * Project: https://github.com/nwg-piotr/nwg-launchers
+ * License: GPL3
+ * */
 
 #include <fstream>
 #include <string_view>
