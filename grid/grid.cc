@@ -32,9 +32,9 @@ Options:\n\
 -l <ln>          force use of <ln> language\n\
 -wm <wmname>     window manager name (if can not be detected)\n\
 -oneshot         run in the foreground, exit when window is closed\n\
-                 you should not use this option unless you are running nwggrid-server directly\n\
+                 generally you should not use this option, use simply `nwggrid` instead\n\
 [requires layer-shell]:\n\
--layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
+-layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},         default: OVERLAY\n\
 -layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
 
 inline bool looks_like_desktop_file(const Glib::RefPtr<Gio::File>& file) {

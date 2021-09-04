@@ -150,30 +150,15 @@ AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment):
 
 Instance::Instance(Gtk::Application& app, std::string_view name): app{ app } {
     // TODO: maybe use dbus if it is present?
-    pid_file = get_runtime_dir();
-    pid_file /= name;
+    pid_file = get_pid_file(name);
     pid_file += ".pid";
 
-    // kill any existing instances
-    // opening file worked - file exists
-    if (std::ifstream pid_stream{ pid_file }) {
-        // set to not throw exceptions
-        pid_stream.exceptions(std::ifstream::goodbit);
-        if (pid_t saved_pid; pid_stream >> saved_pid) {
-            Log::info("Another instance is running, trying to terminate it...");
-            if (saved_pid <= 0) {
-                throw std::runtime_error{ "getpid() returned non-positive value" };
-            }
-            if (kill(saved_pid, 0) != 0) {
-                throw std::runtime_error{ "process with pid specified in .pid file does not exist" };
-            }
-            if (kill(saved_pid, SIGTERM) != 0) {
-                throw std::runtime_error{ "failed to send SIGTERM to pid specified in .pid file" };
-            }
-            Log::plain("OK");
-        } else {
-            Log::error("Pid file exists, but empty");
+    if (auto pid = get_instance_pid(pid_file)) {
+        Log::info("Another instance is running, trying to terminate it...");
+        if (kill(*pid, SIGTERM) != 0) {
+            throw std::runtime_error{ "failed to send SIGTERM to pid" };
         }
+        Log::plain("Success");
     }
 
     // write instance pid

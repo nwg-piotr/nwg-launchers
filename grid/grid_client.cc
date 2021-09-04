@@ -7,47 +7,44 @@
 #include "nwgconfig.h"
 
 const char* const HELP_MESSAGE = "\
+GTK application grid: nwggrid " VERSION_STR " (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
 Usage:\n\
     nwggrid -client      sends -SIGUSR1 to nwggrid-server, requires nwggrid-server running\n\
-    nwggrid [ARGS...]    launches nwggrid -oneshot ARGS...\n\n";
+    nwggrid [ARGS...]    launches nwggrid-server -oneshot ARGS...\n\n\
+\
+See also:\n\
+    nwggrid-server -h\n";
 
 int main(int argc, char* argv[]) {
     try {
         using namespace std::string_view_literals;
         // TODO: maybe use dbus if it is present?
-        auto pid_file = get_runtime_dir();
-        pid_file /= "nwggrid.pid";
+        auto pid_file = get_pid_file("nwggrid.pid");
         Log::info("Using pid file ", pid_file);
 
-        if (argc >= 2 && std::string_view{ argv[1] } == "-h"sv) {
-            // TODO: nice help message
-            Log::plain(HELP_MESSAGE);
-        }
-        if (argc >= 2 && std::string_view{ argv[1] } == "-client"sv) {
-            Log::info("Running in client mode");
-            // send signal or fail
-            // opening file worked - file exists
-            if (std::ifstream pid_stream{ pid_file }) {
-                // set to not throw exceptions
-                pid_stream.exceptions(std::ifstream::goodbit);
-                if (pid_t saved_pid; pid_stream >> saved_pid) {
-                    if (saved_pid <= 0) {
-                        throw std::runtime_error{ "Non-positive value stored in pid file" };
-                    }
-                    if (kill(saved_pid, 0) != 0) {
-                        throw std::runtime_error{ "process with pid specified in .pid file does not exist" };
-                    }
-                    Log::info("Found running instance with pid '", saved_pid, "'");
-                    if (kill(saved_pid, SIGUSR1) != 0) {
-                        throw std::runtime_error{ "failed to send SIGUSR1 to pid specified in .pid file" };
-                    }
-                    Log::plain("OK");
-                } else {
-                    Log::error("nwggrid-server is not running");
-                    return EXIT_FAILURE;
-                }
+        if (argc >= 2) {
+            std::string_view argv1{ argv[1] };
+
+            if (argv1 == "-h"sv) {
+                Log::plain(HELP_MESSAGE);
+                return EXIT_SUCCESS;
             }
-            return EXIT_SUCCESS;
+
+            if (argv1 == "-client"sv) {
+                Log::info("Running in client mode");
+                if (argc != 2) {
+                    Log::warn("Arguments after '-client' must be passed to nwggrid-server");
+                }
+                auto pid = get_instance_pid(pid_file);
+                if (!pid) {
+                    throw std::runtime_error{ "nwggrid-server is not running" };
+                }
+                if (kill(*pid, SIGUSR1) != 0) {
+                    throw std::runtime_error{ "failed to send SIGUSR1 to the pid" };
+                }
+                Log::plain("Success");
+                return EXIT_SUCCESS;
+            }
         }
         std::vector<std::string> arguments;
         arguments.emplace_back(INSTALL_PREFIX_STR "/bin/nwggrid-server");

@@ -5,12 +5,12 @@ sources = files(
 )
 
 executable(
-    'nwggrid',
-    files('grid_client.cc', 'grid_classes.cc', 'grid_tools.cc'),
-    dependencies: [gtkmm, gtk_layer_shell],
-    link_with: nwg,
-    include_directories: [nwg_inc, nwg_conf_inc],
-    install: true
+	'nwggrid',
+	files('grid_client.cc', 'grid_classes.cc', 'grid_tools.cc'),
+	dependencies: [gtkmm, gtk_layer_shell],
+	link_with: nwg,
+	include_directories: [nwg_inc, nwg_conf_inc],
+	install: true
 )
 
 executable(

@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -27,6 +28,11 @@ namespace ns = nlohmann;
 fs::path get_cache_home();
 fs::path get_config_dir(std::string_view);
 fs::path get_runtime_dir();
+// returns path to pid file <name>
+fs::path get_pid_file(std::string_view name);
+// returns saved instance pid or nullopt if the file does not exist
+// throws std::runtime_error and std::ios_base::failure
+std::optional<pid_t> get_instance_pid(const fs::path& pid_file_path);
 
 std::string detect_wm(const Glib::RefPtr<Gdk::Display>&, const Glib::RefPtr<Gdk::Screen>&);
 

@@ -92,6 +92,29 @@ fs::path get_runtime_dir() {
     return xdg_runtime_dir;
 }
 
+fs::path get_pid_file(std::string_view name) {
+    auto dir = get_runtime_dir();
+    dir /= name;
+    return dir;
+}
+
+std::optional<pid_t> get_instance_pid(const fs::path& pid_file_path) {
+    if (std::ifstream pid_file{ pid_file_path }) {
+        pid_file.exceptions(std::ifstream::badbit | std::ifstream::failbit);
+
+        pid_t pid;
+        pid_file >> pid;
+        if (pid < 0) {
+            throw std::runtime_error{ "pid < 0" };
+        }
+        if (kill(pid, 0) != 0) {
+            throw std::runtime_error{ "process with specified pid does not exist" };
+        }
+        return pid;
+    }
+    return std::nullopt;
+}
+
 /*
  * Returns window manager name
  * */
