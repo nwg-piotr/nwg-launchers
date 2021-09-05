@@ -17,6 +17,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 
 #include "filesystem-compat.h"
@@ -561,11 +562,6 @@ fs::path setup_css_file(std::string_view name, const fs::path& config_dir, const
     }
     return css_file;
 }
-
-/*
- * Remove pid_file created by create_pid_file_or_kill_pid.
- * This function will be run before exiting.
- * */
 
 int instance_on_sigterm(void* userdata) {
     static_cast<Instance*>(userdata)->on_sigterm();

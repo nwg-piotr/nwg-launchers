@@ -43,7 +43,9 @@ template <typename F>
 void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F && f) {
     using namespace std::literals::string_view_literals;
 
-    DesktopEntry entry;
+    std::unique_ptr<DesktopEntry> entry_ptr{ new DesktopEntry{} };
+    auto & entry = *entry_ptr;
+    //DesktopEntry entry;
     entry.terminal = false;
 
     std::ifstream file{ path };
@@ -141,7 +143,7 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
     if (entry.terminal) {
         entry.exec = concat(config.term, " ", entry.exec);
     }
-    f(std::move(entry));
+    f(std::move(entry_ptr));
 }
 
 #endif

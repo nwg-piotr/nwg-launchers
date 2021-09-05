@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (argv1 == "-client"sv) {
-                auto pid_file = get_pid_file("nwggrid.pid");
+                auto pid_file = get_pid_file("nwggrid-server.pid");
                 Log::info("Using pid file ", pid_file);
                 Log::info("Running in client mode");
                 if (argc != 2) {

@@ -54,16 +54,20 @@ struct Stats {
 struct Entry {
     std::string_view desktop_id;
     // no point making it string_view as Glib::spawn_command_async takes const string&
-    std::string      exec;
+    // making it string& however breaks move ctors/assignments
+    std::string*     exec;
     Stats            stats;
 
     // TODO: should we store it separately?
-    DesktopEntry desktop_entry;
+    std::unique_ptr<DesktopEntry> desktop_entry_;
 
-    Entry(std::string_view id, Stats stats, DesktopEntry entry):
-        desktop_id{ id }, exec{ std::move(entry.exec) }, stats{ stats }, desktop_entry{ std::move(entry) }
+    Entry(std::string_view id, Stats stats, std::unique_ptr<DesktopEntry> entry):
+        desktop_id{ id }, exec{ &entry->exec }, stats{ stats }, desktop_entry_{ std::move(entry) }
     {
         // intentionally left blank
+    }
+    auto & desktop_entry() {
+        return *desktop_entry_;
     }
 };
 
@@ -309,7 +313,7 @@ class GridWindow : public PlatformWindow {
         void run_box(GridBox& box);
 
         std::string& exec_of(const GridBox& box) {
-            return box.entry->exec;
+            return *box.entry->exec;
         }
         Stats& stats_of(const GridBox& box) {
             return box.entry->stats;

@@ -43,11 +43,11 @@ struct EntriesModel {
         auto & entry = entries.emplace_front(std::forward<Ts>(args)...);
         set_entry_stats(entry);
         auto && box = window.emplace_box(
-            entry.desktop_entry.name,
-            entry.desktop_entry.comment,
+            entry.desktop_entry().name,
+            entry.desktop_entry().comment,
             entry
         );
-        auto image = Gtk::manage(new Gtk::Image{ icons.load_icon(entry.desktop_entry.icon) });
+        auto image = Gtk::manage(new Gtk::Image{ icons.load_icon(entry.desktop_entry().icon) });
         box.set_image(*image);
         window.build_grids();
 
@@ -59,12 +59,12 @@ struct EntriesModel {
         auto && entry = *index;
         set_entry_stats(entry);
         GridBox new_box {
-            entry.desktop_entry.name,
-            entry.desktop_entry.comment,
+            entry.desktop_entry().name,
+            entry.desktop_entry().comment,
             entry
         };
-        auto image = Gtk::manage(new Gtk::Image{ icons.load_icon(entry.desktop_entry.icon) });
-        new_box.set_image(*image);
+        auto image = icons.load_icon(entry.desktop_entry().icon);
+        new_box.set_image(image);
         window.update_box_by_id(entry.desktop_id, std::move(new_box));
     }
     void erase_entry(Index index) {
