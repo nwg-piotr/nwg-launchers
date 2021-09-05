@@ -363,7 +363,7 @@ struct ServerDriver: public ApplicationDriver {
 
     ServerDriver(const Glib::RefPtr<Gtk::Application>& app, GridWindow& window):
         ApplicationDriver{ app },
-        instance{ *app.get(), window }
+        instance{ *app.get(), window, "nwggrid-server" }
     {
         app->hold();
     }
@@ -371,11 +371,13 @@ struct ServerDriver: public ApplicationDriver {
 
 /* Does not register application instance, exits once the window is closed */
 struct OneshotDriver: public ApplicationDriver {
-    GridWindow& window;
+    GridWindow&  window;
+    GridInstance instance;
 
     OneshotDriver(const Glib::RefPtr<Gtk::Application>& app, GridWindow& window):
         ApplicationDriver{ app },
-        window{ window }
+        window{ window },
+        instance{ *app.get(), window, "nwggrid" }
     {
         app->hold();
     }

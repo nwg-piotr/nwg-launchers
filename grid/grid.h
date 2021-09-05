@@ -358,7 +358,9 @@ struct CacheEntry {
 struct GridInstance: public Instance {
     GridWindow& window;
 
-    GridInstance(Gtk::Application& app, GridWindow& window): Instance{ app, "nwggrid" }, window{ window } {
+    GridInstance(Gtk::Application& app, GridWindow& window, std::string_view name):
+        Instance{ app, name }, window{ window }
+    {
         // intentionally left blank
     }
     /* Instance::on_sig{int,term} call Application::quit, which in turn emit shutdown signal

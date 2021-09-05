@@ -53,25 +53,36 @@ int main(int argc, char* argv[]) {
                 return EXIT_SUCCESS;
             }
         }
-
-        std::vector<std::string> arguments;
-        arguments.emplace_back(INSTALL_PREFIX_STR "/bin/nwggrid-server");
-        arguments.emplace_back("-oneshot");
+        char path[] = INSTALL_PREFIX_STR "/bin/nwggrid-server";
+        char oneshot[] = "-oneshot";
+        std::vector<std::string> string_store;
+        std::vector<char*> arguments;
+        arguments.push_back(path);
+        arguments.push_back(oneshot);
         for (int i = 1; i < argc; ++i) {
-            arguments.emplace_back(argv[i]);
+            auto & arg = string_store.emplace_back(argv[i]);
+            arguments.push_back(arg.data());
         }
-        Glib::Pid pid;
-        Glib::SlotSpawnChildSetup setup;
-        Glib::spawn_async_with_pipes(
-            Glib::get_current_dir(), // working dir
-            arguments,
-            Glib::SPAWN_DEFAULT | Glib::SPAWN_CHILD_INHERITS_STDIN,
-            setup,
-            &pid,
-            nullptr,
-            nullptr,
-            nullptr
+        arguments.push_back(nullptr);
+
+        auto r = execv(
+            INSTALL_PREFIX_STR "/bin/nwggrid-server",
+            arguments.data()
         );
+        if (r == -1) {
+            int err = errno;
+            // strdup is required as the string pointed to by strerror is not guaranteed to live long enough
+            std::unique_ptr<char[], void (*)(char*)> str(
+                strdup(strerror(err)),
+                [](char* str){ std::free(str); }
+            );
+            if (!str) {
+                Log::error("[unable to obtain message due to low memory]");
+            }
+            std::string error{ "execv failed: " };
+            error += str.get();
+            throw std::runtime_error{ error };
+        }
         return EXIT_SUCCESS;
     } catch (const Glib::Error& err) {
         // Glib::ustring performs conversion with respect to locale settings
