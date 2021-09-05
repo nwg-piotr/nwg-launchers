@@ -1,13 +1,19 @@
 #pragma once
+
+#ifndef ON_DESKTOP_ENTRY_H
+#define ON_DESKTOP_ENTRY_H
+
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <string_view>
 #include "nwg_classes.h"
+#include "nwg_tools.h"
 #include "filesystem-compat.h"
 
 namespace OnDesktopEntry {
-    struct Error{}  Error_;
-    struct Hidden{} Hidden_;
+    inline struct Error{}  Error_;
+    inline struct Hidden{} Hidden_;
 }
 
 /* Stores pre-processed assets useful when parsing DesktopEntry struct */
@@ -137,3 +143,5 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
     }
     f(std::move(entry));
 }
+
+#endif
