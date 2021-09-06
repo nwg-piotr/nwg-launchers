@@ -47,14 +47,18 @@ struct EntriesModel {
             entry.desktop_entry().comment,
             entry
         );
-        auto image = Gtk::manage(new Gtk::Image{ icons.load_icon(entry.desktop_entry().icon) });
+        // boxing is necessary
+        // for some reason the icons are not shown if the images are not boxed
+        auto image = Gtk::make_managed<Gtk::Image>(icons.load_icon(entry.desktop_entry().icon));
         box.set_image(*image);
+        box.set_always_show_image(true);
         window.build_grids();
 
         return entries.begin();
     }
     template <typename ... Ts>
     void update_entry(Index index, Ts && ... args) {
+        // TODO: merge entries
         *index = Entry{ std::forward<Ts>(args)... };
         auto && entry = *index;
         set_entry_stats(entry);
@@ -63,8 +67,10 @@ struct EntriesModel {
             entry.desktop_entry().comment,
             entry
         };
-        auto image = icons.load_icon(entry.desktop_entry().icon);
-        new_box.set_image(image);
+        // boxing is necessary
+        // for some reason the icons are not shown if the images are not boxed
+        auto image = Gtk::make_managed<Gtk::Image>(icons.load_icon(entry.desktop_entry().icon));
+        new_box.set_image(*image);
         window.update_box_by_id(entry.desktop_id, std::move(new_box));
     }
     void erase_entry(Index index) {
