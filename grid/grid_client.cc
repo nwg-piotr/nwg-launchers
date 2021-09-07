@@ -71,17 +71,7 @@ int main(int argc, char* argv[]) {
         );
         if (r == -1) {
             int err = errno;
-            // strdup is required as the string pointed to by strerror is not guaranteed to live long enough
-            std::unique_ptr<char[], void (*)(char*)> str(
-                strdup(strerror(err)),
-                [](char* str){ std::free(str); }
-            );
-            if (!str) {
-                Log::error("[unable to obtain message due to low memory]");
-            }
-            std::string error{ "execv failed: " };
-            error += str.get();
-            throw std::runtime_error{ error };
+            throw std::runtime_error{ error_description(err) };
         }
         return EXIT_SUCCESS;
     } catch (const Glib::Error& err) {
