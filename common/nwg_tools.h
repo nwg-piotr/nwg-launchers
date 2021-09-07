@@ -62,6 +62,9 @@ int instance_on_sigusr1(void*);
 int instance_on_sighup(void*);
 int instance_on_sigint(void*);
 
+// wraps strerror into std::string
+std::string error_description(int err);
+
 namespace Log {
     template <typename ... Ts>
     void write(std::ostream& out, Ts && ... ts) {

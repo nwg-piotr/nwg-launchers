@@ -579,3 +579,12 @@ int instance_on_sigint(void* userdata) {
     static_cast<Instance*>(userdata)->on_sigint();
     return G_SOURCE_CONTINUE;
 }
+
+std::string error_description(int err) {
+    errno = 0;
+    auto cstr = std::strerror(err);
+    if (!cstr || errno) {
+        throw std::runtime_error{ "failed to retrieve errno description: strerror return NULL" };
+    }
+    return { cstr };
+}

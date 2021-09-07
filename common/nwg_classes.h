@@ -139,6 +139,7 @@ struct DesktopEntry {
 struct Instance {
     Gtk::Application& app;
     fs::path pid_file;
+    int      pid_lock_fd;
 
     Instance(Gtk::Application& app, std::string_view name);
     virtual ~Instance();

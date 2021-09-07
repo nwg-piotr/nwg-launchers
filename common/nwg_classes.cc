@@ -152,7 +152,19 @@ Instance::Instance(Gtk::Application& app, std::string_view name): app{ app } {
     // TODO: maybe use dbus if it is present?
     pid_file = get_pid_file(name);
     pid_file += ".pid";
+    auto lock_file = pid_file;
+    lock_file += ".lock";
 
+    // we'll need this lock file to synchronize us & running instance
+    // note: it doesn't get unlinked when the program exits
+    //       so the other instance can safely wait on this file
+    int pid_lock_fd = open(lock_file.c_str(), O_CLOEXEC | O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
+    if (pid_lock_fd < 0) {
+        int err = errno;
+        throw std::runtime_error{ concat("failed to open pid lock: ", error_description(err)) };
+    }
+
+    // let's try to read pid file
     if (auto pid = get_instance_pid(pid_file)) {
         Log::info("Another instance is running, trying to terminate it...");
         if (kill(*pid, SIGTERM) != 0) {
@@ -161,9 +173,14 @@ Instance::Instance(Gtk::Application& app, std::string_view name): app{ app } {
         Log::plain("Success");
     }
 
+    // acquire lock
+    // we'll hold this lock until the very exit
+    if (lockf(pid_lock_fd, F_LOCK, 0)) {
+        int err = errno;
+        throw std::runtime_error{ concat("failed to lock the pid lock: ", error_description(err)) };
+    }
+
     // write instance pid
-    // TODO: flock maybe?
-    // TODO: open file only once
     std::ofstream pid_stream{ pid_file, std::ios::trunc };
     auto pid = getpid();
     pid_stream << pid;
@@ -183,9 +200,16 @@ void Instance::on_sigusr1() {}
 void Instance::on_sigterm(){ app.quit(); }
 
 Instance::~Instance() {
+    // it is important to delete pid file BEFORE releasing the lock
+    // otherwise other instance may overwrite it just before we delete it
     if (std::error_code err; !fs::remove(pid_file, err) && err) {
         Log::error("Failed to remove pid file '", pid_file, "': ", err.message());
     }
+    if (lockf(pid_lock_fd, F_ULOCK, 0)) {
+        int err = errno;
+        Log::error("Failed to unlock pid lock: ", error_description(err));
+    }
+    close(pid_lock_fd);
 }
 
 IconProvider::IconProvider(const Glib::RefPtr<Gtk::IconTheme>& theme, int icon_size):
