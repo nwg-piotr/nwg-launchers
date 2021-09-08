@@ -107,12 +107,12 @@ int main(int argc, char *argv[]) {
 
         /* Create buttons */
         for (auto& entry : bar_entries) {
-            auto image = icon_provider.load_icon(entry.icon);
+            auto image = Gtk::make_managed<Gtk::Image>(icon_provider.load_icon(entry.icon));
             auto& ab = window.boxes.emplace_back(std::move(entry.name),
                                                  std::move(entry.exec),
                                                  std::move(entry.icon));
             ab.set_image_position(Gtk::POS_TOP);
-            ab.set_image(image);
+            ab.set_image(*image);
         }
 
         int column = 0;
