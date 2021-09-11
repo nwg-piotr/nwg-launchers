@@ -42,11 +42,19 @@ json = dependency(
     required: true
 )
 
+## librsvg is required to load .svg
+librsvg = dependency(
+    'librsvg-2.0',
+    version: ['>=2.0.0'],
+    required: get_option('support-svg')
+)
+
 # Generate configuration header
 conf_data = configuration_data()
 conf_data.set('version', meson.project_version())
 conf_data.set('prefix', get_option('prefix'))
 conf_data.set('datadir', get_option('prefix') / get_option('datadir') / 'nwg-launchers')
+conf_data.set('SUPPORTS_SVG', librsvg.found())
 configure_file(
 	input : 'nwgconfig.h.in',
 	output : 'nwgconfig.h',
@@ -68,3 +76,12 @@ endif
 if get_option('grid')
 	subdir('grid')
 endif
+
+icons = ['icon-missing.png']
+if librsvg.found()
+    icons += 'icon-missing.svg'
+endif
+install_data(
+    icons,
+    install_dir: conf_data.get('datadir')
+)

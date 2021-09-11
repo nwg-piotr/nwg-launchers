@@ -38,6 +38,7 @@ latest release](https://github.com/nwg-piotr/nwg-launchers/releases/latest).
 - `meson` and `ninja` - build dependencies
 - `nlohmann-json` - will be downloaded as a subproject if not found on the system
 - `gtk-layer-shell` - optional, set to `auto` by default; will be downloaded as a subproject if explicitly enabled, but not found on the system
+- `librsvg` - optional, required to support SVG icons
 
 ### Building
 

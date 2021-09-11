@@ -24,6 +24,6 @@ executable(
 )
 
 install_data(
-	['style.css', 'icon-missing.svg'],
+	['style.css'],
 	install_dir: conf_data.get('datadir', '') / 'nwggrid'
 )
