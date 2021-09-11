@@ -321,6 +321,7 @@ class GridWindow : public PlatformWindow {
     protected:
         //Override default signal handler:
         bool on_key_press_event(GdkEventKey*) override;
+        void on_show() override;
         bool on_delete_event(GdkEventAny*) override;
         bool on_button_press_event(GdkEventButton*) override;
     private:

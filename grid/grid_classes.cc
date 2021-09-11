@@ -360,6 +360,17 @@ void GridWindow::save_cache() {
     }
 }
 
+void GridWindow::on_show() {
+    // when running in server mode, the window is not scrolled back to top
+    // each time it's shown
+    // so we'll do it on our own
+    auto hadjustment = scrolled_window.get_hadjustment();
+    auto vadjustment = scrolled_window.get_vadjustment();
+    hadjustment->set_value(hadjustment->get_lower());
+    vadjustment->set_value(vadjustment->get_lower());
+    return PlatformWindow::on_show();
+}
+
 bool GridWindow::on_delete_event(GdkEventAny* event) {
     // no-op as on_delete_event doesn't get called when application exits w/
     this -> save_cache();
