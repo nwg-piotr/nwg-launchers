@@ -17,9 +17,6 @@ endif
 
 # Dependencies
 gdk_x11 = dependency('gdk-x11-3.0', required: get_option('gdk-x11'))
-if gdk_x11.found()
-	add_project_arguments('-DHAVE_GDK_X11', language: 'cpp')
-endif
 
 ## gtkmm
 gtkmm = dependency('gtkmm-3.0', required: true)
