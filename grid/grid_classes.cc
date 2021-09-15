@@ -368,6 +368,7 @@ void GridWindow::on_show() {
     auto vadjustment = scrolled_window.get_vadjustment();
     hadjustment->set_value(hadjustment->get_lower());
     vadjustment->set_value(vadjustment->get_lower());
+    focus_first_box();
     return PlatformWindow::on_show();
 }
 
