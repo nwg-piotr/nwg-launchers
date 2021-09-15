@@ -158,7 +158,7 @@ Instance::Instance(Gtk::Application& app, std::string_view name): app{ app } {
     // we'll need this lock file to synchronize us & running instance
     // note: it doesn't get unlinked when the program exits
     //       so the other instance can safely wait on this file
-    int pid_lock_fd = open(lock_file.c_str(), O_CLOEXEC | O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
+    pid_lock_fd = open(lock_file.c_str(), O_CLOEXEC | O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
     if (pid_lock_fd < 0) {
         int err = errno;
         throw std::runtime_error{ concat("failed to open pid lock: ", error_description(err)) };
