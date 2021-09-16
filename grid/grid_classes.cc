@@ -369,6 +369,7 @@ void GridWindow::on_show() {
     hadjustment->set_value(hadjustment->get_lower());
     vadjustment->set_value(vadjustment->get_lower());
     focus_first_box();
+    searchbox.set_text("");
     return PlatformWindow::on_show();
 }
 
