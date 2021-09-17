@@ -215,7 +215,7 @@ Instance::~Instance() {
 IconProvider::IconProvider(const Glib::RefPtr<Gtk::IconTheme>& theme, int icon_size):
     icon_theme{ theme },
     fallback{ Gdk::Pixbuf::create_from_file(
-        DATA_DIR_STR "/nwgbar/icon-missing" ICON_EXT,
+        DATA_DIR_STR "/icon-missing" ICON_EXT,
         icon_size,
         icon_size,
         true
