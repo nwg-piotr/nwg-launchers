@@ -214,15 +214,28 @@ Instance::~Instance() {
 
 IconProvider::IconProvider(const Glib::RefPtr<Gtk::IconTheme>& theme, int icon_size):
     icon_theme{ theme },
-    fallback{ Gdk::Pixbuf::create_from_file(
-        DATA_DIR_STR "/icon-missing" ICON_EXT,
-        icon_size,
-        icon_size,
-        true
-    ) },
     icon_size{ icon_size }
 {
-    // intentionally left blank
+    constexpr std::array fallback_icons {
+        DATA_DIR_STR "/icon-missing.svg",
+        DATA_DIR_STR "/icon-missing.png"
+    };
+    for (auto && icon: fallback_icons) {
+        try {
+            fallback = Gdk::Pixbuf::create_from_file(
+                icon,
+                icon_size,
+                icon_size,
+                true
+            );
+            break;
+        } catch (const Glib::Error& e) {
+            Log::error("Failed to load fallback icon '", icon, "'");
+        }
+    }
+    if (!fallback) {
+        throw std::runtime_error{ "No fallback icon available" };
+    }
 }
 
 Gtk::Image IconProvider::load_icon(const std::string& icon) const {
