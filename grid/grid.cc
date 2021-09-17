@@ -1,6 +1,6 @@
 /*
  * GTK-based application grid
- * Copyright (c) 2020 Piotr Miller
+ * Copyright (c) 2021 Piotr Miller
  * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
@@ -9,13 +9,15 @@
 
 #include <sys/time.h>
 #include <iostream>
+#include <fstream>
 
 #include "nwg_tools.h"
 #include "nwg_classes.h"
 #include "grid.h"
+#include "grid_entries.h"
 
 const char* const HELP_MESSAGE =
-"GTK application grid: nwggrid " VERSION_STR " (c) 2020 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
+"GTK application grid: nwggrid " VERSION_STR " (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
 \
 Options:\n\
 -h               show this help message and exit\n\
@@ -28,18 +30,62 @@ Options:\n\
 -s <size>        button image size (default: 72)\n\
 -c <name>        css file name (default: style.css)\n\
 -l <ln>          force use of <ln> language\n\
--wm <wmname>     window manager name (if can not be detected)\n\n\
+-wm <wmname>     window manager name (if can not be detected)\n\
+-oneshot         run in the foreground, exit when window is closed\n\
+                 generally you should not use this option, use simply `nwggrid` instead\n\
 [requires layer-shell]:\n\
--layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
+-layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},         default: OVERLAY\n\
 -layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
+
+/* Base class for application drivers, simply calls Application::run */
+struct ApplicationDriver {
+    Glib::RefPtr<Gtk::Application> app;
+
+    ApplicationDriver(const Glib::RefPtr<Gtk::Application>& app): app{ app } {
+        // intentionally left blank
+    }
+    virtual ~ApplicationDriver() = default;
+    virtual int run() { return app->run(); }
+};
+
+/* Keeps the application alive when the window is closed, registers & deregisters */
+struct ServerDriver: public ApplicationDriver {
+    GridInstance instance;
+
+    ServerDriver(const Glib::RefPtr<Gtk::Application>& app, GridWindow& window):
+        ApplicationDriver{ app },
+        instance{ *app.get(), window, "nwggrid-server" }
+    {
+        app->hold();
+    }
+};
+
+/* Does not register application instance, exits once the window is closed */
+struct OneshotDriver: public ApplicationDriver {
+    GridWindow&  window;
+    GridInstance instance;
+
+    OneshotDriver(const Glib::RefPtr<Gtk::Application>& app, GridWindow& window):
+        ApplicationDriver{ app },
+        window{ window },
+        instance{ *app.get(), window, "nwggrid" }
+    {
+        app->hold();
+    }
+    int run() override {
+        window.show(hint::Fullscreen);
+        window.signal_hide().connect([this](){
+            this->app->release();
+        });
+        return ApplicationDriver::run();
+    }
+};
 
 int main(int argc, char *argv[]) {
     try {
         struct timeval tp;
         gettimeofday(&tp, NULL);
         long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-        create_pid_file_or_kill_pid("nwggrid");
 
         InputParser input{ argc, argv };
         if (input.cmdOptionExists("-h")){
@@ -76,13 +122,10 @@ int main(int argc, char *argv[]) {
             provider->load_from_path(css_file);
             Log::info("Using css file \'", css_file, "\'");
         }
-        auto icon_theme = Gtk::IconTheme::get_for_screen(screen);
-        if (!icon_theme) {
-            Log::error("Failed to load icon theme");
-            std::exit(EXIT_FAILURE);
-        }
-        auto& icon_theme_ref = *icon_theme.get();
-        auto icon_missing = Gdk::Pixbuf::create_from_file(DATA_DIR_STR "/nwgbar/icon-missing.svg");
+        IconProvider icon_provider {
+            Gtk::IconTheme::get_for_screen(screen),
+            config.icon_size
+        };
 
         // This will be read-only, to find n most clicked items (n = number of grid columns)
         std::vector<CacheEntry> favourites;
@@ -135,112 +178,47 @@ int main(int argc, char *argv[]) {
         gettimeofday(&tp, NULL);
         long int commons_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-        // Maps desktop-ids to their table indices, nullopt stands for 'hidden'
-        std::unordered_map<std::string, std::optional<std::size_t>> desktop_ids;
-
-        // Table, only contains shown entries
-        std::vector<DesktopEntry> desktop_entries;
-        std::vector<std::string>  execs;
-        std::vector<Stats>        stats;
-        std::vector<Gtk::Image*>  images;
-
-        auto desktop_id = [](auto& path) {
-            return path.string(); // actual desktop_id requires '/' to be replaced with '-'
-        };
-
-        for (auto& dir : dirs) {
-            std::error_code ec;
-            auto dir_iter = fs::directory_iterator(dir, ec);
-            for (auto& entry : dir_iter) {
-                if (ec) {
-                    Log::error(ec.message());
-                    ec.clear();
-                    continue;
-                }
-                if (!entry.is_regular_file()) {
-                    continue;
-                }
-                auto& path = entry.path();
-                auto&& rel_path = path.lexically_relative(dir);
-                auto&& id = desktop_id(rel_path);
-                if (auto [at, inserted] = desktop_ids.try_emplace(id, std::nullopt); inserted) {
-                    if (auto entry = desktop_entry(path, config.lang, config.term)) {
-                        at->second = execs.size(); // set index
-                        execs.emplace_back(entry->exec);
-                        desktop_entries.emplace_back(std::move(*entry));
-                        stats.emplace_back(0, 0, Stats::Common, Stats::Unpinned);
-                        images.emplace_back(nullptr);
-                    }
-                }
-            }
-        }
-
-        int pin_index = 0; // preserve pins order
-        for (auto& pin : pinned) {
-            if (auto result = desktop_ids.find(pin); result != desktop_ids.end() && result->second) {
-                stats[*result->second].pinned = Stats::Pinned;
-                stats[*result->second].position = pin_index;
-                pin_index++;
-            }
-        }
-        for (auto& [fav, clicks] : favourites) {
-            if (auto result = desktop_ids.find(fav); result != desktop_ids.end() && result->second) {
-                stats[*result->second].clicks   = clicks;
-                stats[*result->second].favorite = Stats::Favorite;
-            }
-        }
+        GridWindow window{ config };
 
         gettimeofday(&tp, NULL);
-        long int bs_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+        long int window_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
-        GridWindow window{ config, execs, stats };
-        window.show(hint::Fullscreen);
-
-        gettimeofday(&tp, NULL);
-        long int images_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-        // The most expensive part
-        for (std::size_t i = 0; i < desktop_entries.size(); i++) {
-            images[i] = app_image(icon_theme_ref, desktop_entries[i].icon, icon_missing, config.icon_size);
-        }
+        EntriesModel   table{ config, window, icon_provider, pinned, favourites };
+        EntriesManager entries_provider{ dirs, table, config };
 
         gettimeofday(&tp, NULL);
-        long int boxes_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-        for (auto& [desktop_id, pos_] : desktop_ids) {
-            if (pos_) {
-                auto pos = *pos_;
-                auto& entry = desktop_entries[pos];
-                auto& ab = window.emplace_box(std::move(entry.name),
-                                              std::move(entry.comment),
-                                              desktop_id,
-                                              pos);
-                ab.set_image_position(Gtk::POS_TOP);
-                ab.set_image(*images[pos]);
-            }
-        }
-
-        gettimeofday(&tp, NULL);
-        long int grids_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-        window.build_grids();
-
-        gettimeofday(&tp, NULL);
-        long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+        long int model_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
 
         auto format = [](auto&& title, auto from, auto to) {
             Log::plain(title, to - from, "ms");
         };
-        format("Total: ", start_ms, end_ms);
-        format("\tgrids:   ", grids_ms, end_ms);
-        format("\tboxes:   ", boxes_ms, grids_ms);
-        format("\timages:  ", images_ms, boxes_ms);
-        format("\tbs:      ", bs_ms, images_ms);
-        format("\tcommons: ", commons_ms, bs_ms);
+        format("Total: ", start_ms, model_ms);
+        format("\tcommon: ", start_ms, commons_ms);
+        format("\twindow: ", commons_ms, window_ms);
+        format("\tmodels: ", window_ms, model_ms);
 
-        return app->run(window);
-    } catch (const Glib::FileError& error) {
-        Log::error(error.what());
-        return EXIT_FAILURE;
+        std::unique_ptr<ApplicationDriver> driver;
+        if (config.oneshot) {
+            driver.reset(new OneshotDriver{ app, window });
+        } else {
+            driver.reset(new ServerDriver{ app, window });
+        }
+        return driver->run();
+    } catch (const Glib::Error& err) {
+        // Glib::ustring performs conversion with respect to locale settings
+        // it might throw (and it does [on my machine])
+        // so let's try our best
+        auto ustr = err.what();
+        try {
+            Log::error(ustr);
+        } catch (const Glib::ConvertError& err) {
+            Log::plain("[message conversion failed]");
+            Log::error(std::string_view{ ustr.data(), ustr.bytes() });
+        } catch (...) {
+            Log::error("Failed to print error message due to unknown error");
+        }
+    } catch (const std::exception& err) {
+        Log::error(err.what());
     }
+    return EXIT_FAILURE;
 }

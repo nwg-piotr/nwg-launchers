@@ -1,6 +1,6 @@
 
 /* GTK-based application grid
- * Copyright (c) 2020 Piotr Miller
+ * Copyright (c) 2021 Piotr Miller
  * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
@@ -14,6 +14,8 @@
  * (https://stackoverflow.com/questions/3908565/how-to-make-gtk-window-background-transparent)
  * Re-worked for Gtkmm 3.0 by Louis Melahn, L.C. January 31, 2014.
  * */
+
+#include <fstream>
 
 #include "charconv-compat.h"
 #include "nwg_tools.h"
@@ -68,25 +70,15 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
             Log::error("Invalid image size");
         }
     }
+    oneshot = parser.cmdOptionExists("-oneshot");
 }
 
-// we only store GridBoxes inside of our FlowBoxes, so dynamic_cast won't fail
-inline auto child_ = [](auto c) -> auto& { return *dynamic_cast<GridBox*>(c->get_child()); };
-int by_name(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
-    return child_(a).name.compare(child_(b).name);
+static Gtk::Widget* make_widget(const Glib::RefPtr<Glib::Object>& object) {
+    return dynamic_cast<GridBox*>(object.get());
 }
-// return -1 if a < b, 0 if a == b, 1 if a > b
-inline auto cmp_ = [](auto a, auto b) { return int(a > b) - int(a < b); };
-int by_position(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
-    auto& toplevel = *dynamic_cast<GridWindow*>(a->get_toplevel());
-    return cmp_(toplevel.stats_of(child_(a)).position, toplevel.stats_of(child_(b)).position);
-}
-int by_clicks(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
-    auto& toplevel = *dynamic_cast<GridWindow*>(a->get_toplevel());
-    return -cmp_(toplevel.stats_of(child_(a)).clicks, toplevel.stats_of(child_(b)).clicks);
-}
-GridWindow::GridWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss):
-    PlatformWindow{ config }, config{ config }, execs(es), stats(ss)
+
+GridWindow::GridWindow(GridConfig& config):
+    PlatformWindow{ config }, config{ config }
 {
     searchbox
         .signal_search_changed()
@@ -95,7 +87,7 @@ GridWindow::GridWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss)
     searchbox.set_sensitive(true);
     searchbox.set_name("searchbox");
 
-    auto setup_grid = [](auto& grid) {
+    auto setup_grid = [&](auto& grid) {
         grid.set_column_spacing(5);
         grid.set_row_spacing(5);
         grid.set_homogeneous(true);
@@ -106,9 +98,15 @@ GridWindow::GridWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss)
     setup_grid(favs_grid);
     setup_grid(pinned_grid);
 
-    pinned_grid.set_sort_func(&by_position);
-    apps_grid.set_sort_func(&by_name);
-    favs_grid.set_sort_func(&by_clicks);
+    apps_boxes = AppBoxes::create();
+    pinned_boxes = PinnedBoxes::create();
+    fav_boxes = FavBoxes::create();
+
+    // doesn't compile with lambda due to sigc bug, must use free function
+    Gtk::FlowBox::SlotCreateWidget<Glib::Object> make_widget_{ &make_widget };
+    pinned_grid.bind_model(pinned_boxes, make_widget_);
+    favs_grid.bind_model(fav_boxes, make_widget_);
+    apps_grid.bind_model(apps_boxes, make_widget_);
 
     description.set_ellipsize(Pango::ELLIPSIZE_END);
     description.set_text("");
@@ -152,14 +150,14 @@ GridWindow::GridWindow(GridConfig& config, Span<std::string> es, Span<Stats> ss)
 bool GridWindow::on_button_press_event(GdkEventButton *event) {
     (void) event; // suppress warning
 
-    this->close();
+    this->hide();
     return true;
 }
 
 bool GridWindow::on_key_press_event(GdkEventKey* key_event) {
     switch (key_event->keyval) {
         case GDK_KEY_Escape:
-            this->close();
+            this->hide();
             break;
         case GDK_KEY_Delete:
             this -> searchbox.set_text("");
@@ -197,107 +195,75 @@ inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container, a
     auto size = container.size();
     decltype(size) cols = num_col;
     if (auto min = std::min(cols, size)) { // suppress gtk warnings about size=0
-        flowbox.set_min_children_per_line(std::min(size, cols));
+        //flowbox.set_min_children_per_line(std::min(size, cols));
         flowbox.set_max_children_per_line(std::min(size, cols));
     }
 };
 
+/* Prevent FlowBoxChild from being focused
+ * explicit type to break compilation if we change container type
+ * as other containers (well, most of them) don't have such quirk
+ */
+inline auto disable_flowbox_child_focus = [](Gtk::FlowBox& flowbox) {
+    flowbox.foreach([](auto & child) {
+        // child is not actually flowbox child: FlowBox{ ... FlowBoxChild{ child } ... }
+        // hence the need for get_parent
+        child.set_can_focus(false);
+    });
+};
+
 /* Populate grid with widgets from container */
 inline auto build_grid = [](auto& grid, auto& container, auto num_col) {
-    for (auto child : container) {
-        grid.add(*child);
-        child->get_parent()->set_can_focus(false); // FlowBoxChild shouldn't consume focus
-    }
     refresh_max_children_per_line(grid, container, num_col);
+    disable_flowbox_child_focus(grid);
 };
 
 /* Called each time `search_entry` changes, rebuilds `apps_grid` according to search criteria */
 void GridWindow::filter_view() {
-    auto clean_grid = [](auto& grid) {
-        grid.foreach([&grid](auto& child) {
-            grid.remove(child);
-            dynamic_cast<Gtk::FlowBoxChild*>(&child)->remove();
-        });
-    };
-    auto search_phrase = searchbox.get_text();
-    is_filtered = search_phrase.size() > 0;
-    filtered_boxes.clear();
-    apps_grid.freeze_child_notify();
-    if (is_filtered) {
-        auto phrase = search_phrase.casefold();
-        auto matches = [&phrase](auto& str) {
-            return str.casefold().find(phrase) != Glib::ustring::npos;
-        };
-        for (auto* box : apps_boxes) {
-            auto& exec = this->exec_of(*box);
-            auto matches_exec = exec.find(phrase) != std::string::npos;
-            if (matches(box->name) || matches_exec || matches(box->comment)) {
-                filtered_boxes.push_back(box);
-            }
-        }
-        clean_grid(apps_grid);
-        build_grid(apps_grid, filtered_boxes, config.num_col);
-    } else {
-        clean_grid(apps_grid);
-        build_grid(apps_grid, apps_boxes, config.num_col);
-    }
+    apps_boxes->filter(searchbox.get_text());
     this -> refresh_separators();
     this -> focus_first_box();
-    apps_grid.thaw_child_notify();
+    refresh_max_children_per_line(apps_grid, *apps_boxes.get(), config.num_col);
 }
 
 /* Sets separators' visibility according to grid status */
 void GridWindow::refresh_separators() {
     auto set_shown = [](auto c, auto& s) { if (c) s.show(); else s.hide(); };
-    auto p = !pinned_boxes.empty();
-    auto f = !fav_boxes.empty();
-    auto a1 = !filtered_boxes.empty() && is_filtered;
-    auto a2 = !apps_boxes.empty() && !is_filtered;
-    auto a = a1 || a2;
+    auto p = !pinned_boxes->empty();
+    auto f = !fav_boxes->empty();
+    auto a = !apps_boxes->empty();
+    // TODO: separator shrinks to dot if there is too few items in flowbox
+    // can it be fixed?
     set_shown(p && f, separator1);
-    set_shown(f && a, separator);
-    if (p && a) {
-        separator.show();
-    }
+    set_shown((f || p) && a, separator);
 }
 
 void GridWindow::build_grids() {
-    this -> pinned_grid.freeze_child_notify();
-    this -> favs_grid.freeze_child_notify();
-    this -> apps_grid.freeze_child_notify();
-
     auto num_col = config.num_col;
-    build_grid(this->pinned_grid, this->pinned_boxes, num_col);
-    build_grid(this->favs_grid, this->fav_boxes, num_col);
-    build_grid(this->apps_grid, this->apps_boxes, num_col);
-
-    this -> monotonic_index = this->pinned_boxes.size();
+    build_grid(this->pinned_grid, *pinned_boxes.get(), num_col);
+    build_grid(this->favs_grid, *fav_boxes.get(), num_col);
+    build_grid(this->apps_grid, *apps_boxes.get(), num_col);
 
     this -> pinned_grid.show_all_children();
     this -> favs_grid.show_all_children();
     this -> apps_grid.show_all_children();
-
-    this -> pinned_grid.thaw_child_notify();
-    this -> favs_grid.thaw_child_notify();
-    this -> apps_grid.thaw_child_notify();
 
     this -> focus_first_box();
     this -> refresh_separators();
 }
 
 void GridWindow::focus_first_box() {
-    // flowbox -> flowboxchild -> gridbox
-    if (is_filtered) {
-        if (auto child = apps_grid.get_child_at_index(0)) {
-            child->get_child()->grab_focus();
-            return;
+    if (apps_boxes->is_filtered() && apps_boxes->size()) {
+        apps_boxes->front()->grab_focus();
+    } else {
+        if (pinned_boxes->size()) {
+            pinned_boxes->front()->grab_focus(); return;
         }
-    }
-    std::array grids { &pinned_grid,  &favs_grid, &apps_grid };
-    for (auto grid : grids) {
-        if (auto child = grid->get_child_at_index(0)) {
-            child->get_child()->grab_focus();
-            return;
+        if (fav_boxes->size()) {
+            fav_boxes->front()->grab_focus(); return;
+        }
+        if (apps_boxes->size()) {
+            apps_boxes->front()->grab_focus(); return;
         }
     }
 }
@@ -317,44 +283,42 @@ void GridWindow::toggle_pinned(GridBox& box) {
     auto is_pinned = stats.pinned == Stats::Pinned;
     stats.pinned = Stats::PinTag{ !is_pinned };
 
-    // monotonic index increases each time an entry is pinned
-    // ensuring it will appear last
-    stats.position = this->monotonic_index * !is_pinned;
-    this->monotonic_index += !is_pinned;
-
     auto* from_grid = &this->apps_grid;
-    auto* from = &this->apps_boxes;
+    AbstractBoxes* from = apps_boxes.get();
 
     if (stats.favorite) {
         from_grid = &this->favs_grid;
-        from = &this->fav_boxes;
+        from = this->fav_boxes.get();
     }
 
-    auto* to = &this->pinned_boxes;
+    AbstractBoxes* to = this->pinned_boxes.get();
     auto* to_grid = &this->pinned_grid;
     if (is_pinned) {
         std::swap(from, to);
         std::swap(from_grid, to_grid);
     }
-    auto to_remove = std::remove(from->begin(), from->end(), &box);;
-    from->erase(to_remove);
-    to->push_back(&box);
+    box.reference(); // reference count decreases when unparenting
+    box.reference(); // TODO: this reference is required (errors otherwise), but why?
+    box.reference();
+    from->erase(box);
+    // FlowBox { ... FlowBoxChild { box } ... }
+    // it is necessary to remove box from FlowBoxChild
+    // and then FlowBoxChild from FlowBox
+    // as it doesn't get deleted for some reason
+    if (auto parent = box.get_parent()) {
+        //if (auto grid = parent->get_parent()) {
+        //    grid->remove(*parent);
+        //}
+        from_grid->remove(*parent);
+        parent->remove(box);
+    }
+    to->add(box);
     auto num_col = config.num_col;
     refresh_max_children_per_line(*from_grid, *from, num_col);
     refresh_max_children_per_line(*to_grid, *to, num_col);
 
-    // get_parent is important
-    // FlowBox { ... FlowBoxChild { box } ... }
-    // box is not child to FlowBox
-    // but its parent, FlowBoxChild is
-    // so we need to reparent FlowBoxChild, not the box itself
-    box.get_parent()->reparent(*to_grid);
-    // refresh filter if needed
-    if (is_filtered) {
-        this->filter_view();
-    } else {
-        this->refresh_separators();
-    }
+    // refresh filters
+    refresh_separators();
 }
 
 
@@ -362,41 +326,116 @@ void GridWindow::toggle_pinned(GridBox& box) {
  * Saves pinned cache file
  * */
 void GridWindow::save_cache() {
-    if (pins_changed) {
-        std::sort(pinned_boxes.begin(), pinned_boxes.end(), [this](auto* a, auto* b) {
-            return this->stats_of(*a).position < this->stats_of(*b).position;
-        });
-        std::ofstream out{ config.pinned_file, std::ios::trunc };
-        for (auto* pin : this->pinned_boxes) {
-            out << *pin->desktop_id << '\n';
+    // if pins_changed can only be set to true if config.pins is true
+    // but lets do double-check just in case
+    if (config.pins && pins_changed) {
+        if (std::ofstream out{ config.pinned_file, std::ios::trunc }) {
+            for (auto* pin : *pinned_boxes.get()) {
+                out << pin->entry->desktop_id << '\n';
+            }
+        } else {
+            Log::error("failed to save pins to file '", config.pinned_file, "'");
         }
     }
-    if (config.favs) {
-        ns::json favs_cache;
-        // find min positive clicks count
-        decltype(Stats::clicks) min = 1000000; // avoid including <limits>
-        for (auto& box : this->all_boxes) {
-            if (auto clicks = stats_of(box).clicks; clicks > 0) {
-                min = std::min(min, clicks);
+    if (config.favs && favs_changed) {
+        try {
+            ns::json favs_cache;
+            // find min positive clicks count
+            decltype(Stats::clicks) min = 1000000; // avoid including <limits>
+            for (auto& box : this->all_boxes) {
+                if (auto clicks = stats_of(box).clicks; clicks > 0) {
+                    min = std::min(min, clicks);
+                }
             }
-        }
-        // only save positives, substract min to keep clicks low, but preserve order
-        for (auto& box : this->all_boxes) {
-            if (auto clicks = stats_of(box).clicks - min + 1; clicks > 0) {
-                favs_cache[*box.desktop_id] = clicks;
+            // only save positives, substract min to keep clicks low, but preserve order
+            for (auto& box : this->all_boxes) {
+                if (auto clicks = stats_of(box).clicks - min + 1; clicks > 0) {
+                    favs_cache.emplace(box.entry->desktop_id, clicks);
+                }
             }
+            save_json(favs_cache, config.cached_file);
+        } catch (const ns::json::exception& e) {
+            Log::error("unable to save favs: ", e.what());
         }
-        save_json(favs_cache, config.cached_file);
     }
 }
 
+void GridWindow::on_show() {
+    // when running in server mode, the window is not scrolled back to top
+    // each time it's shown
+    // so we'll do it on our own
+    auto hadjustment = scrolled_window.get_hadjustment();
+    auto vadjustment = scrolled_window.get_vadjustment();
+    hadjustment->set_value(hadjustment->get_lower());
+    vadjustment->set_value(vadjustment->get_lower());
+    focus_first_box();
+    searchbox.set_text("");
+    return PlatformWindow::on_show();
+}
+
 bool GridWindow::on_delete_event(GdkEventAny* event) {
+    // no-op as on_delete_event doesn't get called when application exits w/
     this -> save_cache();
     return CommonWindow::on_delete_event(event);
 }
 
-GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::string& id, std::size_t index)
-: name(std::move(name)), comment(std::move(comment)), desktop_id(&id), index(index) {
+void GridWindow::run_box(GridBox& box) {
+    favs_changed = true;
+    ++stats_of(box).clicks;
+    auto& cmd = exec_of(box);
+    // TODO: use special flag
+    if (cmd.find(config.term) == 0) {
+        Log::info("Running: \'", cmd, "\'");
+    }
+    try {
+        Glib::spawn_command_line_async(cmd);
+    } catch (const Glib::SpawnError& error) {
+        Log::error("Failed to run command: ", error.what());
+    } catch (const Glib::ShellError& error) {
+        Log::error("Failed to run command: ", error.what());
+    }
+    hide();
+}
+
+inline auto with_box_by_id = [](auto && container, auto && desktop_id, auto && foo) {
+    auto cmp = [&desktop_id](auto && box) { return box.entry->desktop_id == desktop_id; };
+    if (auto iter = std::find_if(container.begin(), container.end(), cmp); iter != container.end()) {
+        foo(iter);
+    }
+};
+
+void GridWindow::remove_box_by_desktop_id(std::string_view desktop_id) {
+    with_box_by_id(all_boxes, desktop_id, [this](auto && iter) {
+        auto && box = *iter;
+        // delete references to the widget from models
+        pinned_boxes->erase(box);
+        fav_boxes->erase(box);
+        apps_boxes->erase(box);
+        // remove flowboxchild
+        box.reference();
+        if (auto parent = dynamic_cast<Gtk::FlowBoxChild*>(box.get_parent())) {
+            if (auto flowbox = parent->get_parent()) {
+                flowbox->remove(*parent);
+            }
+        }
+        // delete the actual widget
+        all_boxes.erase(iter);
+    });
+}
+
+void GridWindow::update_box_by_id(std::string_view desktop_id, GridBox && new_box) {
+    with_box_by_id(all_boxes, desktop_id, [this,&new_box](auto && iter) {
+        auto && box = *iter;
+        auto && new_box_ref = all_boxes.emplace_front(std::move(new_box));
+        pinned_boxes->update(box, new_box_ref);
+        fav_boxes->update(box, new_box_ref);
+        apps_boxes->update(box, new_box_ref);
+        all_boxes.erase(iter);
+    });
+}
+
+GridBox::GridBox(Glib::ustring name, Glib::ustring comment, Entry& entry)
+: name(std::move(name)), comment(std::move(comment)), entry{ &entry } {
     // As we sort dynamically by actual names, we need to avoid shortening them, or long names will remain unsorted.
     // See the issue: https://github.com/nwg-piotr/nwg-launchers/issues/128
     auto display_name = this->name;
@@ -406,6 +445,7 @@ GridBox::GridBox(Glib::ustring name, Glib::ustring comment, const std::string& i
     }
     this->set_always_show_image(true);
     this->set_label(display_name);
+    this->set_image_position(Gtk::POS_TOP);
 }
 
 bool GridBox::on_button_press_event(GdkEventButton* event) {
@@ -434,18 +474,23 @@ void GridBox::on_enter() {
 
 void GridBox::on_activate() {
     auto& toplevel = *dynamic_cast<GridWindow*>(this->get_toplevel());
-    toplevel.stats_of(*this).clicks++;
-    auto& cmd = toplevel.exec_of(*this);
-    // TODO: use special flag
-    if (cmd.find(toplevel.config.term) == 0) {
-        Log::info("Running: \'", cmd, "\'");
-    }
-    try {
-        Glib::spawn_command_line_async(cmd);
-    } catch (const Glib::SpawnError& error) {
-        Log::error("Failed to run command: ", error.what());
-    } catch (const Glib::ShellError& error) {
-        Log::error("Failed to run command: ", error.what());
-    }
-    toplevel.close();
+    toplevel.run_box(*this);
+}
+
+void GridInstance::on_sighup() {
+    Log::error("let's assume we reload something");
+}
+
+void GridInstance::on_sigusr1() {
+    window.show(hint::Fullscreen);
+}
+
+void GridInstance::on_sigint() {
+    window.save_cache();
+    Instance::on_sigint();
+}
+
+void GridInstance::on_sigterm() {
+    window.save_cache();
+    Instance::on_sigterm();
 }

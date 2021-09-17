@@ -1,8 +1,8 @@
 /*
  * Tools for nwg-launchers
- * Copyright (c) 2020 Érico Nogueira
+ * Copyright (c) 2021 Érico Nogueira
  * e-mail: ericonr@disroot.org
- * Copyright (c) 2020 Piotr Miller
+ * Copyright (c) 2021 Piotr Miller
  * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
@@ -17,18 +17,20 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 
 #include "filesystem-compat.h"
 #include "nwgconfig.h"
 #include "nwg_tools.h"
 
-#ifdef HAVE_GDK_X11
+
+#ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
 #endif
 
 // stores the name of the pid_file, for use in atexit
-static std::string pid_file{};
+static fs::path pid_file{};
 
 /*
  * Returns config dir
@@ -70,6 +72,48 @@ fs::path get_cache_home() {
         home /= ".cache";
     }
     return home;
+}
+
+/*
+ * Return runtime dir
+ * */
+fs::path get_runtime_dir() {
+    auto* xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
+    if (!xdg_runtime_dir) {
+        std::array<char, 64> myuid;
+        auto myuid_ = getuid();
+        if (auto n = std::snprintf(myuid.data(), 64, "%u", myuid_); n > 0) {
+            std::string_view myuid_view{ myuid.data(), static_cast<std::string_view::size_type>(n) };
+            fs::path path{ "/var/run/user" };
+            path /= myuid_view;
+            return path;
+        }
+        throw std::runtime_error{ "Failed to convert UID to chars" };
+    }
+    return xdg_runtime_dir;
+}
+
+fs::path get_pid_file(std::string_view name) {
+    auto dir = get_runtime_dir();
+    dir /= name;
+    return dir;
+}
+
+std::optional<pid_t> get_instance_pid(const fs::path& pid_file_path) {
+    if (std::ifstream pid_file{ pid_file_path }) {
+        pid_file.exceptions(std::ifstream::badbit | std::ifstream::failbit);
+
+        pid_t pid;
+        pid_file >> pid;
+        if (pid < 0) {
+            throw std::runtime_error{ "pid < 0" };
+        }
+        if (kill(pid, 0) != 0) {
+            throw std::runtime_error{ "process with specified pid does not exist" };
+        }
+        return pid;
+    }
+    return std::nullopt;
 }
 
 /*
@@ -350,35 +394,6 @@ Geometry display_geometry(std::string_view wm, Glib::RefPtr<Gdk::Display> displa
 }
 
 /*
- * Returns Gtk::Image out of the icon name of file path
- * */
-Gtk::Image* app_image(
-    const Gtk::IconTheme& icon_theme,
-    const std::string& icon,
-    const Glib::RefPtr<Gdk::Pixbuf>& fallback,
-    int icon_size
-) {
-    Glib::RefPtr<Gdk::Pixbuf> pixbuf;
-
-    try {
-        if (icon.find_first_of("/") == std::string::npos) {
-            pixbuf = icon_theme.load_icon(icon, icon_size, Gtk::ICON_LOOKUP_FORCE_SIZE);
-        } else {
-            pixbuf = Gdk::Pixbuf::create_from_file(icon, icon_size, icon_size, true);
-        }
-    } catch (...) {
-        try {
-            pixbuf = Gdk::Pixbuf::create_from_file("/usr/share/pixmaps/" + icon, icon_size, icon_size, true);
-        } catch (...) {
-            pixbuf = fallback;
-        }
-    }
-    auto image = Gtk::manage(new Gtk::Image(pixbuf));
-
-    return image;
-}
-
-/*
  * Returns current locale
  * */
 std::string get_locale() {
@@ -548,78 +563,28 @@ fs::path setup_css_file(std::string_view name, const fs::path& config_dir, const
     return css_file;
 }
 
-/*
- * Remove pid_file created by create_pid_file_or_kill_pid.
- * This function will be run before exiting.
- * */
-static void clean_pid_file() {
-    unlink(pid_file.c_str());
+int instance_on_sigterm(void* userdata) {
+    static_cast<Instance*>(userdata)->on_sigterm();
+    return G_SOURCE_CONTINUE;
+}
+int instance_on_sigusr1(void* userdata) {
+    static_cast<Instance*>(userdata)->on_sigusr1();
+    return G_SOURCE_CONTINUE;
+}
+int instance_on_sighup(void* userdata) {
+    static_cast<Instance*>(userdata)->on_sighup();
+    return G_SOURCE_CONTINUE;
+}
+int instance_on_sigint(void* userdata) {
+    static_cast<Instance*>(userdata)->on_sigint();
+    return G_SOURCE_CONTINUE;
 }
 
-/*
- * Signal handler to exit normally with SIGTERM
- * */
-// Put string in global scope to be sure no dynamic allocation will happen
-static const std::string exit_sigterm_msg = "Received SIGTERM, exiting...\n";
-static void exit_normal(int sig) {
-    // We have to use only async-signal-safe functions here
-    if (sig == SIGTERM) {
-        write(STDERR_FILENO, exit_sigterm_msg.c_str(), exit_sigterm_msg.length());
+std::string error_description(int err) {
+    errno = 0;
+    auto cstr = std::strerror(err);
+    if (!cstr || errno) {
+        throw std::runtime_error{ "failed to retrieve errno description: strerror return NULL" };
     }
-
-    std::quick_exit(1);
-}
-
-/*
- * Creates PID file for the new instance,
- * or kills the other cmd instance.
- *
- * If it creates a PID file, it also sets up a signal handler to exit
- * normally if it receives SIGTERM; and registers an atexit() action
- * to run when exiting normally.
- *
- * This allows for behavior where using the shortcut to open one
- * of the launchers closes the currently running one.
- * */
-void create_pid_file_or_kill_pid(std::string cmd) {
-    char *runtime_dir_tmp = getenv("XDG_RUNTIME_DIR");
-    std::string runtime_dir;
-    if (runtime_dir_tmp) {
-        runtime_dir = runtime_dir_tmp;
-    } else {
-        runtime_dir = "/var/run/user/" + std::to_string(getuid());
-    }
-
-    pid_file = runtime_dir + "/" + cmd + ".pid";
-
-    auto pid_read = std::ifstream(pid_file);
-    // set to not throw exceptions
-    pid_read.exceptions(std::ifstream::goodbit);
-    if (pid_read.is_open()) {
-        // opening file worked - file exists
-        pid_t saved_pid;
-        pid_read >> saved_pid;
-
-        if (saved_pid > 0 && kill(saved_pid, 0) == 0) {
-            // found running instance
-            // PID file will be deleted by process's atexit routine
-            int rv = kill(saved_pid, SIGTERM);
-
-            // exit with status dependent on kill success
-            std::exit(rv == 0 ? 0 : 1);
-        }
-    }
-
-    auto mypid = std::to_string(getpid());
-    save_string_to_file(mypid, pid_file);
-
-    // register function to clean pid file - will be used if it exits normally
-    std::atexit(clean_pid_file);
-    // also register for quick_exit, since it isn't safe to call std::exit
-    // inside a signal handler
-    std::at_quick_exit(clean_pid_file);
-    // register signal handler for SIGTERM
-    struct sigaction act {};
-    act.sa_handler = exit_normal;
-    sigaction(SIGTERM, &act, nullptr);
+    return { cstr };
 }

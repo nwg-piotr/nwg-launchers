@@ -14,6 +14,6 @@ executable(
 )
 
 install_data(
-	['style.css', 'bar.json', 'icon-missing.svg'],
+	['style.css', 'bar.json'],
 	install_dir: conf_data.get('datadir', '') / 'nwgbar'
 )

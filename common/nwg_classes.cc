@@ -1,18 +1,23 @@
 /*
  * Classes for nwg-launchers
- * Copyright (c) 2020 Érico Nogueira
+ * Copyright (c) 2021 Érico Nogueira
  * e-mail: ericonr@disroot.org
- * Copyright (c) 2020 Piotr Miller
+ * Copyright (c) 2021 Piotr Miller
  * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
  * License: GPL3
  * */
 
+#include <unistd.h>
+#include <glib-unix.h>
+
 #include <algorithm>
 #include <array>
+#include <fstream>
 
 #include "charconv-compat.h"
+#include "nwgconfig.h"
 #include "nwg_classes.h"
 #include "nwg_tools.h"
 
@@ -141,6 +146,105 @@ AppBox::AppBox(Glib::ustring name, Glib::ustring exec, Glib::ustring comment):
         this->name.append("...");
     }
     this -> set_always_show_image(true);
+}
+
+Instance::Instance(Gtk::Application& app, std::string_view name): app{ app } {
+    // TODO: maybe use dbus if it is present?
+    pid_file = get_pid_file(name);
+    pid_file += ".pid";
+    auto lock_file = pid_file;
+    lock_file += ".lock";
+
+    // we'll need this lock file to synchronize us & running instance
+    // note: it doesn't get unlinked when the program exits
+    //       so the other instance can safely wait on this file
+    pid_lock_fd = open(lock_file.c_str(), O_CLOEXEC | O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
+    if (pid_lock_fd < 0) {
+        int err = errno;
+        throw std::runtime_error{ concat("failed to open pid lock: ", error_description(err)) };
+    }
+
+    // let's try to read pid file
+    if (auto pid = get_instance_pid(pid_file)) {
+        Log::info("Another instance is running, trying to terminate it...");
+        if (kill(*pid, SIGTERM) != 0) {
+            throw std::runtime_error{ "failed to send SIGTERM to pid" };
+        }
+        Log::plain("Success");
+    }
+
+    // acquire lock
+    // we'll hold this lock until the very exit
+    if (lockf(pid_lock_fd, F_LOCK, 0)) {
+        int err = errno;
+        throw std::runtime_error{ concat("failed to lock the pid lock: ", error_description(err)) };
+    }
+
+    // write instance pid
+    std::ofstream pid_stream{ pid_file, std::ios::trunc };
+    auto pid = getpid();
+    pid_stream << pid;
+    pid_stream.flush();
+
+    // using glib unix extensions instead of plain signals allows for arbitrary functions to be used
+    // when handling signals
+    g_unix_signal_add(SIGHUP, instance_on_sighup, this);
+    g_unix_signal_add(SIGINT, instance_on_sigint, this);
+    g_unix_signal_add(SIGUSR1, instance_on_sigusr1, this);
+    g_unix_signal_add(SIGTERM, instance_on_sigterm, this);
+}
+
+void Instance::on_sighup(){}
+void Instance::on_sigint(){ app.quit(); }
+void Instance::on_sigusr1() {}
+void Instance::on_sigterm(){ app.quit(); }
+
+Instance::~Instance() {
+    // it is important to delete pid file BEFORE releasing the lock
+    // otherwise other instance may overwrite it just before we delete it
+    if (std::error_code err; !fs::remove(pid_file, err) && err) {
+        Log::error("Failed to remove pid file '", pid_file, "': ", err.message());
+    }
+    if (lockf(pid_lock_fd, F_ULOCK, 0)) {
+        int err = errno;
+        Log::error("Failed to unlock pid lock: ", error_description(err));
+    }
+    close(pid_lock_fd);
+}
+
+IconProvider::IconProvider(const Glib::RefPtr<Gtk::IconTheme>& theme, int icon_size):
+    icon_theme{ theme },
+    fallback{ Gdk::Pixbuf::create_from_file(
+        DATA_DIR_STR "/nwgbar/icon-missing" ICON_EXT,
+        icon_size,
+        icon_size,
+        true
+    ) },
+    icon_size{ icon_size }
+{
+    // intentionally left blank
+}
+
+Gtk::Image IconProvider::load_icon(const std::string& icon) const {
+    if (icon.empty()) {
+        return Gtk::Image{ fallback };
+    }
+    try {
+        if (icon.find_first_of("/") == icon.npos) {
+            return Gtk::Image{ icon_theme->load_icon(icon, icon_size, Gtk::ICON_LOOKUP_FORCE_SIZE) };
+        } else {
+            return Gtk::Image{ Gdk::Pixbuf::create_from_file(icon, icon_size, icon_size, true) };
+        }
+    } catch (const Glib::Error& error) {
+        Log::error("Failed to load icon '", icon, "': ", error.what());
+    }
+    try {
+        return Gtk::Image{ Gdk::Pixbuf::create_from_file("/usr/share/pixmaps/" + icon, icon_size, icon_size, true) };
+    } catch (const Glib::Error& error) {
+        Log::error("Failed to load icon '", icon, "': ", error.what());
+        Log::plain("falling back to placeholder");
+    }
+    return Gtk::Image{ fallback };
 }
 
 GenericShell::GenericShell(Config& config) {

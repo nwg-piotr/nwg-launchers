@@ -1,8 +1,8 @@
 /*
  * Classes for nwg-launchers
- * Copyright (c) 2020 Érico Nogueira
+ * Copyright (c) 2021 Érico Nogueira
  * e-mail: ericonr@disroot.org
- * Copyright (c) 2020 Piotr Miller
+ * Copyright (c) 2021 Piotr Miller
  * e-mail: nwg.piotr@gmail.com
  * Website: http://nwg.pl
  * Project: https://github.com/nwg-piotr/nwg-launchers
@@ -134,6 +134,30 @@ struct DesktopEntry {
     std::string comment;
     std::string mime_type;
     bool terminal;
+};
+
+struct Instance {
+    Gtk::Application& app;
+    fs::path pid_file;
+    int      pid_lock_fd;
+
+    Instance(Gtk::Application& app, std::string_view name);
+    virtual ~Instance();
+    virtual void on_sigterm();
+    virtual void on_sigusr1();
+    virtual void on_sighup();
+    virtual void on_sigint();
+};
+
+struct IconProvider {
+    Glib::RefPtr<Gtk::IconTheme> icon_theme;
+    Glib::RefPtr<Gdk::Pixbuf>    fallback;
+    int                          icon_size;
+
+    IconProvider(const Glib::RefPtr<Gtk::IconTheme>& theme, int icon_size);
+    // Returns Gtk::Image out of the icon name of file path
+    // the returned image is scaled to icon_size x icon_size
+    Gtk::Image load_icon(const std::string& icon) const;
 };
 
 enum class SwayError {

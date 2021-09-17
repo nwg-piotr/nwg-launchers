@@ -4,7 +4,7 @@ project('nwg-launchers', 'cpp',
 			'warning_level=3'
 			],
 	license: 'GPL-3.0-or-later',
-	version: '0.5.0'
+	version: '0.6.0'
 )
 
 compiler = meson.get_compiler('cpp')
@@ -17,9 +17,6 @@ endif
 
 # Dependencies
 gdk_x11 = dependency('gdk-x11-3.0', required: get_option('gdk-x11'))
-if gdk_x11.found()
-	add_project_arguments('-DHAVE_GDK_X11', language: 'cpp')
-endif
 
 ## gtkmm
 gtkmm = dependency('gtkmm-3.0', required: true)
@@ -42,11 +39,19 @@ json = dependency(
     required: true
 )
 
+## librsvg is required to load .svg
+librsvg = dependency(
+    'librsvg-2.0',
+    version: ['>=2.0.0'],
+    required: get_option('support-svg')
+)
+
 # Generate configuration header
 conf_data = configuration_data()
 conf_data.set('version', meson.project_version())
 conf_data.set('prefix', get_option('prefix'))
 conf_data.set('datadir', get_option('prefix') / get_option('datadir') / 'nwg-launchers')
+conf_data.set('SUPPORTS_SVG', librsvg.found())
 configure_file(
 	input : 'nwgconfig.h.in',
 	output : 'nwgconfig.h',
@@ -68,3 +73,12 @@ endif
 if get_option('grid')
 	subdir('grid')
 endif
+
+icons = ['icon-missing.png']
+if librsvg.found()
+    icons += 'icon-missing.svg'
+endif
+install_data(
+    icons,
+    install_dir: conf_data.get('datadir')
+)
