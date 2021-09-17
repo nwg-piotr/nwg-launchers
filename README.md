@@ -6,9 +6,8 @@
 ## This project is community-driven
 
 As it seems I'm not going to live long enough to learn C++ properly, I decided to develop my launchers from scratch in Go. You'll find them in the
-[nwg-shell](https://github.com/nwg-piotr/nwg-shell) project. They only support sway, and partially other wlroots-based compositors. The nwg-launchers code
-is a community-driven project from now on, if it comes to further development. I'll only support bug fixes, if any.
-
+[nwg-shell](https://github.com/nwg-piotr/nwg-shell) project. They only support sway, and partially other wlroots-based compositors. Nwg-launchers 
+is a community-driven project from now on. The main developer is [Siborgium](https://github.com/Siborgium).
 ## Description
 
 It's damned difficult to make all the stuff behave properly on all window managers. My priorities are:
