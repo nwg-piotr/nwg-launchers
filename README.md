@@ -34,9 +34,12 @@ latest release](https://github.com/nwg-piotr/nwg-launchers/releases/latest).
 
 ### Dependencies
 
-- `gtkmm3` (`libgtkmm-3.0-dev`)
-- `meson` and `ninja` - build dependencies
+##### Build dependencies
+- `meson` and `ninja`
 - `nlohmann-json` - will be downloaded as a subproject if not found on the system
+
+##### Runtime dependencies
+- `gtkmm3` (`libgtkmm-3.0-dev`)
 - `gtk-layer-shell` - optional, set to `auto` by default; will be downloaded as a subproject if explicitly enabled, but not found on the system
 - `librsvg` - optional, required to support SVG icons
 
