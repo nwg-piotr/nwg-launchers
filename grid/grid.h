@@ -158,8 +158,9 @@ protected:
 
 /* CRTP class providing T::create() -> RefPtr<T> */
 template <typename T> struct Create {
-    static auto create() {
-        auto* ptr = new T{};
+    template <typename ... Ts>
+    static auto create(Ts && ... ts) {
+        auto* ptr = new T{ std::forward<Ts>(ts)... };
         // refptr(ptr) constructor does not increase reference count, but ~refptr does decrease
         // resulting in refcount < 0
         ptr->reference();
@@ -179,19 +180,30 @@ inline auto container_add_sorted = [](auto && container, auto && elem, auto && c
 class PinnedBoxes: public BoxesModel, public Create<PinnedBoxes> {
     friend struct Create<PinnedBoxes>; // permit Create to access a protected constructor
 protected:
-    int monotonic_index = 0;
+    int monotonic_index{ 0 };
     PinnedBoxes(): Glib::ObjectBase(typeid(PinnedBoxes)) {}
 public:
     void add(GridBox& box) override {
         box.entry->stats.pinned = Stats::Pinned;
-        box.entry->stats.position = monotonic_index;
+        // temporary fix for #176
+        // initial indices are set to < 0 so they are not reordered
+        // but we reset them to 0 when erasing, so that when the entry is unpinned & pinned again
+        // it receives proper position
+        if (box.entry->stats.position >= 0) {
+            box.entry->stats.position = monotonic_index;
+            ++monotonic_index;
+        }
         auto pos = container_add_sorted(boxes, &box, [](auto* a, auto* b) {
-            return a->entry->stats.position < b->entry->stats.position;
+            return a->entry->stats.position > b->entry->stats.position;
         });
+
         // monotonic index increases each time an entry is pinned
         // ensuring it will appear last
-        ++monotonic_index;
         items_changed(pos, 0, 1);
+    }
+    void erase(GridBox& box) override {
+        box.entry->stats.position = 0;
+        BoxesModel::erase(box);
     }
 };
 
