@@ -380,13 +380,18 @@ struct GridInstance: public Instance {
     {
         // intentionally left blank
     }
-    /* Instance::on_sig{int,term} call Application::quit, which in turn emit shutdown signal
-     * However, window.save_cache bound to said event doesn't get called for some reason
-     * So we call it ourselves before calling Application::quit */
+    /* Instance on_* handlers call Application::quit
+     * which internally calls _exit, destructors are not called
+     * To handle this problem GridInstance overrides handlers
+     * to call Application::release
+     */
     void on_sighup() override;  // reload
     void on_sigint() override;  // save & exit
     void on_sigterm() override;  // save & exit
     void on_sigusr1() override; // show
+    ~GridInstance() {
+        window.save_cache();
+    }
 };
 
 /*
