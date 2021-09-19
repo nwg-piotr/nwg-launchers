@@ -108,10 +108,10 @@ std::optional<pid_t> get_instance_pid(const fs::path& pid_file_path) {
         if (pid < 0) {
             throw std::runtime_error{ "pid < 0" };
         }
-        if (kill(pid, 0) != 0) {
-            throw std::runtime_error{ "process with specified pid does not exist" };
+        if (kill(pid, 0) == 0) {
+            return pid;
         }
-        return pid;
+        Log::warn("the saved pid is stale");
     }
     return std::nullopt;
 }
