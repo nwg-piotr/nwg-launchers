@@ -165,7 +165,7 @@ Instance::Instance(Gtk::Application& app, std::string_view name): app{ app } {
     }
 
     // let's try to read pid file
-    if (auto pid = get_instance_pid(pid_file)) {
+    if (auto pid = get_instance_pid(pid_file.c_str())) {
         Log::info("Another instance is running, trying to terminate it...");
         if (kill(*pid, SIGTERM) != 0) {
             throw std::runtime_error{ "failed to send SIGTERM to pid" };
@@ -181,10 +181,7 @@ Instance::Instance(Gtk::Application& app, std::string_view name): app{ app } {
     }
 
     // write instance pid
-    std::ofstream pid_stream{ pid_file, std::ios::trunc };
-    auto pid = getpid();
-    pid_stream << pid;
-    pid_stream.flush();
+    write_instance_pid(pid_file.c_str(), getpid());
 
     // using glib unix extensions instead of plain signals allows for arbitrary functions to be used
     // when handling signals
