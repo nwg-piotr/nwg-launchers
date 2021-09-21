@@ -27,8 +27,13 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
     background_color{ parser.get_background_color(0.9) }
 {
     auto has_custom_paths = parser.cmdOptionExists("-d");
-    favs = parser.cmdOptionExists("-f") && !has_custom_paths;
-    pins = parser.cmdOptionExists("-p") && !has_custom_paths;
+    auto has_favs = parser.cmdOptionExists("-f");
+    auto has_pins = parser.cmdOptionExists("-d");
+    if ((has_favs || has_pins) && has_custom_paths) {
+        Log::error("'-f' and '-p' options are incompatible with '-d ...', ignoring '-p' and/or '-f'");
+    }
+    favs = has_favs && !has_custom_paths;
+    pins = has_pins && !has_custom_paths;
 
     if (auto forced_lang = parser.getCmdOption("-l"); !forced_lang.empty()){
         lang = forced_lang;
