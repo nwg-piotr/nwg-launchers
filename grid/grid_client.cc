@@ -55,19 +55,25 @@ int main(int argc, char* argv[]) {
         }
         char path[] = INSTALL_PREFIX_STR "/bin/nwggrid-server";
         char oneshot[] = "-oneshot";
-        std::vector<std::string> string_store;
-        std::vector<char*> arguments;
-        arguments.push_back(path);
-        arguments.push_back(oneshot);
+        auto arguments = new char*[argc + 2];
+        arguments[0] = path;
         for (int i = 1; i < argc; ++i) {
-            auto & arg = string_store.emplace_back(argv[i]);
-            arguments.push_back(arg.data());
+            arguments[i] = strdup(argv[i]);
+            if (!arguments[i]) {
+                int err = errno;
+                // totally unnecessary cleanup, but why not?
+                for (int j = 0; j < i; ++j) {
+                    free(arguments[j]);
+                }
+                throw std::runtime_error{ error_description(err) };
+            }
         }
-        arguments.push_back(nullptr);
+        arguments[argc] = oneshot;
+        arguments[argc + 1] = (char*)NULL;
 
         auto r = execv(
             INSTALL_PREFIX_STR "/bin/nwggrid-server",
-            arguments.data()
+            arguments
         );
         if (r == -1) {
             int err = errno;
