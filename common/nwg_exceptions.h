@@ -21,7 +21,17 @@ struct ErrnoException: public std::runtime_error {
         b.insert(0, a.data(), a.size());
         return b;
     }
-
+    /* Make sure to use this constructor as follows:
+     *
+     *    int err = errno;
+     *    ErrnoException{ "desc", err }
+     *
+     * and NOT
+     *
+     *    ErrnoException{ "desc", errno }
+     *
+     * because creating `string_view` can potentially change `errno` value,
+     * and the initialization order is not guaranteed */
     ErrnoException(std::string_view desc, int err):
         std::runtime_error{ concat(desc, error_description(err)) }
     {
