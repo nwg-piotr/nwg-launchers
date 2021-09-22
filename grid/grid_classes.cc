@@ -61,13 +61,13 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
     if (auto i_size = parser.getCmdOption("-s"); !i_size.empty()){
         int i_s;
         if (parse_number(i_size, i_s)) {
-            if (i_s >= 16 && i_s <= 256) {
+            if (i_s >= 16 && i_s <= 2048) {
                 icon_size = i_s;
             } else {
-                Log::error("Size must be in range 16 - 256\n");
+                Log::error("Size must be in range 16 - 2048\n");
             }
         } else {
-            Log::error("Invalid image size");
+            Log::error("Image size should be valid integer in range 16 - 2048\n");
         }
     }
     oneshot = parser.cmdOptionExists("-oneshot");
