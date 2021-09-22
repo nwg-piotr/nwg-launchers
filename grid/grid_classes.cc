@@ -28,7 +28,7 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
 {
     auto has_custom_paths = parser.cmdOptionExists("-d");
     auto has_favs = parser.cmdOptionExists("-f");
-    auto has_pins = parser.cmdOptionExists("-d");
+    auto has_pins = parser.cmdOptionExists("-p");
     if ((has_favs || has_pins) && has_custom_paths) {
         Log::error("'-f' and '-p' options are incompatible with '-d ...', ignoring '-p' and/or '-f'");
     }
