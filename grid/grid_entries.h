@@ -86,6 +86,9 @@ private:
     void set_entry_stats(Entry& entry) {
         if (auto result = std::find(pins.begin(), pins.end(), entry.desktop_id); result != pins.end()) {
             entry.stats.pinned = Stats::Pinned;
+            // temporary fix for #176
+            // see comments to PinnedBoxes class
+            entry.stats.position = (result - pins.begin()) - pins.size() - 1;
         }
         auto cmp = [&entry](auto && fav){ return entry.desktop_id == fav.desktop_id; };
         if (auto result = std::find_if(favs.begin(), favs.end(), cmp); result != favs.end()) {

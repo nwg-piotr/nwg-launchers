@@ -143,6 +143,8 @@ struct Instance {
 
     Instance(Gtk::Application& app, std::string_view name);
     virtual ~Instance();
+    // note: the provided implementation of on_{sigterm,sigint} handlers
+    // calls Gtk::Application::quit, which does NOT call any destructors
     virtual void on_sigterm();
     virtual void on_sigusr1();
     virtual void on_sighup();

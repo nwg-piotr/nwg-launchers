@@ -491,11 +491,9 @@ void GridInstance::on_sigusr1() {
 }
 
 void GridInstance::on_sigint() {
-    window.save_cache();
-    Instance::on_sigint();
+    app.release();
 }
 
 void GridInstance::on_sigterm() {
-    window.save_cache();
-    Instance::on_sigterm();
+    app.release();
 }
