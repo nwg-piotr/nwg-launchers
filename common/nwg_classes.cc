@@ -19,6 +19,7 @@
 #include "charconv-compat.h"
 #include "nwgconfig.h"
 #include "nwg_classes.h"
+#include "nwg_exceptions.h"
 #include "nwg_tools.h"
 
 InputParser::InputParser (int argc, char **argv) {
@@ -161,7 +162,7 @@ Instance::Instance(Gtk::Application& app, std::string_view name): app{ app } {
     pid_lock_fd = open(lock_file.c_str(), O_CLOEXEC | O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
     if (pid_lock_fd < 0) {
         int err = errno;
-        throw std::runtime_error{ concat("failed to open pid lock: ", error_description(err)) };
+        throw ErrnoException{ "failed to open pid lock: ", err };
     }
 
     // let's try to read pid file
@@ -177,7 +178,7 @@ Instance::Instance(Gtk::Application& app, std::string_view name): app{ app } {
     // we'll hold this lock until the very exit
     if (lockf(pid_lock_fd, F_LOCK, 0)) {
         int err = errno;
-        throw std::runtime_error{ concat("failed to lock the pid lock: ", error_description(err)) };
+        throw ErrnoException{ "failed to lock the pid lock: ", err };
     }
 
     // write instance pid

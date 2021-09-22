@@ -24,6 +24,7 @@
 #include "charconv-compat.h"
 #include "filesystem-compat.h"
 #include "nwgconfig.h"
+#include "nwg_exceptions.h"
 #include "nwg_tools.h"
 
 
@@ -112,7 +113,7 @@ struct LockfGuard {
     LockfGuard(int fd, int cmd, off_t len): fd{ fd }, len{ len } {
         if (lockf(fd, cmd, len)) {
             int err = errno;
-            throw std::runtime_error{ concat("Failed to lock file: ", error_description(err)) };
+            throw ErrnoException{ "Failed to lock file: ", err };
         }
     }
     ~LockfGuard() {
@@ -132,7 +133,7 @@ static inline size_t read_buf(int fd, char* buf, size_t n) {
         }
         if (bytes < 0) {
             int err = errno;
-            throw std::runtime_error{ concat("read(2) failed: ", error_description(err)) };
+            throw ErrnoException{ "read(2) failed: ", err };
         }
         total += bytes;
     }
@@ -147,7 +148,7 @@ static inline void write_buf(int fd, const char* buf, size_t n) {
         }
         if (bytes < 0) {
             int err = errno;
-            throw std::runtime_error{ concat("write(2) failed: ", error_description(err)) };
+            throw ErrnoException{ "write(2) failed: ", err };
         }
         total += bytes;
     }
@@ -161,7 +162,7 @@ std::optional<pid_t> get_instance_pid(const char* path) {
         if (err == ENOENT) {
             return std::nullopt;
         }
-        throw std::runtime_error{ concat("failed to open pid file: ", error_description(err)) };
+        throw ErrnoException{ "failed to open pid file: ", err };
     }
     FdGuard fd_guard{ fd };
     LockfGuard guard{ fd, F_LOCK, 0 };
@@ -191,7 +192,7 @@ void write_instance_pid(const char* path, pid_t pid) {
     auto fd = open(path, O_WRONLY | O_CLOEXEC | O_CREAT, S_IWUSR | S_IRUSR);
     if (fd == -1) {
         int err = errno;
-        throw std::runtime_error{ concat("failed to open pid file: ", error_description(err)) };
+        throw ErrnoException{ "failed to open the pid file: ", err };
     }
     FdGuard fd_guard{ fd };
     LockfGuard guard{ fd, F_LOCK, 0 };
@@ -661,13 +662,4 @@ int instance_on_sighup(void* userdata) {
 int instance_on_sigint(void* userdata) {
     static_cast<Instance*>(userdata)->on_sigint();
     return G_SOURCE_CONTINUE;
-}
-
-std::string error_description(int err) {
-    errno = 0;
-    auto cstr = std::strerror(err);
-    if (!cstr || errno) {
-        throw std::runtime_error{ "failed to retrieve errno description: strerror return NULL" };
-    }
-    return { cstr };
 }

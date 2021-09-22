@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "nwg_tools.h"
+#include "nwg_exceptions.h"
 #include "nwgconfig.h"
 
 const char* const HELP_MESSAGE = "\
@@ -70,8 +71,7 @@ int main(int argc, char* argv[]) {
             arguments.data()
         );
         if (r == -1) {
-            int err = errno;
-            throw std::runtime_error{ error_description(err) };
+            throw ErrnoException{ errno };
         }
         return EXIT_SUCCESS;
     } catch (const Glib::Error& err) {
