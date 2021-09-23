@@ -181,9 +181,11 @@ std::optional<pid_t> get_instance_pid(const char* path) {
     }
     if (pid < 0) {
         Log::warn("the saved pid is negative");
+        return std::nullopt;
     }
     if (kill(pid, 0) != 0) {
         Log::warn("the saved pid is stale");
+        return std::nullopt;
     }
     return pid;
 }
