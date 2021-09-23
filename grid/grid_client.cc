@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "nwg_tools.h"
+#include "nwg_exceptions.h"
 #include "nwgconfig.h"
 
 const char* const HELP_MESSAGE = "\
@@ -42,7 +43,7 @@ int main(int argc, char* argv[]) {
                 if (argc != 2) {
                     Log::warn("Arguments after '-client' must be passed to nwggrid-server");
                 }
-                auto pid = get_instance_pid(pid_file);
+                auto pid = get_instance_pid(pid_file.c_str());
                 if (!pid) {
                     throw std::runtime_error{ "nwggrid-server is not running" };
                 }
@@ -76,8 +77,7 @@ int main(int argc, char* argv[]) {
             arguments
         );
         if (r == -1) {
-            int err = errno;
-            throw std::runtime_error{ error_description(err) };
+            throw ErrnoException{ errno };
         }
         return EXIT_SUCCESS;
     } catch (const Glib::Error& err) {

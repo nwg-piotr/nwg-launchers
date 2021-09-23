@@ -1,6 +1,7 @@
 sources = files(
 	'nwg_tools.cc',
-	'nwg_classes.cc'
+	'nwg_classes.cc',
+	'nwg_exceptions.cc'
 )
 
 nwg_inc = include_directories('.')

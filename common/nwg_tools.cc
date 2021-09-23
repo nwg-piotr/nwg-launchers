@@ -9,6 +9,7 @@
  * License: GPL3
  * */
 
+#include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
@@ -20,8 +21,10 @@
 #include <iomanip>
 #include <fstream>
 
+#include "charconv-compat.h"
 #include "filesystem-compat.h"
 #include "nwgconfig.h"
+#include "nwg_exceptions.h"
 #include "nwg_tools.h"
 
 
@@ -99,21 +102,104 @@ fs::path get_pid_file(std::string_view name) {
     return dir;
 }
 
-std::optional<pid_t> get_instance_pid(const fs::path& pid_file_path) {
-    if (std::ifstream pid_file{ pid_file_path }) {
-        pid_file.exceptions(std::ifstream::badbit | std::ifstream::failbit);
-
-        pid_t pid;
-        pid_file >> pid;
-        if (pid < 0) {
-            throw std::runtime_error{ "pid < 0" };
+/* RAII wrappers to reduce the amount of bookkeeping */
+struct FdGuard {
+    int fd;
+    ~FdGuard() { close(fd); }
+};
+struct LockfGuard {
+    int   fd;
+    off_t len;
+    LockfGuard(int fd, int cmd, off_t len): fd{ fd }, len{ len } {
+        if (lockf(fd, cmd, len)) {
+            int err = errno;
+            throw ErrnoException{ "Failed to lock file: ", err };
         }
-        if (kill(pid, 0) != 0) {
-            throw std::runtime_error{ "process with specified pid does not exist" };
-        }
-        return pid;
     }
-    return std::nullopt;
+    ~LockfGuard() {
+        if (lockf(fd, F_ULOCK, len)) {
+            int err = errno;
+            Log::error("Failed to unlock file: ", error_description(err));
+        }
+    }
+};
+/* private helpers handling partial reads/writes (see {read,write}(2))  */
+static inline size_t read_buf(int fd, char* buf, size_t n) {
+    size_t total{ 0 };
+    while (total < n) {
+        auto bytes = read(fd, buf + total, n - total);
+        if (bytes == 0) {
+            break;
+        }
+        if (bytes < 0) {
+            int err = errno;
+            throw ErrnoException{ "read(2) failed: ", err };
+        }
+        total += bytes;
+    }
+    return total;
+}
+static inline void write_buf(int fd, const char* buf, size_t n) {
+    size_t total{ 0 };
+    while (total < n) {
+        auto bytes = write(fd, buf + total, n - total);
+        if (bytes == 0) {
+            break;
+        }
+        if (bytes < 0) {
+            int err = errno;
+            throw ErrnoException{ "write(2) failed: ", err };
+        }
+        total += bytes;
+    }
+}
+
+std::optional<pid_t> get_instance_pid(const char* path) {
+    // we need write capability to be able to lockf(3) file
+    auto fd = open(path, O_RDWR | O_CLOEXEC, 0);
+    if (fd == -1) {
+        int err = errno;
+        if (err == ENOENT) {
+            return std::nullopt;
+        }
+        throw ErrnoException{ "failed to open pid file: ", err };
+    }
+    FdGuard fd_guard{ fd };
+    LockfGuard guard{ fd, F_LOCK, 0 };
+
+    // we read at most 64 bytes which is more than enough for pid
+    char buf[64]{};
+    pid_t pid{ -1 };
+    auto bytes = read_buf(fd, buf, 64);
+    if (bytes == 0) {
+        Log::warn("the pid file is empty");
+        return std::nullopt;
+    }
+    std::string_view view{ buf, size_t(bytes) };
+    if (!parse_number(view, pid)) {
+        throw std::runtime_error{ "Failed to read pid from file" };
+    }
+    if (pid < 0) {
+        Log::warn("the saved pid is negative");
+        return std::nullopt;
+    }
+    if (kill(pid, 0) != 0) {
+        Log::warn("the saved pid is stale");
+        return std::nullopt;
+    }
+    return pid;
+}
+
+void write_instance_pid(const char* path, pid_t pid) {
+    auto fd = open(path, O_WRONLY | O_CLOEXEC | O_CREAT, S_IWUSR | S_IRUSR);
+    if (fd == -1) {
+        int err = errno;
+        throw ErrnoException{ "failed to open the pid file: ", err };
+    }
+    FdGuard fd_guard{ fd };
+    LockfGuard guard{ fd, F_LOCK, 0 };
+    auto str = std::to_string(pid);
+    write_buf(fd, str.data(), str.size());
 }
 
 /*
@@ -578,13 +664,4 @@ int instance_on_sighup(void* userdata) {
 int instance_on_sigint(void* userdata) {
     static_cast<Instance*>(userdata)->on_sigint();
     return G_SOURCE_CONTINUE;
-}
-
-std::string error_description(int err) {
-    errno = 0;
-    auto cstr = std::strerror(err);
-    if (!cstr || errno) {
-        throw std::runtime_error{ "failed to retrieve errno description: strerror return NULL" };
-    }
-    return { cstr };
 }

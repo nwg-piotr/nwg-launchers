@@ -30,8 +30,9 @@ fs::path get_runtime_dir();
 // returns path to pid file <name>
 fs::path get_pid_file(std::string_view name);
 // returns saved instance pid or nullopt if the file does not exist
-// throws std::runtime_error and std::ios_base::failure
-std::optional<pid_t> get_instance_pid(const fs::path& pid_file_path);
+// throws std::runtime_error
+std::optional<pid_t> get_instance_pid(const char* pid_file_path);
+void write_instance_pid(const char* path, pid_t pid);
 
 std::string detect_wm(const Glib::RefPtr<Gdk::Display>&, const Glib::RefPtr<Gdk::Screen>&);
 
@@ -61,9 +62,6 @@ int instance_on_sigterm(void*);
 int instance_on_sigusr1(void*);
 int instance_on_sighup(void*);
 int instance_on_sigint(void*);
-
-// wraps strerror into std::string
-std::string error_description(int err);
 
 namespace Log {
     template <typename ... Ts>
