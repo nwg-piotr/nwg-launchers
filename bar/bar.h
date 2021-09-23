@@ -37,11 +37,12 @@ class BarWindow : public PlatformWindow {
     public:
         BarWindow(Config&);
 
-        Gtk::VBox outer_box;
-        Gtk::HBox inner_hbox;
-        Gtk::Grid grid;                         // Buttons grid
-        Gtk::Separator separator;               // between favs and all apps
-        std::vector<BarBox> boxes {};           // attached to favs_grid
+        Gtk::ScrolledWindow scrolled_window;
+        Gtk::VBox           outer_box;
+        Gtk::HBox           inner_hbox;
+        Gtk::Grid           grid;            // Buttons grid
+        Gtk::Separator      separator;       // between favs and all apps
+        std::vector<BarBox> boxes {};        // attached to favs_grid
 
     private:
         //Override default signal handler:

@@ -42,7 +42,7 @@ BarConfig::BarConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>&
 }
 
 BarWindow::BarWindow(Config& config): PlatformWindow(config) {
-    // outer_box -> inner_hbox -> grid
+    // scrolled_window -> outer_box -> inner_hbox -> grid
     grid.set_column_spacing(5);
     grid.set_row_spacing(5);
     grid.set_column_homogeneous(true);
@@ -58,7 +58,8 @@ BarWindow::BarWindow(Config& config): PlatformWindow(config) {
         case VAlign::Bottom: outer_box.pack_end(inner_hbox, false, false); break;
         default: outer_box.pack_start(inner_hbox, Gtk::PACK_EXPAND_PADDING);
     }
-    add(outer_box);
+    scrolled_window.add(outer_box);
+    add(scrolled_window);
     show_all_children();
 }
 
