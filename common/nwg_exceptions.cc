@@ -9,6 +9,7 @@
  * */
 
 
+#include <cerrno>
 #include <cstring>
 #include "nwg_exceptions.h"
 
