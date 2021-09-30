@@ -28,21 +28,7 @@ BarConfig::BarConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>&
         definition_file = tname;
     }
     if (auto i_size = parser.getCmdOption("-s"); !i_size.empty()) {
-        int i_s;
-        if (parse_number(i_size, i_s)) {
-            switch (2 * (i_s > 2048) + (i_s < 16)) {
-                case 0: icon_size = i_s;
-                        break;
-                case 1: icon_size = 16;
-                        Log::error("Icon size is too small (<16), setting to 16");
-                        break;
-                case 2: icon_size = 2048;
-                        Log::error("Icon size is too large (>2048), setting to 2048");
-                        break;
-            }
-        } else {
-            Log::error("Image size should be valid integer in range 16 - 2048\n");
-        }
+        icon_size = parse_icon_size(i_size);
     }
 }
 
