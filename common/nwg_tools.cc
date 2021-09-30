@@ -102,6 +102,26 @@ fs::path get_pid_file(std::string_view name) {
     return dir;
 }
 
+int parse_icon_size(std::string_view arg) {
+    int i_s;
+    if (parse_number(arg, i_s)) {
+        switch (2 * (i_s > 2048) + (i_s < 16)) {
+            case 0: return i_s;
+            case 1: Log::error("Icon size is too small (<16), setting to 16");
+                    return 16;
+            case 2: 
+                    Log::error("Icon size is too large (>2048), setting to 2048");
+                    return 2048;
+            default: throw std::logic_error{
+                "parse_icon_size: unexpected switch variant triggered"
+            };
+        }
+    } else {
+        // -s argument couldn't be parsed, therefore something's really wrong
+        throw std::runtime_error{ "Image size should be valid integer in range 16 - 2048\n" };
+    }
+}
+
 /* RAII wrappers to reduce the amount of bookkeeping */
 struct FdGuard {
     int fd;

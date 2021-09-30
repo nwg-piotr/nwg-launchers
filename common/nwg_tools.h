@@ -29,6 +29,8 @@ fs::path get_config_dir(std::string_view);
 fs::path get_runtime_dir();
 // returns path to pid file <name>
 fs::path get_pid_file(std::string_view name);
+// parses icon size from `arg`, saturating to [16, 2048] if needed
+int parse_icon_size(std::string_view arg);
 // returns saved instance pid or nullopt if the file does not exist
 // throws std::runtime_error
 std::optional<pid_t> get_instance_pid(const char* pid_file_path);
