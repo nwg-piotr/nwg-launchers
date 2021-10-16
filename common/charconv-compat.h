@@ -4,6 +4,8 @@
 #if defined (__cpp_lib_to_chars) || __has_include(<charconv>)
 #include <charconv>
 
+#define HAVE_TO_CHARS
+
 template <typename T>
 bool parse_number(std::string_view source, T& number) {
     auto from = source.data();

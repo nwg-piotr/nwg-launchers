@@ -85,11 +85,31 @@ fs::path get_runtime_dir() {
     if (!xdg_runtime_dir) {
         std::array<char, 64> myuid;
         auto myuid_ = getuid();
+#ifdef HAVE_TO_CHARS
+        if (auto [p, e] = std::to_chars(myuid.data(), myuid.data() + myuid.size(), myuid_); e == std::errc()) {
+            std::string_view myuid_view{ myuid.data(), std::size_t(p - myuid.data()) };
+#else
         if (auto n = std::snprintf(myuid.data(), 64, "%u", myuid_); n > 0) {
             std::string_view myuid_view{ myuid.data(), static_cast<std::string_view::size_type>(n) };
-            fs::path path{ "/var/run/user" };
-            path /= myuid_view;
-            return path;
+#endif
+            // let's try /var/run/user/ first
+            std::error_code ec;
+            if (fs::path path{ "/var/run/user/" }; fs::exists(path, ec) && ec) {
+                path /= myuid_view;
+                return path;
+            }
+            if (!ec) {
+                Log::error("Failed to retrieve /var/run/user/ info: ", ec);
+            }
+            // let's try /tmp
+            if (fs::path path{ "/tmp" }; fs::exists(path, ec) && ec) {
+                path /= myuid_view;
+                return path;
+            }
+            if (!ec) {
+                Log::error("Failed to retrieve /tmp info: ", ec);
+            }
+            throw std::runtime_error{ "Failed to determine user runtime directory" };
         }
         throw std::runtime_error{ "Failed to convert UID to chars" };
     }
