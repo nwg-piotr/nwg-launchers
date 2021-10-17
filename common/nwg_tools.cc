@@ -92,14 +92,14 @@ fs::path get_runtime_dir() {
         if (auto n = std::snprintf(myuid.data(), 64, "%u", myuid_); n > 0) {
             std::string_view myuid_view{ myuid.data(), static_cast<std::string_view::size_type>(n) };
 #endif
-            // let's try /var/run/user/ first
+            // let's try /run/user/ first
             std::error_code ec;
-            if (fs::path path{ "/var/run/user/" }; fs::exists(path, ec) && ec) {
+            if (fs::path path{ "/run/user/" }; fs::exists(path, ec) && ec) {
                 path /= myuid_view;
                 return path;
             }
             if (!ec) {
-                Log::error("Failed to retrieve /var/run/user/ info: ", ec);
+                Log::error("Failed to retrieve /run/user/ info: ", ec);
             }
             // let's try /tmp
             if (fs::path path{ "/tmp" }; fs::exists(path, ec) && ec) {
