@@ -81,19 +81,34 @@ fs::path get_cache_home() {
  * Return runtime dir
  * */
 fs::path get_runtime_dir() {
-    auto* xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
-    if (!xdg_runtime_dir) {
+    if (auto* xdg_runtime_dir = getenv("XDG_RUNTIME_DIR")) {
+        return xdg_runtime_dir;
+    }
+    std::error_code ec;
+    {
         std::array<char, 64> myuid;
         auto myuid_ = getuid();
+#ifdef HAVE_TO_CHARS
+        if (auto [p, e] = std::to_chars(myuid.data(), myuid.data() + myuid.size(), myuid_); e == std::errc()) {
+            std::string_view myuid_view{ myuid.data(), std::size_t(p - myuid.data()) };
+#else
         if (auto n = std::snprintf(myuid.data(), 64, "%u", myuid_); n > 0) {
             std::string_view myuid_view{ myuid.data(), static_cast<std::string_view::size_type>(n) };
-            fs::path path{ "/var/run/user" };
-            path /= myuid_view;
-            return path;
+#endif
+            if (fs::path path{ "/run/user/" }; fs::exists(path, ec) && !ec) {
+                // let's try /run/user/ first
+                path /= myuid_view;
+                return path;
+            }
+        } else {
+            throw std::runtime_error{ "Failed to convert UID to chars" };
         }
-        throw std::runtime_error{ "Failed to convert UID to chars" };
+        ec.clear();
     }
-    return xdg_runtime_dir;
+    if (fs::path tmp{ Glib::get_tmp_dir() }; fs::exists(tmp, ec) && !ec) {
+        return tmp;
+    }
+    throw std::runtime_error{ "Failed to determine user runtime directory" };
 }
 
 fs::path get_pid_file(std::string_view name) {
