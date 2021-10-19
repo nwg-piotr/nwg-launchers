@@ -81,8 +81,11 @@ fs::path get_cache_home() {
  * Return runtime dir
  * */
 fs::path get_runtime_dir() {
-    auto* xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
-    if (!xdg_runtime_dir) {
+    if (auto* xdg_runtime_dir = getenv("XDG_RUNTIME_DIR")) {
+        return xdg_runtime_dir;
+    }
+    std::error_code ec;
+    {
         std::array<char, 64> myuid;
         auto myuid_ = getuid();
 #ifdef HAVE_TO_CHARS
@@ -92,28 +95,20 @@ fs::path get_runtime_dir() {
         if (auto n = std::snprintf(myuid.data(), 64, "%u", myuid_); n > 0) {
             std::string_view myuid_view{ myuid.data(), static_cast<std::string_view::size_type>(n) };
 #endif
-            // let's try /run/user/ first
-            std::error_code ec;
-            if (fs::path path{ "/run/user/" }; fs::exists(path, ec) && ec) {
+            if (fs::path path{ "/run/user/" }; fs::exists(path, ec) && !ec) {
+                // let's try /run/user/ first
                 path /= myuid_view;
                 return path;
             }
-            if (!ec) {
-                Log::error("Failed to retrieve /run/user/ info: ", ec);
-            }
-            // let's try /tmp
-            if (fs::path path{ "/tmp" }; fs::exists(path, ec) && ec) {
-                path /= myuid_view;
-                return path;
-            }
-            if (!ec) {
-                Log::error("Failed to retrieve /tmp info: ", ec);
-            }
-            throw std::runtime_error{ "Failed to determine user runtime directory" };
+        } else {
+            throw std::runtime_error{ "Failed to convert UID to chars" };
         }
-        throw std::runtime_error{ "Failed to convert UID to chars" };
+        ec.clear();
     }
-    return xdg_runtime_dir;
+    if (fs::path tmp{ Glib::get_tmp_dir() }; fs::exists(tmp, ec) && !ec) {
+        return tmp;
+    }
+    throw std::runtime_error{ "Failed to determine user runtime directory" };
 }
 
 fs::path get_pid_file(std::string_view name) {
