@@ -113,6 +113,10 @@ int main(int argc, char *argv[]) {
                                                  std::move(entry.icon));
             ab.set_image_position(Gtk::POS_TOP);
             ab.set_image(*image);
+            if (!entry.css_class.empty()) {
+                auto && style_context = ab.get_style_context();
+                style_context->add_class(entry.css_class);
+            }
         }
 
         int column = 0;
@@ -139,9 +143,9 @@ int main(int argc, char *argv[]) {
         Log::info("Time: ", end_ms - start_ms, "ms");
 
         return app->run(window);
-    } catch (const Glib::FileError& error) {
-        Log::error(error.what());
-    } catch (const std::runtime_error& error) {
+    } catch (const Glib::Error& e) {
+        Log::error(e.what());
+    } catch (const std::exception& error) {
         Log::error(error.what());
     }
     return EXIT_FAILURE;

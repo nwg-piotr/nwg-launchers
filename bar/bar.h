@@ -54,6 +54,7 @@ struct BarEntry {
     std::string name;
     std::string exec;
     std::string icon;
+    std::string css_class;
     BarEntry(std::string, std::string, std::string);
 };
 

@@ -15,9 +15,14 @@ std::vector<BarEntry> get_bar_entries(ns::json&& bar_json) {
     // read from json object
     std::vector<BarEntry> entries {};
     for (auto&& json : bar_json) {
-        entries.emplace_back(std::move(json.at("name")),
-                             std::move(json.at("exec")),
-                             std::move(json.at("icon")));
+        auto && entry = entries.emplace_back(
+            std::move(json.at("name")),
+            std::move(json.at("exec")),
+            std::move(json.at("icon"))
+        );
+        if (auto iter = json.find("class"); iter != json.end()) {
+            entry.css_class = *iter;
+        }
     }
     return entries;
 }
