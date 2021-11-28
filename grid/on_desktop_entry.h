@@ -67,9 +67,29 @@ struct CategoryParser: public FieldParser {
         // intentionally left blank
     }
     void parse(std::string_view str) override {
+        using namespace std::string_view_literals;
+        // list of "main" categories: https://specifications.freedesktop.org/menu-spec/latest/apa.html
+        // supporting actual category tree is (for now, atleast) beyond the scope of this project
+        // so we'll only allow categories listed here
+        constexpr std::array main_categories{
+            "AudioVideo"sv,
+            "Development"sv,
+            "Education"sv,
+            "Game"sv,
+            "Graphics"sv,
+            "Network"sv,
+            "Office"sv,
+            "Science"sv,
+            "Settings"sv,
+            "System"sv,
+            "Utility"sv
+        };
+        auto is_main_category = [&](auto && c){ 
+            return std::find(main_categories.begin(), main_categories.end(), c) != main_categories.end();
+        };
         auto parts = split_string(str, ";");
         for (auto && part: parts) {
-            if (!part.empty()) {
+            if (!part.empty() && is_main_category(part)) {
                 categories.emplace_back(part);
             }
         }
