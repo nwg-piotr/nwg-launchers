@@ -93,6 +93,7 @@ GridWindow::GridWindow(GridConfig& config):
     setup_grid(apps_grid);
     setup_grid(favs_grid);
     setup_grid(pinned_grid);
+    setup_grid(categories_box);
 
     apps_boxes = AppBoxes::create();
     pinned_boxes = PinnedBoxes::create();
@@ -125,6 +126,8 @@ GridWindow::GridWindow(GridConfig& config):
     inner_vbox.set_halign(Gtk::ALIGN_CENTER);
     inner_vbox.pack_start(pinned_hbox, Gtk::PACK_SHRINK, 5);
     inner_vbox.pack_start(separator1, false, true, 0);
+
+    inner_vbox.pack_start(categories_box, Gtk::PACK_EXPAND_WIDGET);
 
     favs_hbox.pack_start(favs_grid, true, false, 0);
     inner_vbox.pack_start(favs_hbox, false, false, 5);
@@ -403,6 +406,7 @@ inline auto with_box_by_id = [](auto && container, auto && desktop_id, auto && f
 void GridWindow::remove_box_by_desktop_id(std::string_view desktop_id) {
     with_box_by_id(all_boxes, desktop_id, [this](auto && iter) {
         auto && box = *iter;
+        unref_categories(box);
         // delete references to the widget from models
         pinned_boxes->erase(box);
         fav_boxes->erase(box);
@@ -423,11 +427,39 @@ void GridWindow::update_box_by_id(std::string_view desktop_id, GridBox && new_bo
     with_box_by_id(all_boxes, desktop_id, [this,&new_box](auto && iter) {
         auto && box = *iter;
         auto && new_box_ref = all_boxes.emplace_front(std::move(new_box));
+
+        unref_categories(box);
+        ref_categories(new_box_ref);
+
         pinned_boxes->update(box, new_box_ref);
         fav_boxes->update(box, new_box_ref);
         apps_boxes->update(box, new_box_ref);
         all_boxes.erase(iter);
     });
+}
+
+void GridWindow::ref_categories(const GridBox& box) {
+    for (auto && category: box.entry->desktop_entry_->categories) {
+        auto && [iter, inserted] = categories.try_emplace(category, 1);
+        if (!inserted) {
+            ++iter->second;
+        } else {
+            auto* category = new Gtk::Button{ iter->first };
+            category->show();
+            categories_box.insert(*category, -1);
+        }
+    }
+}
+
+void GridWindow::unref_categories(const GridBox& box) {
+    for (auto && category: box.entry->desktop_entry_->categories) {
+        if (auto iter = categories.find(category); iter != categories.end()) {
+            --iter->second;
+            if (!iter->second) {
+                categories.extract(iter);
+            }
+        }
+    }
 }
 
 GridBox::GridBox(Glib::ustring name, Glib::ustring comment, Entry& entry)

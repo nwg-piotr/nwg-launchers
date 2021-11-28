@@ -298,6 +298,7 @@ class GridWindow : public PlatformWindow {
         GridWindow(const GridWindow&) = delete;
 
         Gtk::SearchEntry searchbox;              // Search apps
+        Gtk::FlowBox     categories_box;
         Gtk::Label description;                  // To display .desktop entry Comment field at the bottom
         Gtk::FlowBox apps_grid;                  // All application buttons grid
         Gtk::FlowBox favs_grid;                  // Favourites grid above
@@ -337,10 +338,16 @@ class GridWindow : public PlatformWindow {
         bool on_delete_event(GdkEventAny*) override;
         bool on_button_press_event(GdkEventButton*) override;
     private:
+        void ref_categories(const GridBox& box);
+        void unref_categories(const GridBox& box);
+        
         std::list<GridBox>  all_boxes {}; // stores all applications buttons
         Glib::RefPtr<AppBoxes> apps_boxes;   // common boxes (possibly filtered)
         Glib::RefPtr<FavBoxes> fav_boxes;    // favourites (most clicked)
         Glib::RefPtr<PinnedBoxes> pinned_boxes; // boxes pinned by user
+
+        // Name, reference counter
+        std::unordered_map<std::string, std::size_t> categories;
 
         bool pins_changed = false;
         bool favs_changed = false;
@@ -353,6 +360,7 @@ class GridWindow : public PlatformWindow {
 template <typename ... Args>
 GridBox& GridWindow::emplace_box(Args&& ... args) {
     auto& ab = this -> all_boxes.emplace_back(std::forward<Args>(args)...);
+    ref_categories(ab);
     ab.reference();
     ab.reference();
     AbstractBoxes* boxes = apps_boxes.get();
