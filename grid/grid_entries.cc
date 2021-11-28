@@ -127,8 +127,10 @@ void EntriesManager::try_load_entry_(std::string id, const fs::path& file, int p
                     std::move(desktop_entry)
                 );
             },
-            [&](OnDesktopEntry::Error){ Log::error("Failed to load desktop file '", file, "'"); },
-                         [](OnDesktopEntry::Hidden){ }
+            [&](OnDesktopEntry::Error){
+                Log::error("Failed to load desktop file '", file, "'");
+            },
+            [](OnDesktopEntry::Hidden){ }
         });
     } else {
         Log::info(".desktop file '", file, "' with id '", id_, "' overridden, ignored");

@@ -134,6 +134,7 @@ struct DesktopEntry {
     std::string icon;
     std::string comment;
     std::string mime_type;
+    std::vector<std::string> categories;
     bool terminal;
 };
 

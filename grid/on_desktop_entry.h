@@ -3,6 +3,7 @@
 #ifndef ON_DESKTOP_ENTRY_H
 #define ON_DESKTOP_ENTRY_H
 
+#include <bitset>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -28,6 +29,50 @@ struct DesktopEntryConfig {
         comment_ln{ concat("Comment[", lang, "]=") }
     {
         // intentionally left blank
+    }
+};
+
+struct FieldParser {
+    virtual ~FieldParser() = default;
+    virtual void parse(std::string_view) = 0;
+};
+
+struct PlainFieldParser: public FieldParser {
+    std::string& dest;
+
+    PlainFieldParser(std::string& dest): dest{ dest } {
+        // intentionally left blank
+    }
+    virtual ~PlainFieldParser() = default;
+    virtual void parse(std::string_view str) override {
+        dest = str;
+    }
+};
+
+struct ExecParser: public PlainFieldParser {
+    using PlainFieldParser::PlainFieldParser;
+    void parse(std::string_view str) override {
+        auto idx = str.find(" %");
+        if (idx == std::string_view::npos) {
+            idx = std::size(str);
+        }
+        dest = str.substr(0, idx);
+    }
+};
+
+struct CategoryParser: public FieldParser {
+    using CategoriesType = decltype(DesktopEntry{}.categories);
+    CategoriesType& categories;
+    CategoryParser(CategoriesType& categories): categories{ categories } {
+        // intentionally left blank
+    }
+    void parse(std::string_view str) override {
+        auto parts = split_string(str, ";");
+        for (auto && part: parts) {
+            if (!part.empty()) {
+                categories.emplace_back(part);
+            }
+        }
     }
 };
 
@@ -58,29 +103,36 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
     std::string name_ln {};    // localized: Name[ln]=
     std::string comment_ln {}; // localized: Comment[ln]=
 
-    // action to perform on value before writing it to the dest
-    struct nop_t { } nop;
-    struct cut_t { } cut;
     // if line starts with `prefix`, process the rest of the line according to `tag`
     // writing the result to `dest`
     struct Match {
-        std::string_view           prefix;
-        std::string*               dest;   // non-null
-        std::variant<nop_t, cut_t> tag;
+        std::string_view prefix;
+        FieldParser&     parser;
     };
     struct Result {
         bool   ok;
         size_t pos;
     };
+    PlainFieldParser name_parser{ entry.name };
+    PlainFieldParser name_ln_parser{ name_ln };
+    ExecParser exec_parser{ entry.exec };
+    PlainFieldParser icon_parser{ entry.icon };
+    PlainFieldParser comment_parser{ entry.comment };
+    PlainFieldParser comment_ln_parser{ comment_ln };
+    PlainFieldParser mime_type_parser{ entry.mime_type };
+    CategoryParser categories_parser{ entry.categories };
+
     Match matches[] = {
-        { "Name="sv,         &entry.name,      nop },
-        { config.name_ln,    &name_ln,         nop },
-        { "Exec="sv,         &entry.exec,      cut },
-        { "Icon="sv,         &entry.icon,      nop },
-        { "Comment="sv,      &entry.comment,   nop },
-        { config.comment_ln, &comment_ln,      nop },
-        { "MimeType="sv,     &entry.mime_type, nop },
+        { "Name="sv,         name_parser },
+        { config.name_ln,    name_ln_parser },
+        { "Exec="sv,         exec_parser },
+        { "Icon="sv,         icon_parser },
+        { "Comment="sv,      comment_parser },
+        { config.comment_ln, comment_ln_parser },
+        { "MimeType="sv,     mime_type_parser },
+        { "Categories="sv,   categories_parser }
     };
+    std::bitset<sizeof(matches)> parsed;
 
     // Skip everything not related
     constexpr auto header = "[Desktop Entry]"sv;
@@ -93,7 +145,7 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
     // Repeat until the next section
     constexpr auto nodisplay = "NoDisplay=true"sv;
     constexpr auto terminal = "Terminal=true"sv;
-    while (std::getline(file, str)) {
+    while (std::getline(file, str) && !parsed.all()) {
         if (str[0] == '[') { // new section begins, break
             break;
         }
@@ -113,21 +165,15 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
                 len
             };
         };
-        for (auto& [prefix, dest, tag] : matches) {
+        std::size_t index;
+        for (auto& [prefix, parser] : matches) {
+            if (parsed[index]) {
+                continue;
+            }
             if (auto [ok, pos] = try_strip_prefix(prefix); ok) {
-                std::visit(Overloaded {
-                    [dest=dest, pos=pos, &view](nop_t) { *dest = view.substr(pos); },
-                    [dest=dest, pos=pos, &view](cut_t) {
-                        auto idx = view.find(" %", pos);
-                        if (idx == std::string_view::npos) {
-                            idx = std::size(view);
-                        }
-                        *dest = view.substr(pos, idx - pos);
-                    }
-                },
-                tag);
                 break;
             }
+            ++index;
         }
     }
 
