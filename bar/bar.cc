@@ -25,6 +25,7 @@ Options:\n\
 -o <opacity>     background opacity (0.0 - 1.0, default 0.9)\n\
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
 -s <size>        button image size (default: 72)\n\
+-g <theme>       GTK theme name\n\
 -wm <wmname>     window manager name (if can not be detected)\n\n\
 [requires layer-shell]:\n\
 -layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
@@ -55,7 +56,8 @@ int main(int argc, char *argv[]) {
         auto provider = Gtk::CssProvider::create();
         auto display = Gdk::Display::get_default();
         auto screen = display->get_default_screen();
-        if (!provider || !display || !screen) {
+	auto settings = Gtk::Settings::get_for_screen(screen);
+        if (!provider || !display || !settings || !screen) {
             Log::error("Failed to initialize GTK");
             return EXIT_FAILURE;
         }
@@ -64,6 +66,8 @@ int main(int argc, char *argv[]) {
             input,
             screen
         };
+
+	settings->property_gtk_theme_name() = config.theme;
 
         // default or custom template
         auto default_bar_file = config_dir / "bar.json";

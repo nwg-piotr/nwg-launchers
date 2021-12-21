@@ -83,6 +83,10 @@ Config::Config(const InputParser& parser, std::string_view title, std::string_vi
     if (auto css_name = parser.getCmdOption("-c"); !css_name.empty()) {
         css_filename = css_name;
     }
+
+    if (auto theme = parser.getCmdOption("-g"); !theme.empty()) {
+        this->theme = theme;
+    }
 }
 
 CommonWindow::CommonWindow(Config& config): title{config.title} {
