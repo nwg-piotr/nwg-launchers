@@ -8,6 +8,7 @@ button, label, image {
 button {
     padding: 5px;
     margin: 5px
+    text-shadow: none;
 }
 
 button:hover {

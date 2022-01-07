@@ -6,7 +6,8 @@ button, image {
     background: none;
     border-style: none;
     box-shadow: none;
-    color: #999
+    color: #999;
+    text-shadow: none;
 }
 
 button {
