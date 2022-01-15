@@ -95,7 +95,7 @@ GridWindow::GridWindow(GridConfig& config):
     setup_grid(pinned_grid);
     setup_grid(categories_box);
 
-    apps_boxes = AppBoxes::create();
+    apps_boxes = AppBoxes::create(categories);
     pinned_boxes = PinnedBoxes::create();
     fav_boxes = FavBoxes::create();
 
@@ -440,26 +440,80 @@ void GridWindow::update_box_by_id(std::string_view desktop_id, GridBox && new_bo
 
 void GridWindow::ref_categories(const GridBox& box) {
     for (auto && category: box.entry->desktop_entry_->categories) {
-        auto && [iter, inserted] = categories.try_emplace(category, 1);
-        if (!inserted) {
-            ++iter->second;
-        } else {
-            auto* category = new Gtk::Button{ iter->first };
-            category->show();
-            categories_box.insert(*category, -1);
+        if (auto [view, inserted] = categories.ref(category); inserted) {
+            auto* button = new Gtk::ToggleButton{ category };
+            button->show();
+            categories_box.insert(*button, -1);
+            button->set_active();
+
+            button->signal_toggled().connect([this,category_view=view,button]() {
+                std::cout << "toggled (" << category_view << "): " << button->get_active() << '\n';
+                categories.toggle(category_view);
+                this->apps_boxes->on_category_toggled();
+            });
         }
     }
 }
 
-void GridWindow::unref_categories(const GridBox& box) {
+void GridWindow::unref_categories(GridBox& box) {
     for (auto && category: box.entry->desktop_entry_->categories) {
-        if (auto iter = categories.find(category); iter != categories.end()) {
-            --iter->second;
-            if (!iter->second) {
-                categories.extract(iter);
-            }
+        if (categories.unref(category)) {
+            categories_box.remove(box);
         }
     }
+}
+
+bool CategoriesSet::toggle(std::string_view category) {
+    if (auto iter = active_categories.find(category); iter != active_categories.end()) {
+        active_categories.extract(iter);
+        return false;
+    } else {
+        active_categories.emplace_hint(iter, category);
+        return true;
+    }
+}
+
+std::pair<std::string_view, bool> CategoriesSet::ref(std::string_view category) {
+    std::pair<std::string_view, bool> ret{ {}, false };
+    if (auto iter = categories.find(category); iter != categories.end()) {
+        ++iter->second->refs;
+        return ret;
+    } else {
+        auto& ref = categories_store.emplace_front(category);
+        auto category_iter = categories_store.begin();
+        categories.emplace_hint(iter, ref.category, category_iter);
+        active_categories.emplace_hint(active_categories.end(), ref.category);
+        ret.first = ref.category;
+        ret.second = true;
+    }
+    return ret;
+}
+
+bool CategoriesSet::unref(std::string_view category) {
+    if (auto iter = categories.find(category); iter != categories.end()) {
+        --iter->second->refs;
+        if (!iter->second->refs) {
+            auto node = categories.extract(iter);
+            active_categories.extract(category);
+            categories_store.erase(node.mapped());
+            return true;
+        }
+        return false;
+    }
+    throw std::logic_error{ "Trying to unref non-existing category" };
+}
+
+bool CategoriesSet::enabled(std::string_view category) const {
+    return active_categories.find(category) != active_categories.end();
+}
+
+bool CategoriesSet::enabled(const GridBox& box) const {
+    auto && categories = box.entry->desktop_entry_->categories;
+    return std::any_of(
+        categories.begin(),
+        categories.end(),
+        [&](auto && c) { return enabled(c); }
+    );
 }
 
 GridBox::GridBox(Glib::ustring name, Glib::ustring comment, Entry& entry)

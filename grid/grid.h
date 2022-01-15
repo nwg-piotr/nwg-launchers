@@ -7,6 +7,8 @@
  * */
 #pragma once
 
+#include <unordered_set>
+
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
 
@@ -101,6 +103,26 @@ struct GridConfig: public Config {
     int icon_size{ 72 };
     RGBA background_color;
     bool oneshot{ false };    // run in foreground, exit when window is closed
+};
+
+
+struct CategoriesSet {
+    struct Category {
+        std::string category;
+        std::size_t refs;
+        Category(std::string_view category): category{ category }, refs{ 1 } {}
+    };
+
+    std::list<Category> categories_store;
+    std::unordered_map<std::string_view, decltype(categories_store)::iterator> categories;
+    std::unordered_set<std::string_view>                                       active_categories;
+
+    CategoriesSet() = default;
+    bool toggle(std::string_view category);
+    std::pair<std::string_view, bool> ref(std::string_view category);
+    bool unref(std::string_view category);
+    bool enabled(std::string_view category) const;
+    bool enabled(const GridBox& box) const;
 };
 
 class AbstractBoxes {
@@ -226,21 +248,52 @@ class AppBoxes: public BoxesModel, public Create<AppBoxes> {
     friend struct Create<AppBoxes>; // permit Create to access a protected constructor
 private:
     std::vector<GridBox*> all_boxes; // unsorted & unfiltered boxes
-    Glib::ustring search_criteria;
+    Glib::ustring         search_criteria;
+    CategoriesSet&        categories;
 protected:
-    AppBoxes(): Glib::ObjectBase(typeid(AppBoxes)) {}
+    AppBoxes(CategoriesSet& set): Glib::ObjectBase(typeid(AppBoxes)), categories{ set } {}
     void add_if_matches(GridBox* box) {
-        if (box->name.casefold().find(search_criteria) != Glib::ustring::npos) {
+        auto enabled = categories.enabled(*box);
+        if (enabled && (box->name.casefold().find(search_criteria) != Glib::ustring::npos)) {
             container_add_sorted(boxes, box, [](auto* a, auto* b) {
                 return a->name.compare(b->name) > 0;
             });
         }
     }
+    void filter_impl(bool restore) {
+        // TODO: only update actually removed/inserted entries
+        auto old_size = boxes.size();
+        if (!restore) {
+            for (auto && box: boxes) {
+                box->reference();
+            }
+            boxes.clear();
+            for (auto && box: all_boxes) {
+                box->reference();
+                add_if_matches(box);
+            }
+        } else {
+            boxes = all_boxes;
+            std::sort(boxes.begin(), boxes.end(), [](auto* a, auto* b) {
+                return a->name.compare(b->name) < 0;
+            });
+            for (auto && box: all_boxes) {
+                box->reference();
+                box->reference();
+            }
+        }
+        items_changed(0, old_size, boxes.size());
+    }
 public:
     void add(GridBox& box) override {
         // TODO: ensure the box does not exist before insertion for all *Boxes classes
         all_boxes.push_back(&box);
-        if (search_criteria.length() == 0 || (box.name.casefold().find(search_criteria) != Glib::ustring::npos)) {
+        auto ok = categories.enabled(box) && (
+            search_criteria.length() == 0
+            ||
+            box.name.casefold().find(search_criteria) != Glib::ustring::npos
+        );
+        if (ok) {
             auto pos = container_add_sorted(boxes, &box, [](auto* a, auto* b) {
                 return a->name.compare(b->name) > 0;
             });
@@ -262,35 +315,16 @@ public:
         auto criteria_ = criteria.casefold();
         if (search_criteria != criteria_) {
             search_criteria = criteria_;
-            // TODO: only update actually removed/inserted entries
-            auto old_size = boxes.size();
-            if (search_criteria.length() > 0) {
-                for (auto && box: boxes) {
-                    box->reference();
-                }
-                boxes.clear();
-                for (auto && box: all_boxes) {
-                    box->reference();
-                    add_if_matches(box);
-                }
-            } else {
-                boxes = all_boxes;
-                std::sort(boxes.begin(), boxes.end(), [](auto* a, auto* b) {
-                    return a->name.compare(b->name) < 0;
-                });
-                for (auto && box: all_boxes) {
-                    box->reference();
-                    box->reference();
-                }
-            }
-            items_changed(0, old_size, boxes.size());
+            filter_impl(search_criteria.length() == 0);
         }
+    }
+    void on_category_toggled() {
+        filter_impl(false);
     }
     bool is_filtered() {
         return search_criteria.length() > 0;
     }
 };
-
 
 class GridWindow : public PlatformWindow {
     public:
@@ -339,15 +373,14 @@ class GridWindow : public PlatformWindow {
         bool on_button_press_event(GdkEventButton*) override;
     private:
         void ref_categories(const GridBox& box);
-        void unref_categories(const GridBox& box);
+        void unref_categories(GridBox& box);
         
         std::list<GridBox>  all_boxes {}; // stores all applications buttons
         Glib::RefPtr<AppBoxes> apps_boxes;   // common boxes (possibly filtered)
         Glib::RefPtr<FavBoxes> fav_boxes;    // favourites (most clicked)
         Glib::RefPtr<PinnedBoxes> pinned_boxes; // boxes pinned by user
 
-        // Name, reference counter
-        std::unordered_map<std::string, std::size_t> categories;
+        CategoriesSet categories;
 
         bool pins_changed = false;
         bool favs_changed = false;
