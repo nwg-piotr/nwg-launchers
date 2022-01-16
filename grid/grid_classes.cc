@@ -99,6 +99,28 @@ GridWindow::GridWindow(GridConfig& config):
     pinned_boxes = PinnedBoxes::create();
     fav_boxes = FavBoxes::create();
 
+    categories_all.set_label("All");
+    categories_all.set_active();
+    categories_all.signal_toggled().connect([this](){
+        auto active = categories_all.get_active();
+        categories.all_enabled = !active;
+        if (active) {
+            // disable all other buttons
+            categories_box.foreach([this](auto& widget){
+                auto& fboxchild = static_cast<Gtk::FlowBoxChild&>(widget);
+                auto* button = dynamic_cast<Gtk::ToggleButton*>(fboxchild.get_child());
+                if (!button) {
+                    throw std::logic_error{ "Categories button is not a Gtk::ToggleButton" };
+                }
+                if (button != &categories_all) {
+                    button->set_active(false);
+                }
+            });
+        }
+        apps_boxes->on_category_toggled();
+    });
+    categories_box.insert(categories_all, -1);
+
     // doesn't compile with lambda due to sigc bug, must use free function
     Gtk::FlowBox::SlotCreateWidget<Glib::Object> make_widget_{ &make_widget };
     pinned_grid.bind_model(pinned_boxes, make_widget_);
@@ -444,10 +466,16 @@ void GridWindow::ref_categories(const GridBox& box) {
             auto* button = new Gtk::ToggleButton{ category };
             button->show();
             categories_box.insert(*button, -1);
-            button->set_active();
+
+            // all enabled, all categories disabled -> no filter
+            // I click category, I
 
             button->signal_toggled().connect([this,category_view=view,button]() {
-                std::cout << "toggled (" << category_view << "): " << button->get_active() << '\n';
+                auto active = button->get_active();
+                if (active) {
+                    categories_all.set_active(false);
+                }
+                categories.all_enabled = categories_all.get_active();
                 categories.toggle(category_view);
                 this->apps_boxes->on_category_toggled();
             });
@@ -482,7 +510,6 @@ std::pair<std::string_view, bool> CategoriesSet::ref(std::string_view category) 
         auto& ref = categories_store.emplace_front(category);
         auto category_iter = categories_store.begin();
         categories.emplace_hint(iter, ref.category, category_iter);
-        active_categories.emplace_hint(active_categories.end(), ref.category);
         ret.first = ref.category;
         ret.second = true;
     }
@@ -503,16 +530,20 @@ bool CategoriesSet::unref(std::string_view category) {
     throw std::logic_error{ "Trying to unref non-existing category" };
 }
 
+inline auto enabled_impl = [](auto && cs) {
+    return [&](auto c) { return cs.find(c) != cs.end(); };
+};
+
 bool CategoriesSet::enabled(std::string_view category) const {
-    return active_categories.find(category) != active_categories.end();
+    return all_enabled || enabled_impl(active_categories)(category);
 }
 
 bool CategoriesSet::enabled(const GridBox& box) const {
     auto && categories = box.entry->desktop_entry_->categories;
-    return std::any_of(
+    return all_enabled || std::any_of(
         categories.begin(),
         categories.end(),
-        [&](auto && c) { return enabled(c); }
+        enabled_impl(active_categories)
     );
 }
 

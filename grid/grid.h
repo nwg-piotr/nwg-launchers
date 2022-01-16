@@ -115,7 +115,8 @@ struct CategoriesSet {
 
     std::list<Category> categories_store;
     std::unordered_map<std::string_view, decltype(categories_store)::iterator> categories;
-    std::unordered_set<std::string_view>                                       active_categories;
+    std::unordered_set<std::string_view> active_categories;
+    bool all_enabled{ true };
 
     CategoriesSet() = default;
     bool toggle(std::string_view category);
@@ -331,8 +332,9 @@ class GridWindow : public PlatformWindow {
         GridWindow(GridConfig& config);
         GridWindow(const GridWindow&) = delete;
 
-        Gtk::SearchEntry searchbox;              // Search apps
-        Gtk::FlowBox     categories_box;
+        Gtk::SearchEntry  searchbox;              // Search apps
+        Gtk::FlowBox      categories_box;
+        Gtk::ToggleButton categories_all;
         Gtk::Label description;                  // To display .desktop entry Comment field at the bottom
         Gtk::FlowBox apps_grid;                  // All application buttons grid
         Gtk::FlowBox favs_grid;                  // Favourites grid above
