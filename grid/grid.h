@@ -347,6 +347,7 @@ class GridWindow : public PlatformWindow {
         Gtk::HBox pinned_hbox;
         Gtk::HBox favs_hbox;
         Gtk::HBox apps_hbox;
+        Gtk::HBox categories_hbox;
         Gtk::ScrolledWindow scrolled_window;
         GridConfig&           config;
 

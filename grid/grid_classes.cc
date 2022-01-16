@@ -100,26 +100,24 @@ GridWindow::GridWindow(GridConfig& config):
     fav_boxes = FavBoxes::create();
 
     categories_all.set_label("All");
-    categories_all.set_active();
     categories_all.signal_toggled().connect([this](){
         auto active = categories_all.get_active();
-        categories.all_enabled = !active;
+        categories.all_enabled = active;
         if (active) {
             // disable all other buttons
-            categories_box.foreach([this](auto& widget){
+            categories_box.foreach([](auto& widget){
                 auto& fboxchild = static_cast<Gtk::FlowBoxChild&>(widget);
                 auto* button = dynamic_cast<Gtk::ToggleButton*>(fboxchild.get_child());
                 if (!button) {
                     throw std::logic_error{ "Categories button is not a Gtk::ToggleButton" };
                 }
-                if (button != &categories_all) {
-                    button->set_active(false);
-                }
+                button->set_active(false);
             });
         }
         apps_boxes->on_category_toggled();
     });
-    categories_box.insert(categories_all, -1);
+    categories_all.set_active();
+    categories_hbox.pack_start(categories_all, Gtk::PACK_SHRINK, 0);
 
     // doesn't compile with lambda due to sigc bug, must use free function
     Gtk::FlowBox::SlotCreateWidget<Glib::Object> make_widget_{ &make_widget };
@@ -149,7 +147,9 @@ GridWindow::GridWindow(GridConfig& config):
     inner_vbox.pack_start(pinned_hbox, Gtk::PACK_SHRINK, 5);
     inner_vbox.pack_start(separator1, false, true, 0);
 
-    inner_vbox.pack_start(categories_box, Gtk::PACK_EXPAND_WIDGET);
+    inner_vbox.pack_start(categories_hbox, Gtk::PACK_SHRINK, 0);
+    categories_hbox.pack_start(categories_all, Gtk::PACK_SHRINK, 0);
+    categories_hbox.pack_start(categories_box, Gtk::PACK_EXPAND_WIDGET, 0);
 
     favs_hbox.pack_start(favs_grid, true, false, 0);
     inner_vbox.pack_start(favs_hbox, false, false, 5);
@@ -460,15 +460,44 @@ void GridWindow::update_box_by_id(std::string_view desktop_id, GridBox && new_bo
     });
 }
 
+struct CategoryButton: public Gtk::ToggleButton {
+    Gdk::ModifierType modifiers;
+    bool mod_pressed{ false };
+
+    CategoryButton(const std::string& name): Gtk::ToggleButton{ name } {
+        modifiers = Gtk::AccelGroup::get_default_mod_mask();
+    }
+    bool on_button_press_event(GdkEventButton* key) override {
+        mod_pressed = (key->state & modifiers) == Gdk::CONTROL_MASK;
+        if (!mod_pressed) {
+            auto& fboxchild = *dynamic_cast<Gtk::FlowBoxChild*>(get_parent());
+            auto& fbox = dynamic_cast<Gtk::FlowBox&>(*fboxchild.get_parent());
+            fbox.foreach([this](Gtk::Widget& widget) {
+                auto& fboxchild = static_cast<Gtk::FlowBoxChild&>(widget);
+                auto* button = dynamic_cast<CategoryButton*>(fboxchild.get_child());
+                if (this != button) {
+                    button->set_active(false);
+                }
+            });
+        }
+        return Gtk::ToggleButton::on_button_press_event(key);
+    }
+    bool on_button_release_event(GdkEventButton* key) override {
+        return Gtk::ToggleButton::on_button_release_event(key);
+    }
+};
+
 void GridWindow::ref_categories(const GridBox& box) {
     for (auto && category: box.entry->desktop_entry_->categories) {
         if (auto [view, inserted] = categories.ref(category); inserted) {
-            auto* button = new Gtk::ToggleButton{ category };
+            auto* button = Gtk::make_managed<CategoryButton>(category);
             button->show();
             categories_box.insert(*button, -1);
+            button->set_active(false);
 
-            // all enabled, all categories disabled -> no filter
-            // I click category, I
+            // initial state: ALL active, others disabled
+            // any: enable clicked, disable ALL & other active buttons
+            // C+any: disable ALL, enable clicked
 
             button->signal_toggled().connect([this,category_view=view,button]() {
                 auto active = button->get_active();
@@ -477,7 +506,11 @@ void GridWindow::ref_categories(const GridBox& box) {
                 }
                 categories.all_enabled = categories_all.get_active();
                 categories.toggle(category_view);
+
                 this->apps_boxes->on_category_toggled();
+                this -> refresh_separators();
+                this -> focus_first_box();
+                refresh_max_children_per_line(apps_grid, *apps_boxes.get(), config.num_col);
             });
         }
     }
@@ -486,7 +519,8 @@ void GridWindow::ref_categories(const GridBox& box) {
 void GridWindow::unref_categories(GridBox& box) {
     for (auto && category: box.entry->desktop_entry_->categories) {
         if (categories.unref(category)) {
-            categories_box.remove(box);
+            std::cerr << "Unimplemented" << '\n';
+            //categories_box.remove(box);
         }
     }
 }
