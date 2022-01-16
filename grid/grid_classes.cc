@@ -73,6 +73,12 @@ static Gtk::Widget* make_widget(const Glib::RefPtr<Glib::Object>& object) {
     return dynamic_cast<GridBox*>(object.get());
 }
 
+static int sort_by_name(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
+    return dynamic_cast<Gtk::ToggleButton*>(a->get_child())->get_label().compare(
+        dynamic_cast<Gtk::ToggleButton*>(b->get_child())->get_label()
+    );
+}
+
 GridWindow::GridWindow(GridConfig& config):
     PlatformWindow{ config }, config{ config }
 {
@@ -95,6 +101,8 @@ GridWindow::GridWindow(GridConfig& config):
     setup_grid(pinned_grid);
     setup_grid(categories_box);
 
+    categories_box.set_sort_func(&sort_by_name);
+
     apps_boxes = AppBoxes::create(categories);
     pinned_boxes = PinnedBoxes::create();
     fav_boxes = FavBoxes::create();
@@ -116,8 +124,8 @@ GridWindow::GridWindow(GridConfig& config):
         }
         apps_boxes->on_category_toggled();
     });
+    categories_all.set_name("categories_all");
     categories_all.set_active();
-    categories_hbox.pack_start(categories_all, Gtk::PACK_SHRINK, 0);
 
     // doesn't compile with lambda due to sigc bug, must use free function
     Gtk::FlowBox::SlotCreateWidget<Glib::Object> make_widget_{ &make_widget };
@@ -148,8 +156,8 @@ GridWindow::GridWindow(GridConfig& config):
     inner_vbox.pack_start(separator1, false, true, 0);
 
     inner_vbox.pack_start(categories_hbox, Gtk::PACK_SHRINK, 0);
-    categories_hbox.pack_start(categories_all, Gtk::PACK_SHRINK, 0);
-    categories_hbox.pack_start(categories_box, Gtk::PACK_EXPAND_WIDGET, 0);
+    categories_hbox.pack_start(categories_all, Gtk::PACK_EXPAND_PADDING, 0);
+    categories_hbox.pack_start(categories_box, Gtk::PACK_EXPAND_PADDING, 0);
 
     favs_hbox.pack_start(favs_grid, true, false, 0);
     inner_vbox.pack_start(favs_hbox, false, false, 5);
