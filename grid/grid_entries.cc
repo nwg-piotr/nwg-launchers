@@ -6,6 +6,7 @@
  * License: GPL3
  * */
 #include "grid_entries.h"
+#include "log.h"
 
 inline bool looks_like_desktop_file(const Glib::RefPtr<Gio::File>& file) {
     fs::path path{ file->get_path() };

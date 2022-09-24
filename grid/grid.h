@@ -126,6 +126,64 @@ struct CategoriesSet {
     bool enabled(const GridBox& box) const;
 };
 
+struct CategoryButton: public Gtk::ToggleButton {
+    Gdk::ModifierType modifiers;
+    bool mod_pressed{ false };
+
+    CategoryButton(const std::string& name): Gtk::ToggleButton{ name } {
+        modifiers = Gtk::AccelGroup::get_default_mod_mask();
+    }
+    bool on_button_press_event(GdkEventButton* key) override {
+        mod_pressed = (key->state & modifiers) == Gdk::CONTROL_MASK;
+        if (!mod_pressed) {
+            auto& fboxchild = *dynamic_cast<Gtk::FlowBoxChild*>(get_parent());
+            auto& fbox = dynamic_cast<Gtk::FlowBox&>(*fboxchild.get_parent());
+            fbox.foreach([this](Gtk::Widget& widget) {
+                auto& fboxchild = static_cast<Gtk::FlowBoxChild&>(widget);
+                auto* button = dynamic_cast<CategoryButton*>(fboxchild.get_child());
+                if (this != button) {
+                    button->set_active(false);
+                }
+            });
+        }
+        return Gtk::ToggleButton::on_button_press_event(key);
+    }
+    bool on_button_release_event(GdkEventButton* key) override {
+        return Gtk::ToggleButton::on_button_release_event(key);
+    }
+};
+
+class CategoriesModel: public Gio::ListModel, public Glib::Object {
+    CategoriesSet& categories;
+    std::vector<CategoryButton*> buttons;
+
+public:
+    CategoriesModel(CategoriesSet& categories): categories{ categories }
+    {
+        for (auto&& category: categories.categories_store) {
+            std::unique_ptr<CategoryButton> guard{ new CategoryButton{ category.category } };
+            buttons.push_back(guard.release());
+        }
+        // intentionally left blank
+    }
+
+protected:
+    GType get_item_type_vfunc() override {
+        return Gtk::ToggleButton::get_type();
+    }
+
+    guint get_n_items_vfunc() override {
+        return buttons.size();
+    }
+
+    gpointer get_item_vfunc(guint position) override {
+        if (position < buttons.size()) {
+            return buttons[position]->gobj();
+        }
+        return nullptr;
+    }
+};
+
 class AbstractBoxes {
 protected:
     std::vector<GridBox*> boxes;

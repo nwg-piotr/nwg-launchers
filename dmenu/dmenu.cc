@@ -12,6 +12,7 @@
 #include "nwg_tools.h"
 #include "nwg_classes.h"
 #include "dmenu.h"
+#include "log.h"
 
 #define STR_EXPAND(x) #x
 #define STR(x) STR_EXPAND(x)

@@ -20,6 +20,7 @@
 #include "charconv-compat.h"
 #include "nwg_tools.h"
 #include "grid.h"
+#include "log.h"
 
 GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen, const fs::path& config_dir):
     Config{ parser, "~nwggrid", "~nwggrid", screen },
@@ -467,33 +468,6 @@ void GridWindow::update_box_by_id(std::string_view desktop_id, GridBox && new_bo
         all_boxes.erase(iter);
     });
 }
-
-struct CategoryButton: public Gtk::ToggleButton {
-    Gdk::ModifierType modifiers;
-    bool mod_pressed{ false };
-
-    CategoryButton(const std::string& name): Gtk::ToggleButton{ name } {
-        modifiers = Gtk::AccelGroup::get_default_mod_mask();
-    }
-    bool on_button_press_event(GdkEventButton* key) override {
-        mod_pressed = (key->state & modifiers) == Gdk::CONTROL_MASK;
-        if (!mod_pressed) {
-            auto& fboxchild = *dynamic_cast<Gtk::FlowBoxChild*>(get_parent());
-            auto& fbox = dynamic_cast<Gtk::FlowBox&>(*fboxchild.get_parent());
-            fbox.foreach([this](Gtk::Widget& widget) {
-                auto& fboxchild = static_cast<Gtk::FlowBoxChild&>(widget);
-                auto* button = dynamic_cast<CategoryButton*>(fboxchild.get_child());
-                if (this != button) {
-                    button->set_active(false);
-                }
-            });
-        }
-        return Gtk::ToggleButton::on_button_press_event(key);
-    }
-    bool on_button_release_event(GdkEventButton* key) override {
-        return Gtk::ToggleButton::on_button_release_event(key);
-    }
-};
 
 void GridWindow::ref_categories(const GridBox& box) {
     for (auto && category: box.entry->desktop_entry_->categories) {

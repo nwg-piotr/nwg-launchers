@@ -14,6 +14,7 @@
 #include "nwg_tools.h"
 #include "nwg_exceptions.h"
 #include "nwgconfig.h"
+#include "log.h"
 
 const char* const HELP_MESSAGE = "\
 GTK application grid: nwggrid " VERSION_STR " (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors \n\n\

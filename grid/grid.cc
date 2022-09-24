@@ -15,6 +15,7 @@
 #include "nwg_classes.h"
 #include "grid.h"
 #include "grid_entries.h"
+#include "time_report.h"
 
 const char* const HELP_MESSAGE =
 "GTK application grid: nwggrid " VERSION_STR " (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
@@ -83,9 +84,7 @@ struct OneshotDriver: public ApplicationDriver {
 
 int main(int argc, char *argv[]) {
     try {
-        struct timeval tp;
-        gettimeofday(&tp, NULL);
-        long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+        ntime::Time start{ "start" };
 
         InputParser input{ argc, argv };
         if (input.cmdOptionExists("-h")){
@@ -175,27 +174,17 @@ int main(int argc, char *argv[]) {
             dirs = get_app_dirs();
         }
 
-        gettimeofday(&tp, NULL);
-        long int commons_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+        ntime::Time commons{ "common", start };
 
         GridWindow window{ config };
 
-        gettimeofday(&tp, NULL);
-        long int window_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+        ntime::Time window_time{ "window", commons };
 
         EntriesModel   table{ config, window, icon_provider, pinned, favourites };
         EntriesManager entries_provider{ dirs, table, config };
 
-        gettimeofday(&tp, NULL);
-        long int model_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-        auto format = [](auto&& title, auto from, auto to) {
-            Log::plain(title, to - from, "ms");
-        };
-        format("Total: ", start_ms, model_ms);
-        format("\tcommon: ", start_ms, commons_ms);
-        format("\twindow: ", commons_ms, window_ms);
-        format("\tmodels: ", window_ms, model_ms);
+        ntime::Time model_time{ "models", window_time };
+        ntime::report( start );
 
         std::unique_ptr<ApplicationDriver> driver;
         if (config.oneshot) {
