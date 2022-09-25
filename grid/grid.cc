@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
         EntriesManager entries_provider{ dirs, table, config };
 
         ntime::Time model_time{ "models", window_time };
-        ntime::report( start );
+        ntime::report(start);
 
         std::unique_ptr<ApplicationDriver> driver;
         if (config.oneshot) {

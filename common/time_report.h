@@ -59,15 +59,17 @@ namespace ntime {
     }; // namespace detail
 
     void report(const Time& initial) {
-        if (!initial.next) {
+        const Time* last = initial.next;
+        if (!last) {
             throw std::logic_error{ "time::report(initial): inital.next is empty" };
         }
 
-        auto& last = detail::report(initial, *initial.next);
-        if (initial.next != &last) {
-            auto diff = detail::diff_ms(initial, last);
-            Log::plain( "Total time: ", diff, "ms");
+        if (last->next) {
+            last = &detail::report(initial, *last);
         }
+
+        auto diff = detail::diff_ms(initial, *last);
+        Log::plain("Total: ", diff, "ms");
     }
 
 } // namespace time_report

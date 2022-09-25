@@ -26,6 +26,7 @@
 #include "nwgconfig.h"
 #include "nwg_exceptions.h"
 #include "nwg_tools.h"
+#include "log.h"
 
 
 #ifdef GDK_WINDOWING_X11

@@ -12,6 +12,8 @@
 #include "nwg_classes.h"
 #include "nwg_tools.h"
 #include "bar.h"
+#include "log.h"
+#include "time_report.h"
 
 const char* const HELP_MESSAGE =
 "GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2021\n\n\
@@ -32,9 +34,7 @@ Options:\n\
 
 int main(int argc, char *argv[]) {
     try {
-        struct timeval tp;
-        gettimeofday(&tp, NULL);
-        long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+        ntime::Time start_time{ "start" };
 
         InputParser input(argc, argv);
         if(input.cmdOptionExists("-h")){
@@ -137,10 +137,8 @@ int main(int argc, char *argv[]) {
         window.show_all_children();
         window.show(hint::Fullscreen);
 
-        gettimeofday(&tp, NULL);
-        long int end_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-        Log::info("Time: ", end_ms - start_ms, "ms");
+        ntime::Time end_time{ "end", start_time };
+        ntime::report(start_time);
 
         return app->run(window);
     } catch (const Glib::Error& e) {
