@@ -24,6 +24,7 @@
 
 namespace ns = nlohmann;
 
+std::string_view get_home_dir();
 fs::path get_cache_home();
 fs::path get_config_dir(std::string_view);
 fs::path get_runtime_dir();
