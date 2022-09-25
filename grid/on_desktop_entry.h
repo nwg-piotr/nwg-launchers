@@ -22,11 +22,13 @@ struct DesktopEntryConfig {
     std::string_view term;  // user-preferred terminal
     std::string name_ln;    // localized prefix: Name[ln]=
     std::string comment_ln; // localized prefix: Comment[ln]=
+    std::string_view home;
 
     DesktopEntryConfig(std::string_view lang, std::string_view term):
         term{ term },
         name_ln{ concat("Name[", lang, "]=") },
-        comment_ln{ concat("Comment[", lang, "]=") }
+        comment_ln{ concat("Comment[", lang, "]=") },
+        home{ get_home_dir() }
     {
         // intentionally left blank
     }
@@ -52,11 +54,18 @@ struct PlainFieldParser: public FieldParser {
 struct ExecParser: public PlainFieldParser {
     using PlainFieldParser::PlainFieldParser;
     void parse(std::string_view str) override {
+        std::string_view home{ "~/" };
+        if (str.substr(0, home.size()) == home) {
+            str.remove_prefix(home.size());
+            dest += get_home_dir();
+            dest.push_back('/');
+        }
+
         auto idx = str.find(" %");
         if (idx == std::string_view::npos) {
             idx = std::size(str);
         }
-        dest = str.substr(0, idx);
+        dest += str.substr(0, idx);
     }
 };
 
