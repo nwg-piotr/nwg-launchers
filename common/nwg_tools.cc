@@ -35,6 +35,19 @@
 // stores the name of the pid_file, for use in atexit
 static fs::path pid_file{};
 
+std::string_view get_home_dir() {
+    static fs::path home_dir;
+    if (home_dir.empty()) {
+        const char* val = getenv("HOME");
+        if (!val) {
+            Log::error("$HOME not set");
+            throw std::runtime_error{ "get_home_dir: $HOME not set" };
+        }
+        home_dir = val;
+    }
+    return { home_dir.native() };
+}
+
 /*
  * Returns config dir
  * */
@@ -42,12 +55,7 @@ fs::path get_config_dir(std::string_view app) {
     fs::path path;
     char* val = getenv("XDG_CONFIG_HOME");
     if (!val) {
-        val = getenv("HOME");
-        if (!val) {
-            Log::error("Couldn't find config directory, $HOME not set!");
-            std::exit(EXIT_FAILURE);
-        }
-        path = val;
+        path = get_home_dir();
         path /= ".config";
     } else {
         path = val;
@@ -66,12 +74,7 @@ fs::path get_cache_home() {
     if (home_) {
         home = home_;
     } else {
-        home_ = getenv("HOME");
-        if (!home_) {
-            Log::error("Neither XDG_CACHE_HOME nor HOME are not defined");
-            std::exit(EXIT_FAILURE);
-        }
-        home = home_;
+        home = get_home_dir();
         home /= ".cache";
     }
     return home;
