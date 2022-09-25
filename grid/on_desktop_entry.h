@@ -112,8 +112,7 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
     std::string name_ln {};    // localized: Name[ln]=
     std::string comment_ln {}; // localized: Comment[ln]=
 
-    // if line starts with `prefix`, process the rest of the line according to `tag`
-    // writing the result to `dest`
+    // if line starts with `prefix`, call `parser.parse()`
     struct Match {
         std::string_view prefix;
         FieldParser&     parser;
@@ -174,12 +173,13 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
                 len
             };
         };
-        std::size_t index;
+        std::size_t index{ 0 };
         for (auto& [prefix, parser] : matches) {
             if (parsed[index]) {
                 continue;
             }
             if (auto [ok, pos] = try_strip_prefix(prefix); ok) {
+                parser.parse(view.substr(pos));
                 break;
             }
             ++index;
