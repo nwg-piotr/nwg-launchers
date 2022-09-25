@@ -71,6 +71,7 @@ enum class VAlign: unsigned int { NotSpecified = 0, Top, Bottom };
 struct Config {
     const InputParser& parser;
     std::string        wm;
+    std::string        theme;
     std::string_view   title;
     std::string_view   role;
     HAlign             halign{ HAlign::NotSpecified };

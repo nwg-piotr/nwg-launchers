@@ -120,6 +120,7 @@ Options:
 -s <size>        button image size (default: 72)
 -c <name>        css file name (default: style.css)
 -l <ln>          force use of <ln> language
+-g <theme>       GTK theme name
 -wm <wmname>     window manager name (if can not be detected)
 -oneshot         run in the foreground, exit when window is closed
                  generally you should not use this option, use simply `nwggrid` instead
@@ -169,6 +170,7 @@ Options:
 -o <opacity>     background opacity (0.0 - 1.0, default 0.9)
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)
 -s <size>        button image size (default: 72)
+-g <theme>       GTK theme name
 -wm <wmname>     window manager name (if can not be detected)
 
 [requires layer-shell]:
@@ -271,6 +273,7 @@ Options:
 -c <name>        css file name (default: style.css)
 -o <opacity>     background opacity (0.0 - 1.0, default 0.3)
 -b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)
+-g <theme>       GTK theme name
 -wm <wmname>     window manager name (if can not be detected)
 -run             ignore stdin, always build from commands in $PATH
 
