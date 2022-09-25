@@ -477,6 +477,11 @@ void GridWindow::ref_categories(const GridBox& box) {
             categories_box.insert(*button, -1);
             button->set_active(false);
 
+            auto* fboxchild = dynamic_cast<Gtk::FlowBoxChild*>(button->get_parent());
+            if (fboxchild) {
+                fboxchild->set_can_focus(false);
+            }
+
             // initial state: ALL active, others disabled
             // any: enable clicked, disable ALL & other active buttons
             // C+any: disable ALL, enable clicked
@@ -510,6 +515,7 @@ void GridWindow::unref_categories(GridBox& box) {
 bool CategoriesSet::toggle(std::string_view category) {
     if (auto iter = active_categories.find(category); iter != active_categories.end()) {
         active_categories.extract(iter);
+        all_enabled = active_categories.empty();
         return false;
     } else {
         active_categories.emplace_hint(iter, category);

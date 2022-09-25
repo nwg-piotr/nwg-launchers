@@ -135,6 +135,7 @@ struct CategoryButton: public Gtk::ToggleButton {
     }
     bool on_button_press_event(GdkEventButton* key) override {
         mod_pressed = (key->state & modifiers) == Gdk::CONTROL_MASK;
+        // if Ctrl is not pressed, disable all other categories
         if (!mod_pressed) {
             auto& fboxchild = *dynamic_cast<Gtk::FlowBoxChild*>(get_parent());
             auto& fbox = dynamic_cast<Gtk::FlowBox&>(*fboxchild.get_parent());
