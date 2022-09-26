@@ -177,6 +177,12 @@ GridWindow::GridWindow(GridConfig& config):
     this -> show_all_children();
 }
 
+GridWindow::~GridWindow() {
+    categories_box.foreach([this](auto & child){
+        categories_box.remove(child);
+    });
+}
+
 bool GridWindow::on_button_press_event(GdkEventButton *event) {
     (void) event; // suppress warning
 
@@ -471,8 +477,10 @@ void GridWindow::update_box_by_id(std::string_view desktop_id, GridBox && new_bo
 
 void GridWindow::ref_categories(const GridBox& box) {
     for (auto && category: box.entry->desktop_entry_->categories) {
-        if (auto [view, inserted] = categories.ref(category); inserted) {
-            auto* button = Gtk::make_managed<CategoryButton>(category);
+        if (auto [index, inserted] = categories.ref(category); inserted) {
+            std::string_view category{ index->category };
+            auto* button = Gtk::make_managed<CategoryButton>(index->category, categories, index);
+            index->button = button;
             button->show();
             categories_box.insert(*button, -1);
             button->set_active(false);
@@ -486,13 +494,13 @@ void GridWindow::ref_categories(const GridBox& box) {
             // any: enable clicked, disable ALL & other active buttons
             // C+any: disable ALL, enable clicked
 
-            button->signal_toggled().connect([this,category_view=view,button]() {
+            button->signal_toggled().connect([this, category, button]() {
                 auto active = button->get_active();
                 if (active) {
                     categories_all.set_active(false);
                 }
                 categories.all_enabled = categories_all.get_active();
-                categories.toggle(category_view);
+                categories.toggle(category);
 
                 this->apps_boxes->on_category_toggled();
                 this -> refresh_separators();
@@ -505,11 +513,25 @@ void GridWindow::ref_categories(const GridBox& box) {
 
 void GridWindow::unref_categories(GridBox& box) {
     for (auto && category: box.entry->desktop_entry_->categories) {
-        if (categories.unref(category)) {
-            std::cerr << "Unimplemented" << '\n';
-            //categories_box.remove(box);
+        if (auto [index, deleted] = categories.unref(category); deleted) {
+            auto& button = *index->button;
+            auto* parent = dynamic_cast<Gtk::Widget*>(button.get_parent());
+            if (!parent) {
+                throw std::logic_error{ "CategoryButton::get_parent returned non-widget" };
+            }
+            categories_box.remove(*parent);
         }
     }
+}
+
+CategoryButton::CategoryButton(const std::string& name, CategoriesSet& set, CategoriesSet::Index index):
+    Gtk::ToggleButton{ name }, categories{ set }, index{ index }
+{
+    modifiers = Gtk::AccelGroup::get_default_mod_mask();
+}
+
+CategoryButton::~CategoryButton() {
+    categories.delete_by_index(index);
 }
 
 bool CategoriesSet::toggle(std::string_view category) {
@@ -523,33 +545,38 @@ bool CategoriesSet::toggle(std::string_view category) {
     }
 }
 
-std::pair<std::string_view, bool> CategoriesSet::ref(std::string_view category) {
-    std::pair<std::string_view, bool> ret{ {}, false };
+std::pair<CategoriesSet::Index, bool> CategoriesSet::ref(std::string_view category) {
+    std::pair<Index, bool> ret{ {}, false };
     if (auto iter = categories.find(category); iter != categories.end()) {
         ++iter->second->refs;
         return ret;
     } else {
         auto& ref = categories_store.emplace_front(category);
-        auto category_iter = categories_store.begin();
-        categories.emplace_hint(iter, ref.category, category_iter);
-        ret.first = ref.category;
+        ret.first = categories_store.begin();
+        categories.emplace_hint(iter, ref.category, ret.first);
         ret.second = true;
     }
     return ret;
 }
 
-bool CategoriesSet::unref(std::string_view category) {
+std::pair<CategoriesSet::Index, bool> CategoriesSet::unref(std::string_view category) {
+    std::pair<Index, bool> ret{ {}, false };
     if (auto iter = categories.find(category); iter != categories.end()) {
         --iter->second->refs;
-        if (!iter->second->refs) {
+        ret.second = !iter->second->refs;
+        if (ret.second) {
             auto node = categories.extract(iter);
             active_categories.extract(category);
-            categories_store.erase(node.mapped());
-            return true;
+            ret.first = node.mapped();
         }
-        return false;
+        all_enabled = active_categories.empty();
+        return ret;
     }
     throw std::logic_error{ "Trying to unref non-existing category" };
+}
+
+void CategoriesSet::delete_by_index(Index index) {
+    categories_store.erase(index);
 }
 
 inline auto enabled_impl = [](auto && cs) {

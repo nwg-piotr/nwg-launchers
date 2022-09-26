@@ -57,10 +57,15 @@ struct EntriesModel {
         return entries.begin();
     }
     template <typename ... Ts>
-    void update_entry(Index index, Ts && ... args) {
+    Index update_entry(Index index, Ts && ... args) {
         // TODO: merge entries
-        *index = Entry{ std::forward<Ts>(args)... };
-        auto && entry = *index;
+        //! ЗДЕСЬ ПРОИСХОДИТ ОБСЕР
+        auto new_index = entries.emplace(index, std::forward<Ts>(args)...);
+        auto& entry = *new_index;
+
+        decltype(entries) preserve;
+        preserve.splice(index, entries);
+
         set_entry_stats(entry);
         GridBox new_box {
             entry.desktop_entry().name,
@@ -72,6 +77,8 @@ struct EntriesModel {
         auto image = Gtk::make_managed<Gtk::Image>(icons.load_icon(entry.desktop_entry().icon));
         new_box.set_image(*image);
         window.update_box_by_id(entry.desktop_id, std::move(new_box));
+
+        return new_index;
     }
     void erase_entry(Index index) {
         auto && entry = *index;

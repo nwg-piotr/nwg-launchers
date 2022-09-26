@@ -106,10 +106,13 @@ struct GridConfig: public Config {
 };
 
 
+struct CategoryButton;
+
 struct CategoriesSet {
     struct Category {
         std::string category;
         std::size_t refs;
+        CategoryButton* button;
         Category(std::string_view category): category{ category }, refs{ 1 } {}
     };
 
@@ -118,21 +121,28 @@ struct CategoriesSet {
     std::unordered_set<std::string_view> active_categories;
     bool all_enabled{ true };
 
+    using Index = typename decltype(categories_store)::iterator;
+
     CategoriesSet() = default;
     bool toggle(std::string_view category);
-    std::pair<std::string_view, bool> ref(std::string_view category);
-    bool unref(std::string_view category);
+    std::pair<Index, bool> ref(std::string_view category);
+    std::pair<Index, bool> unref(std::string_view category);
     bool enabled(std::string_view category) const;
     bool enabled(const GridBox& box) const;
+
+    void delete_by_index(Index index);
 };
 
 struct CategoryButton: public Gtk::ToggleButton {
     Gdk::ModifierType modifiers;
     bool mod_pressed{ false };
 
-    CategoryButton(const std::string& name): Gtk::ToggleButton{ name } {
-        modifiers = Gtk::AccelGroup::get_default_mod_mask();
-    }
+    CategoriesSet& categories;
+    CategoriesSet::Index index;
+
+    CategoryButton(const std::string& name, CategoriesSet& set, CategoriesSet::Index index);
+    ~CategoryButton();
+
     bool on_button_press_event(GdkEventButton* key) override {
         mod_pressed = (key->state & modifiers) == Gdk::CONTROL_MASK;
         // if Ctrl is not pressed, disable all other categories
@@ -154,36 +164,6 @@ struct CategoryButton: public Gtk::ToggleButton {
     }
 };
 
-class CategoriesModel: public Gio::ListModel, public Glib::Object {
-    CategoriesSet& categories;
-    std::vector<CategoryButton*> buttons;
-
-public:
-    CategoriesModel(CategoriesSet& categories): categories{ categories }
-    {
-        for (auto&& category: categories.categories_store) {
-            std::unique_ptr<CategoryButton> guard{ new CategoryButton{ category.category } };
-            buttons.push_back(guard.release());
-        }
-        // intentionally left blank
-    }
-
-protected:
-    GType get_item_type_vfunc() override {
-        return Gtk::ToggleButton::get_type();
-    }
-
-    guint get_n_items_vfunc() override {
-        return buttons.size();
-    }
-
-    gpointer get_item_vfunc(guint position) override {
-        if (position < buttons.size()) {
-            return buttons[position]->gobj();
-        }
-        return nullptr;
-    }
-};
 
 class AbstractBoxes {
 protected:
@@ -390,6 +370,7 @@ class GridWindow : public PlatformWindow {
     public:
         GridWindow(GridConfig& config);
         GridWindow(const GridWindow&) = delete;
+        ~GridWindow();
 
         Gtk::SearchEntry  searchbox;              // Search apps
         Gtk::FlowBox      categories_box;

@@ -168,12 +168,13 @@ void EntriesManager::on_file_changed(std::string id, const Glib::RefPtr<Gio::Fil
             [&meta=meta,this,&result](std::unique_ptr<DesktopEntry> && desktop_entry) {
                 if (meta.state == Metadata::Ok) {
                     // entry was ok, now ok -> update contents
-                    table.update_entry(
+                    auto new_index = table.update_entry(
                         result->second.index,
                         result->first,
                         Stats{},
                         std::move(desktop_entry)
                     );
+                    result->second.index = new_index;
                 } else {
                     // entry wasn't ok, but now ok -> add it to table it
                     meta.index = table.emplace_entry(

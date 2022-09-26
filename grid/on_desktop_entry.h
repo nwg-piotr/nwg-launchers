@@ -174,7 +174,7 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
     constexpr auto nodisplay = "NoDisplay=true"sv;
     constexpr auto terminal = "Terminal=true"sv;
     while (std::getline(file, str) && !parsed.all()) {
-        if (str[0] == '[') { // new section begins, break
+        if (!str.empty() && str[0] == '[') { // new section begins, break
             break;
         }
         auto view = std::string_view{str};
