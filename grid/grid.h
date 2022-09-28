@@ -351,6 +351,12 @@ public:
             all_boxes.erase(to_erase_2);
         }
     }
+    void update(GridBox& from, GridBox& to) override {
+        all_boxes.push_back(&to);
+        auto removed = std::remove(all_boxes.begin(), all_boxes.end(), &from);
+        all_boxes.erase(removed, all_boxes.end());
+        return BoxesModel::update(from, to);
+    }
     void filter(const Glib::ustring& criteria) {
         auto criteria_ = criteria.casefold();
         if (search_criteria != criteria_) {

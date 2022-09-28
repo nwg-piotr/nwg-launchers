@@ -465,8 +465,8 @@ void GridWindow::update_box_by_id(std::string_view desktop_id, GridBox && new_bo
         auto && box = *iter;
         auto && new_box_ref = all_boxes.emplace_front(std::move(new_box));
 
-        unref_categories(box);
         ref_categories(new_box_ref);
+        unref_categories(box);
 
         pinned_boxes->update(box, new_box_ref);
         fav_boxes->update(box, new_box_ref);
