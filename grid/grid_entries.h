@@ -13,8 +13,18 @@
 
 #include "nwg_classes.h"
 #include "filesystem-compat.h"
-#include "on_desktop_entry.h"
 #include "grid.h"
+
+/* Stores pre-processed assets useful when parsing DesktopEntry struct */
+struct DesktopEntryConfig {
+    std::string_view term;  // user-preferred terminal
+    std::string name_ln;    // localized prefix: Name[ln]=
+    std::string comment_ln; // localized prefix: Comment[ln]=
+    std::string_view home;
+    const std::vector<std::string_view>& known_categories;
+
+    DesktopEntryConfig(std::string_view lang, std::string_view term);
+};
 
 // Table containing entries
 // internally is a thin wrapper over list<entry>

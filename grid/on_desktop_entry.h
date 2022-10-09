@@ -12,29 +12,12 @@
 #include "nwg_tools.h"
 #include "filesystem-compat.h"
 
-namespace OnDesktopEntry {
-    inline struct Error{}  Error_;
-    inline struct Hidden{} Hidden_;
+#include "grid_entries.h"
+
+namespace entry_parse {
+    struct Error{};
+    struct Hidden{};
 }
-
-/* Stores pre-processed assets useful when parsing DesktopEntry struct */
-struct DesktopEntryConfig {
-    std::string_view term;  // user-preferred terminal
-    std::string name_ln;    // localized prefix: Name[ln]=
-    std::string comment_ln; // localized prefix: Comment[ln]=
-    std::string_view home;
-    const std::vector<std::string_view>& known_categories;
-
-    DesktopEntryConfig(std::string_view lang, std::string_view term):
-        term{ term },
-        name_ln{ concat("Name[", lang, "]=") },
-        comment_ln{ concat("Comment[", lang, "]=") },
-        home{ get_home_dir() },
-        known_categories{ category::get_known_categories("nwggrid") }
-    {
-        // intentionally left blank
-    }
-};
 
 struct FieldParser {
     virtual ~FieldParser() = default;
@@ -90,33 +73,25 @@ struct CategoryParser: public FieldParser {
         auto parts = split_string(str, ";");
         for (auto && part: parts) {
             if (!part.empty() && is_known_category(part)) {
-                categories.emplace_back(part);
+                categories.emplace_back(category::localize(part));
             }
         }
     }
 };
 
 /*
- * Parses .desktop file to DesktopEntry struct, calling visitor `f` with respective type tags
- *  - f(OnDesktopEntry::Ok, DesktopEntry &&)
- *  - f(OnDesktopEntry::Hidden)
- *  - f(OnDesktopEntry::Error)
- * so `f` should have listed `operator()` overloads.
- * Advice: use Overloaded+lambdas to create a visitor rather than writing one by hand.
- * */
-template <typename F>
-void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F && f) {
+ * Parses .desktop file to DesktopEntry struct,
+ * throwing entry_parse::{Error,Hidden} or io errors
+* */
+DesktopEntry parse_desktop_entry(const fs::path& path, const DesktopEntryConfig& config) {
     using namespace std::literals::string_view_literals;
 
-    std::unique_ptr<DesktopEntry> entry_ptr{ new DesktopEntry{} };
-    auto & entry = *entry_ptr;
-    //DesktopEntry entry;
+    DesktopEntry entry;
     entry.terminal = false;
 
     std::ifstream file{ path };
     if (!file) {
-        f(OnDesktopEntry::Error_);
-        return;
+        throw entry_parse::Error{};
     }
     std::string str; // buffer to read into
 
@@ -171,8 +146,7 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
         auto view = std::string_view{str};
         auto view_len = std::size(view);
         if (view == nodisplay) {
-            f(OnDesktopEntry::Hidden_);
-            return;
+            throw entry_parse::Hidden{};
         }
         if (view == terminal) {
             entry.terminal = true;
@@ -204,12 +178,13 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
         entry.comment = std::move(comment_ln);
     }
     if (entry.name.empty() || entry.exec.empty()) {
-        f(OnDesktopEntry::Error_);
+        throw entry_parse::Error{};
     }
     if (entry.terminal) {
         entry.exec = concat(config.term, " ", entry.exec);
     }
-    f(std::move(entry_ptr));
+
+    return entry;
 }
 
 #endif

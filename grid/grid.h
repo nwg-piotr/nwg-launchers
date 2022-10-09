@@ -395,8 +395,9 @@ class GridWindow : public PlatformWindow {
         Gtk::FlowBox pinned_grid;                // Pinned entries grid above
         Gtk::Separator separator;                // between favs and all apps
         Gtk::Separator separator1;               // below pinned
-        Gtk::VBox outer_vbox;
-        Gtk::VBox inner_vbox;
+
+        struct HVBoxes;
+        std::unique_ptr<HVBoxes> hvboxes;
         Gtk::HBox hbox_header;
         Gtk::HBox pinned_hbox;
         Gtk::HBox favs_hbox;

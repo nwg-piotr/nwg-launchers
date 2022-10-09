@@ -81,6 +81,11 @@ static int sort_by_name(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
     );
 }
 
+struct GridWindow::HVBoxes {
+    Gtk::VBox outer;
+    Gtk::VBox inner;
+};
+
 GridWindow::GridWindow(GridConfig& config):
     PlatformWindow{ config }, config{ config }
 {
@@ -143,6 +148,11 @@ GridWindow::GridWindow(GridConfig& config):
     separator1.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
     separator1.set_name("separator");
     add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
+
+    hvboxes.reset(new GridWindow::HVBoxes());
+    auto& outer_vbox = hvboxes->outer;
+    auto& inner_vbox = hvboxes->inner;
+
     outer_vbox.set_spacing(15);
     hbox_header.pack_start(searchbox, Gtk::PACK_EXPAND_PADDING, 0);
     outer_vbox.pack_start(hbox_header, Gtk::PACK_SHRINK, 0);
@@ -187,8 +197,7 @@ GridWindow::~GridWindow() {
 }
 
 bool GridWindow::on_button_press_event(GdkEventButton *event) {
-    (void) event; // suppress warning
-
+    PlatformWindow::on_button_press_event(event);
     this->hide();
     return true;
 }
@@ -407,9 +416,13 @@ void GridWindow::on_show() {
     auto vadjustment = scrolled_window.get_vadjustment();
     hadjustment->set_value(hadjustment->get_lower());
     vadjustment->set_value(vadjustment->get_lower());
-    focus_first_box();
     searchbox.set_text("");
-    return PlatformWindow::on_show();
+    PlatformWindow::on_show();
+    grab_focus();
+    focus_first_box();
+    disable_flowbox_child_focus(apps_grid);
+}
+
 }
 
 bool GridWindow::on_delete_event(GdkEventAny* event) {
@@ -613,6 +626,10 @@ GridBox::GridBox(Glib::ustring name, Glib::ustring comment, Entry& entry)
     this->set_image_position(Gtk::POS_TOP);
 }
 
+GridWindow& GridBox::get_toplevel() {
+    return *dynamic_cast<GridWindow*>(Gtk::Button::get_toplevel());
+}
+
 bool GridBox::on_button_press_event(GdkEventButton* event) {
     auto& toplevel = get_toplevel();
     if (toplevel.config.pins && event->button == 3) { // right-clicked
@@ -624,7 +641,6 @@ bool GridBox::on_button_press_event(GdkEventButton* event) {
 }
 
 bool GridBox::on_focus_in_event(GdkEventFocus* event) {
-    Log::plain(__PRETTY_FUNCTION__);
     (void) event; // suppress warning
 
     auto& toplevel = get_toplevel();
@@ -633,7 +649,6 @@ bool GridBox::on_focus_in_event(GdkEventFocus* event) {
 }
 
 void GridBox::on_enter() {
-    Log::plain(__PRETTY_FUNCTION__);
     auto& toplevel = get_toplevel();
     toplevel.set_description(comment);
     return Gtk::Button::on_enter();
