@@ -23,12 +23,14 @@ struct DesktopEntryConfig {
     std::string name_ln;    // localized prefix: Name[ln]=
     std::string comment_ln; // localized prefix: Comment[ln]=
     std::string_view home;
+    const std::vector<std::string_view>& known_categories;
 
     DesktopEntryConfig(std::string_view lang, std::string_view term):
         term{ term },
         name_ln{ concat("Name[", lang, "]=") },
         comment_ln{ concat("Comment[", lang, "]=") },
-        home{ get_home_dir() }
+        home{ get_home_dir() },
+        known_categories{ category::get_known_categories("nwggrid") }
     {
         // intentionally left blank
     }
@@ -72,33 +74,22 @@ struct ExecParser: public PlainFieldParser {
 struct CategoryParser: public FieldParser {
     using CategoriesType = decltype(DesktopEntry{}.categories);
     CategoriesType& categories;
-    CategoryParser(CategoriesType& categories): categories{ categories } {
+    const std::vector<std::string_view>& known_categories;
+
+    CategoryParser(CategoriesType& categories, const std::vector<std::string_view>& known_categories):
+        categories{ categories },
+        known_categories{ known_categories }
+    {
         // intentionally left blank
     }
+
     void parse(std::string_view str) override {
-        using namespace std::string_view_literals;
-        // list of "main" categories: https://specifications.freedesktop.org/menu-spec/latest/apa.html
-        // supporting actual category tree is (for now, atleast) beyond the scope of this project
-        // so we'll only allow categories listed here
-        constexpr std::array main_categories{
-            "AudioVideo"sv,
-            "Development"sv,
-            "Education"sv,
-            "Game"sv,
-            "Graphics"sv,
-            "Network"sv,
-            "Office"sv,
-            "Science"sv,
-            "Settings"sv,
-            "System"sv,
-            "Utility"sv
-        };
-        auto is_main_category = [&](auto && c){ 
-            return std::find(main_categories.begin(), main_categories.end(), c) != main_categories.end();
+        auto is_known_category = [&](auto && c){
+            return std::find(known_categories.begin(), known_categories.end(), c) != known_categories.end();
         };
         auto parts = split_string(str, ";");
         for (auto && part: parts) {
-            if (!part.empty() && is_main_category(part)) {
+            if (!part.empty() && is_known_category(part)) {
                 categories.emplace_back(part);
             }
         }
@@ -148,7 +139,7 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
     PlainFieldParser comment_parser{ entry.comment };
     PlainFieldParser comment_ln_parser{ comment_ln };
     PlainFieldParser mime_type_parser{ entry.mime_type };
-    CategoryParser categories_parser{ entry.categories };
+    CategoryParser categories_parser{ entry.categories, config.known_categories };
 
     Match matches[] = {
         { "Name="sv,         name_parser },
@@ -160,7 +151,7 @@ void on_desktop_entry(const fs::path& path, const DesktopEntryConfig& config, F 
         { "MimeType="sv,     mime_type_parser },
         { "Categories="sv,   categories_parser }
     };
-    std::bitset<sizeof(matches)> parsed;
+    std::bitset<std::size(matches)> parsed;
 
     // Skip everything not related
     constexpr auto header = "[Desktop Entry]"sv;

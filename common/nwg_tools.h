@@ -42,6 +42,14 @@ std::string detect_wm(const Glib::RefPtr<Gdk::Display>&, const Glib::RefPtr<Gdk:
 std::string get_term(std::string_view);
 std::string get_locale(void);
 
+namespace category {
+
+// TODO: avoid globals, single config file
+const std::vector<std::string_view>& get_known_categories(std::string_view app);
+std::string_view localize(std::string_view category);
+
+} // namespace category
+
 std::string read_file_to_string(const fs::path&);
 void save_string_to_file(std::string_view, const fs::path&);
 std::vector<std::string_view> split_string(std::string_view, std::string_view);

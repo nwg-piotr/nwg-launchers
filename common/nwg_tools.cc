@@ -537,6 +537,58 @@ std::string get_locale() {
     return locale;
 }
 
+
+namespace category {
+
+using namespace std::string_view_literals;
+
+static ns::json source;
+
+const std::vector<std::string_view>& get_known_categories(std::string_view app) {
+    static std::vector<std::string_view> views;
+
+    if (views.empty()) {
+        auto path = get_config_dir(app);
+        path /= "grid.conf"sv;
+        if ( std::ifstream stream{ path } ) {
+            stream >> source;
+        } else {
+            constexpr std::array main_categories{
+                "AudioVideo"sv,
+                "Development"sv,
+                "Education"sv,
+                "Game"sv,
+                "Graphics"sv,
+                "Network"sv,
+                "Office"sv,
+                "Science"sv,
+                "Settings"sv,
+                "System"sv,
+                "Utility"sv
+            };
+
+            auto& map = source["categories"sv];
+            for (auto c: main_categories) {
+                map[c] = c;
+            }
+            map["AudioVideo"sv] = "Multimedia"sv;
+        }
+
+        for (auto & [k, _] : source["categories"sv].items()) {
+            views.push_back(k);
+        }
+    }
+
+    return views;
+}
+
+std::string_view localize(std::string_view category) {
+    return source["categories"sv][category].get<std::string_view>();
+}
+
+} // namespace category
+
+
 /*
  * Returns file content as a string
  * */

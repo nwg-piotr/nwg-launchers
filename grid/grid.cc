@@ -33,6 +33,7 @@ Options:\n\
 -l <ln>          force use of <ln> language\n\
 -g <theme>       GTK theme name\n\
 -wm <wmname>     window manager name (if can not be detected)\n\
+-no-categories   disable categories display\n\
 -oneshot         run in the foreground, exit when window is closed\n\
                  generally you should not use this option, use simply `nwggrid` instead\n\
 [requires layer-shell]:\n\
@@ -104,7 +105,7 @@ int main(int argc, char *argv[]) {
         auto provider = Gtk::CssProvider::create();
         auto display = Gdk::Display::get_default();
         auto screen = display->get_default_screen();
-	auto settings = Gtk::Settings::get_for_screen(screen);
+        auto settings = Gtk::Settings::get_for_screen(screen);
         if (!provider || !display || !settings || !screen) {
             Log::error("Failed to initialize GTK");
             return EXIT_FAILURE;
@@ -117,7 +118,7 @@ int main(int argc, char *argv[]) {
         };
         Log::info("Locale: ", config.lang);
 
-	settings->property_gtk_theme_name() = config.theme;
+        settings->property_gtk_theme_name() = config.theme;
 
         Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
         {

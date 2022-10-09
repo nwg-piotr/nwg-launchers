@@ -73,12 +73,17 @@ struct Entry {
     }
 };
 
+class GridWindow;
+
 class GridBox : public Gtk::Button {
 public:
     /* name, comment, desktop-id, index */
     GridBox(Glib::ustring, Glib::ustring, Entry& entry);
     GridBox(GridBox&&) = default;
     ~GridBox() = default;
+
+    GridWindow& get_toplevel();
+
     bool on_button_press_event(GdkEventButton*) override;
     bool on_focus_in_event(GdkEventFocus*) override;
     void on_enter() override;
@@ -103,6 +108,7 @@ struct GridConfig: public Config {
     int icon_size{ 72 };
     RGBA background_color;
     bool oneshot{ false };    // run in foreground, exit when window is closed
+    bool categories{ false }; // enable categories
 };
 
 

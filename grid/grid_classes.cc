@@ -68,6 +68,7 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
         icon_size = parse_icon_size(i_size);
     }
     oneshot = parser.cmdOptionExists("-oneshot");
+    categories = !parser.cmdOptionExists("-disable-categories");
 }
 
 static Gtk::Widget* make_widget(const Glib::RefPtr<Glib::Object>& object) {
@@ -156,7 +157,9 @@ GridWindow::GridWindow(GridConfig& config):
     inner_vbox.pack_start(pinned_hbox, Gtk::PACK_SHRINK, 5);
     inner_vbox.pack_start(separator1, false, true, 0);
 
-    inner_vbox.pack_start(categories_hbox, Gtk::PACK_SHRINK, 0);
+    if (config.categories) {
+        inner_vbox.pack_start(categories_hbox, Gtk::PACK_SHRINK, 0);
+    }
     categories_hbox.pack_start(categories_all, Gtk::PACK_EXPAND_PADDING, 0);
     categories_hbox.pack_start(categories_box, Gtk::PACK_EXPAND_PADDING, 0);
 
@@ -611,7 +614,7 @@ GridBox::GridBox(Glib::ustring name, Glib::ustring comment, Entry& entry)
 }
 
 bool GridBox::on_button_press_event(GdkEventButton* event) {
-    auto& toplevel = *dynamic_cast<GridWindow*>(this -> get_toplevel());
+    auto& toplevel = get_toplevel();
     if (toplevel.config.pins && event->button == 3) { // right-clicked
         toplevel.toggle_pinned(*this);
     } else {
@@ -621,21 +624,23 @@ bool GridBox::on_button_press_event(GdkEventButton* event) {
 }
 
 bool GridBox::on_focus_in_event(GdkEventFocus* event) {
+    Log::plain(__PRETTY_FUNCTION__);
     (void) event; // suppress warning
 
-    auto& toplevel = *dynamic_cast<GridWindow*>(this->get_toplevel());
+    auto& toplevel = get_toplevel();
     toplevel.set_description(comment);
-    return true;
+    return Gtk::Button::on_focus_in_event(event);
 }
 
 void GridBox::on_enter() {
-    auto& toplevel = *dynamic_cast<GridWindow*>(this->get_toplevel());
+    Log::plain(__PRETTY_FUNCTION__);
+    auto& toplevel = get_toplevel();
     toplevel.set_description(comment);
     return Gtk::Button::on_enter();
 }
 
 void GridBox::on_activate() {
-    auto& toplevel = *dynamic_cast<GridWindow*>(this->get_toplevel());
+    auto& toplevel = get_toplevel();
     toplevel.run_box(*this);
 }
 
@@ -654,3 +659,4 @@ void GridInstance::on_sigint() {
 void GridInstance::on_sigterm() {
     app.release();
 }
+

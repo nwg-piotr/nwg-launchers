@@ -120,6 +120,9 @@ void EntriesManager::try_load_entry_(std::string id, const fs::path& file, int p
         // load it
         on_desktop_entry(file, desktop_entry_config, Overloaded {
             [&,this,iter=iter](std::unique_ptr<DesktopEntry> && desktop_entry){
+                for (auto& category : desktop_entry->categories) {
+                    category = category::localize(category);
+                }
                 auto && meta = iter->second;
                 meta.state = Metadata::Ok;
                 meta.index = table.emplace_entry(
@@ -166,6 +169,9 @@ void EntriesManager::on_file_changed(std::string id, const Glib::RefPtr<Gio::Fil
         on_desktop_entry(path, desktop_entry_config, Overloaded {
             // successfully reloaded the new entry
             [&meta=meta,this,&result](std::unique_ptr<DesktopEntry> && desktop_entry) {
+                for (auto& category : desktop_entry->categories) {
+                    category = category::localize(category);
+                }
                 if (meta.state == Metadata::Ok) {
                     // entry was ok, now ok -> update contents
                     auto new_index = table.update_entry(
