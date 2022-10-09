@@ -45,7 +45,7 @@ std::string get_locale(void);
 namespace category {
 
 // TODO: avoid globals, single config file
-const std::vector<std::string_view>& get_known_categories(std::string_view app);
+std::vector<std::string_view> get_known_categories(std::string_view app);
 std::string_view localize(std::string_view category);
 
 } // namespace category

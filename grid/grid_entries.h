@@ -21,9 +21,10 @@ struct DesktopEntryConfig {
     std::string name_ln;    // localized prefix: Name[ln]=
     std::string comment_ln; // localized prefix: Comment[ln]=
     std::string_view home;
-    const std::vector<std::string_view>& known_categories;
 
-    DesktopEntryConfig(std::string_view lang, std::string_view term);
+    std::vector<std::string_view> known_categories;
+
+    DesktopEntryConfig(const GridConfig& config);
 };
 
 // Table containing entries

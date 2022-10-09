@@ -9,10 +9,10 @@
 #include "on_desktop_entry.h"
 #include "log.h"
 
-DesktopEntryConfig::DesktopEntryConfig(std::string_view lang, std::string_view term):
-    term{ term },
-    name_ln{ concat("Name[", lang, "]=") },
-    comment_ln{ concat("Comment[", lang, "]=") },
+DesktopEntryConfig::DesktopEntryConfig(const GridConfig& config):
+    term{ config.term },
+    name_ln{ concat("Name[", config.lang, "]=") },
+    comment_ln{ concat("Comment[", config.lang, "]=") },
     home{ get_home_dir() },
     known_categories{ category::get_known_categories("nwggrid") }
 {
@@ -43,7 +43,7 @@ inline auto desktop_id(const fs::path& file, const fs::path& dir) {
 }
 
 EntriesManager::EntriesManager(Span<fs::path> dirs, EntriesModel& table, GridConfig& config):
-    table{ table }, config{ config }, desktop_entry_config{ config.lang, config.term }
+    table{ table }, config{ config }, desktop_entry_config{ config }
 {
     // set monitors
     monitors.reserve(dirs.size());
