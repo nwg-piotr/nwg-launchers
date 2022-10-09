@@ -423,8 +423,6 @@ void GridWindow::on_show() {
     disable_flowbox_child_focus(apps_grid);
 }
 
-}
-
 bool GridWindow::on_delete_event(GdkEventAny* event) {
     // no-op as on_delete_event doesn't get called when application exits w/
     this -> save_cache();
