@@ -544,6 +544,21 @@ using namespace std::string_view_literals;
 
 static ns::json source;
 
+namespace {
+
+auto& json_at(ns::json& j, std::string_view key) {
+#ifdef HAVE_MODERN_NLOHMANN_JSON
+    auto& k = key;
+#else
+    // pray to SSO
+    std::string k{ key };
+#endif // HAVE_MODERN_NLOHMANN_JSON
+
+    return j[k];
+}
+
+} // namespace
+
 std::vector<std::string_view> get_known_categories(std::string_view app) {
     std::vector<std::string_view> views;
 
@@ -568,9 +583,9 @@ std::vector<std::string_view> get_known_categories(std::string_view app) {
 
         auto& map = source["categories"];
         for (auto c: main_categories) {
-            map[c] = c;
+            json_at(map, c) = c;
         }
-        map["AudioVideo"] = "Multimedia"sv;
+        json_at(map, "AudioVideo") = "Multimedia"sv;
     }
 
     for (auto & [k, _] : source["categories"].items()) {
@@ -581,7 +596,8 @@ std::vector<std::string_view> get_known_categories(std::string_view app) {
 }
 
 std::string_view localize(std::string_view category) {
-    return source["categories"][category].get<std::string_view>();
+    auto& map = json_at(source, "categories"sv);
+    return json_at(map, category).get<std::string_view>();
 }
 
 } // namespace category

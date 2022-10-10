@@ -44,6 +44,7 @@ conf_data = configuration_data()
 conf_data.set('version', meson.project_version())
 conf_data.set('prefix', get_option('prefix'))
 conf_data.set('datadir', get_option('prefix') / get_option('datadir') / 'nwg-launchers')
+conf_data.set('HAVE_MODERN_NLOHMANN_JSON', json.version().version_compare('>=3.11.0'))
 configure_file(
 	input : 'nwgconfig.h.in',
 	output : 'nwgconfig.h',
