@@ -557,6 +557,8 @@ auto& json_at(ns::json& j, std::string_view key) {
     return j[k];
 }
 
+constexpr auto categories_tag = "categories"sv;
+
 } // namespace
 
 std::vector<std::string_view> get_known_categories(std::string_view app) {
@@ -596,7 +598,14 @@ std::vector<std::string_view> get_known_categories(std::string_view app) {
 }
 
 std::string_view localize(std::string_view category) {
-    auto& map = json_at(source, "categories"sv);
+    auto& map = json_at(source, categories_tag);
+    if (category == "All"sv) {
+        if (auto iter = map.find(category); iter != map.end()) {
+            std::cout << map << '\n';
+            return iter.value().get<std::string_view>();
+        }
+        return "All"sv;
+    }
     return json_at(map, category).get<std::string_view>();
 }
 

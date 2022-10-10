@@ -158,7 +158,8 @@ struct CategoryButton: public Gtk::ToggleButton {
             fbox.foreach([this](Gtk::Widget& widget) {
                 auto& fboxchild = static_cast<Gtk::FlowBoxChild&>(widget);
                 auto* button = dynamic_cast<CategoryButton*>(fboxchild.get_child());
-                if (this != button) {
+                // <all> button is not CategoryButton
+                if (button && this != button) {
                     button->set_active(false);
                 }
             });

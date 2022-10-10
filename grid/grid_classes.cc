@@ -68,7 +68,7 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
         icon_size = parse_icon_size(i_size);
     }
     oneshot = parser.cmdOptionExists("-oneshot");
-    categories = !parser.cmdOptionExists("-disable-categories");
+    categories = !parser.cmdOptionExists("-no-categories");
 }
 
 static Gtk::Widget* make_widget(const Glib::RefPtr<Glib::Object>& object) {
@@ -76,9 +76,15 @@ static Gtk::Widget* make_widget(const Glib::RefPtr<Glib::Object>& object) {
 }
 
 static int sort_by_name(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
-    return dynamic_cast<Gtk::ToggleButton*>(a->get_child())->get_label().compare(
-        dynamic_cast<Gtk::ToggleButton*>(b->get_child())->get_label()
-    );
+    auto a1 = dynamic_cast<CategoryButton*>(a->get_child());
+    if (!a1) {
+        return -1;
+    }
+    auto b1 = dynamic_cast<CategoryButton*>(b->get_child());
+    if (!b1) {
+        return 1;
+    }
+    return a1->get_label().compare(b1->get_label());
 }
 
 struct GridWindow::HVBoxes {
@@ -114,7 +120,8 @@ GridWindow::GridWindow(GridConfig& config):
     pinned_boxes = PinnedBoxes::create();
     fav_boxes = FavBoxes::create();
 
-    categories_all.set_label("All");
+    auto label_all = category::localize("All");
+    categories_all.set_label({ label_all.data(), label_all.size() });
     categories_all.signal_toggled().connect([this](){
         auto active = categories_all.get_active();
         categories.all_enabled = active;
@@ -133,6 +140,7 @@ GridWindow::GridWindow(GridConfig& config):
     });
     categories_all.set_name("categories_all");
     categories_all.set_active();
+    categories_box.add(categories_all);
 
     // doesn't compile with lambda due to sigc bug, must use free function
     Gtk::FlowBox::SlotCreateWidget<Glib::Object> make_widget_{ &make_widget };
@@ -168,10 +176,9 @@ GridWindow::GridWindow(GridConfig& config):
     inner_vbox.pack_start(separator1, false, true, 0);
 
     if (config.categories) {
-        inner_vbox.pack_start(categories_hbox, Gtk::PACK_SHRINK, 0);
+        inner_vbox.pack_start(categories_hbox, false, false, 5);
     }
-    categories_hbox.pack_start(categories_all, Gtk::PACK_EXPAND_PADDING, 0);
-    categories_hbox.pack_start(categories_box, Gtk::PACK_EXPAND_PADDING, 0);
+    categories_hbox.pack_start(categories_box, true, false, 0);
 
     favs_hbox.pack_start(favs_grid, true, false, 0);
     inner_vbox.pack_start(favs_hbox, false, false, 5);
@@ -191,6 +198,8 @@ GridWindow::GridWindow(GridConfig& config):
 }
 
 GridWindow::~GridWindow() {
+    // this is important: each button frees it's data in dtor,
+    // and the data must be freed while GridWindow is alive
     categories_box.foreach([this](auto & child){
         categories_box.remove(child);
     });
