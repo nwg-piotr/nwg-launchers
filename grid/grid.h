@@ -109,6 +109,7 @@ struct GridConfig: public Config {
     RGBA background_color;
     bool oneshot{ false };    // run in foreground, exit when window is closed
     bool categories{ false }; // enable categories
+    ns::json config_source;
 };
 
 

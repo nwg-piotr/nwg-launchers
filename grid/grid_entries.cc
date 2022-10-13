@@ -14,9 +14,13 @@ DesktopEntryConfig::DesktopEntryConfig(const GridConfig& config):
     name_ln{ concat("Name[", config.lang, "]=") },
     comment_ln{ concat("Comment[", config.lang, "]=") },
     home{ get_home_dir() },
-    known_categories{ category::get_known_categories("nwggrid") }
+    config_source{ config.config_source }
 {
-    // intentionally left blank
+    if (config.categories) {
+        for (auto & [k, _] : config.config_source["categories"].items()) {
+            known_categories.push_back(k);
+        }
+    }
 }
 
 

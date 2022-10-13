@@ -57,11 +57,13 @@ struct ExecParser: public PlainFieldParser {
 struct CategoryParser: public FieldParser {
     using CategoriesType = decltype(DesktopEntry{}.categories);
     CategoriesType& categories;
+    const ns::json& source;
     const std::vector<std::string_view>& known_categories;
 
-    CategoryParser(CategoriesType& categories, const std::vector<std::string_view>& known_categories):
+    CategoryParser(CategoriesType& categories, const DesktopEntryConfig& config):
         categories{ categories },
-        known_categories{ known_categories }
+        source{ config.config_source },
+        known_categories{ config.known_categories }
     {
         // intentionally left blank
     }
@@ -73,7 +75,7 @@ struct CategoryParser: public FieldParser {
         auto parts = split_string(str, ";");
         for (auto && part: parts) {
             if (!part.empty() && is_known_category(part)) {
-                categories.emplace_back(category::localize(part));
+                categories.emplace_back(category::localize(source, part));
             }
         }
     }
@@ -114,7 +116,7 @@ DesktopEntry parse_desktop_entry(const fs::path& path, const DesktopEntryConfig&
     PlainFieldParser comment_parser{ entry.comment };
     PlainFieldParser comment_ln_parser{ comment_ln };
     PlainFieldParser mime_type_parser{ entry.mime_type };
-    CategoryParser categories_parser{ entry.categories, config.known_categories };
+    CategoryParser categories_parser{ entry.categories, config };
 
     Match matches[] = {
         { "Name="sv,         name_parser },

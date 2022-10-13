@@ -22,9 +22,12 @@ struct DesktopEntryConfig {
     std::string comment_ln; // localized prefix: Comment[ln]=
     std::string_view home;
 
+    const ns::json& config_source;
     std::vector<std::string_view> known_categories;
 
     DesktopEntryConfig(const GridConfig& config);
+
+    DesktopEntryConfig(DesktopEntryConfig&&) = delete;
 };
 
 // Table containing entries

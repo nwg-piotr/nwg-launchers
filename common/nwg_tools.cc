@@ -542,66 +542,10 @@ namespace category {
 
 using namespace std::string_view_literals;
 
-static ns::json source;
-
-namespace {
-
-auto& json_at(ns::json& j, std::string_view key) {
-#ifdef HAVE_MODERN_NLOHMANN_JSON
-    auto& k = key;
-#else
-    // pray to SSO
-    std::string k{ key };
-#endif // HAVE_MODERN_NLOHMANN_JSON
-
-    return j[k];
-}
-
-constexpr auto categories_tag = "categories"sv;
-
-} // namespace
-
-std::vector<std::string_view> get_known_categories(std::string_view app) {
-    std::vector<std::string_view> views;
-
-    auto path = get_config_dir(app);
-    path /= "grid.conf"sv;
-    if ( std::ifstream stream{ path } ) {
-        stream >> source;
-    } else {
-        constexpr std::array main_categories{
-            "AudioVideo"sv,
-            "Development"sv,
-            "Education"sv,
-            "Game"sv,
-            "Graphics"sv,
-            "Network"sv,
-            "Office"sv,
-            "Science"sv,
-            "Settings"sv,
-            "System"sv,
-            "Utility"sv
-        };
-
-        auto& map = source["categories"];
-        for (auto c: main_categories) {
-            json_at(map, c) = c;
-        }
-        json_at(map, "AudioVideo") = "Multimedia"sv;
-    }
-
-    for (auto & [k, _] : source["categories"].items()) {
-        views.push_back(k);
-    }
-
-    return views;
-}
-
-std::string_view localize(std::string_view category) {
-    auto& map = json_at(source, categories_tag);
+std::string_view localize(const ns::json& source, std::string_view category) {
+    auto& map = json_at(source, "categories"sv);
     if (category == "All"sv) {
         if (auto iter = map.find(category); iter != map.end()) {
-            std::cout << map << '\n';
             return iter.value().get<std::string_view>();
         }
         return "All"sv;
@@ -659,6 +603,30 @@ std::string_view take_last_by(std::string_view str, std::string_view delimiter) 
     }
     return str;
 }
+
+
+ns::json::reference json_at(ns::json& j, std::string_view key) {
+#ifdef HAVE_MODERN_NLOHMANN_JSON
+    auto& k = key;
+#else
+    // pray to SSO
+    std::string k{ key };
+#endif // HAVE_MODERN_NLOHMANN_JSON
+
+    return j[k];
+}
+
+ns::json::const_reference json_at(const ns::json& j, std::string_view key) {
+#ifdef HAVE_MODERN_NLOHMANN_JSON
+    auto& k = key;
+#else
+    // pray to SSO
+    std::string k{ key };
+#endif // HAVE_MODERN_NLOHMANN_JSON
+
+    return j[k];
+}
+
 
 /*
  * Reads json from file

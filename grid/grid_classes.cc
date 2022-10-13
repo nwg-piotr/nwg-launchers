@@ -22,11 +22,14 @@
 #include "grid.h"
 #include "log.h"
 
+
 GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen, const fs::path& config_dir):
     Config{ parser, "~nwggrid", "~nwggrid", screen },
     term{ get_term(config_dir.native()) },
     background_color{ parser.get_background_color(0.9) }
 {
+    using namespace std::string_view_literals;
+
     auto has_custom_paths = parser.cmdOptionExists("-d");
     auto has_favs = parser.cmdOptionExists("-f");
     auto has_pins = parser.cmdOptionExists("-p");
@@ -69,6 +72,34 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
     }
     oneshot = parser.cmdOptionExists("-oneshot");
     categories = !parser.cmdOptionExists("-no-categories");
+
+    if (categories) {
+        auto path = get_config_dir("nwggrid");
+        path /= "grid.conf"sv;
+        if ( std::ifstream stream{ path } ) {
+            stream >> config_source;
+        } else {
+            constexpr std::array main_categories{
+                "AudioVideo"sv,
+                "Development"sv,
+                "Education"sv,
+                "Game"sv,
+                "Graphics"sv,
+                "Network"sv,
+                "Office"sv,
+                "Science"sv,
+                "Settings"sv,
+                "System"sv,
+                "Utility"sv
+            };
+
+            auto& map = config_source["categories"];
+            for (auto c: main_categories) {
+                json_at(map, c) = c;
+            }
+            json_at(map, "AudioVideo") = "Multimedia"sv;
+        }
+    }
 }
 
 static Gtk::Widget* make_widget(const Glib::RefPtr<Glib::Object>& object) {
@@ -120,8 +151,8 @@ GridWindow::GridWindow(GridConfig& config):
     pinned_boxes = PinnedBoxes::create();
     fav_boxes = FavBoxes::create();
 
-    auto label_all = category::localize("All");
-    categories_all.set_label({ label_all.data(), label_all.size() });
+    auto label_all = category::localize(config.config_source, "All");
+    categories_all.set_label(Glib::locale_to_utf8({ label_all.data(), label_all.size() }));
     categories_all.signal_toggled().connect([this](){
         auto active = categories_all.get_active();
         categories.all_enabled = active;
