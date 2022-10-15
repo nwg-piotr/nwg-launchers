@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
 
         InputParser input{ argc, argv };
         if (input.cmdOptionExists("-h")){
-            std::cout << grid::HELP_MESSAGE;
+            std::cout << grid::server::HELP_MESSAGE;
             std::exit(0);
         }
 
