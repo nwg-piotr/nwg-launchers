@@ -81,7 +81,13 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
 
             auto item = config_source.find("no-categories");
             if (item != config_source.end()) {
-                categories = !item->get<bool>();
+                try {
+                    categories = !item->get<bool>();
+                }
+                catch (...) {
+                    Log::error("Failed to read 'no-categories' value from config JSON");
+                    throw;
+                }
             }
         } else {
             constexpr std::array main_categories{

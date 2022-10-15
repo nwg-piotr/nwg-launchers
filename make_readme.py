@@ -25,7 +25,5 @@ with open(src) as readme_in, open(tgt, 'w') as readme:
     for line in readme_in:
         for k,v in data.items():
             placeholder = 'HELP_OUTPUT_FOR_' + k
-            if placeholder in line:
-                print(placeholder)
             line = line.replace(placeholder, v)
         readme.write(line)
