@@ -27,6 +27,6 @@ grid_client_exe = executable(
 )
 
 install_data(
-	['style.css'],
+	['style.css', 'grid.conf'],
 	install_dir: conf_data.get('datadir', '') / 'nwggrid'
 )

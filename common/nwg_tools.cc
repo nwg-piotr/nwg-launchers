@@ -550,7 +550,14 @@ std::string_view localize(const ns::json& source, std::string_view category) {
         }
         return "All"sv;
     }
-    return json_at(map, category).get<std::string_view>();
+    auto item = map.find(category);
+    if (item == map.end()) {
+        throw std::logic_error{ "Trying to localize unknown category" };
+    }
+    if (item.value()) {
+        return item.value().get<std::string_view>();
+    }
+    return item.key();
 }
 
 } // namespace category
