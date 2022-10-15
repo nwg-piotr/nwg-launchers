@@ -15,23 +15,7 @@
 #include "log.h"
 #include "time_report.h"
 
-const char* const HELP_MESSAGE =
-"GTK button bar: nwgbar " VERSION_STR " (c) Piotr Miller & Contributors 2021\n\n\
-Options:\n\
--h               show this help message and exit\n\
--v               arrange buttons vertically\n\
--ha <l>|<r>      horizontal alignment left/right (default: center)\n\
--va <t>|<b>      vertical alignment top/bottom (default: middle)\n\
--t <name>        template file name (default: bar.json)\n\
--c <name>        css file name (default: style.css)\n\
--o <opacity>     background opacity (0.0 - 1.0, default 0.9)\n\
--b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
--s <size>        button image size (default: 72)\n\
--g <theme>       GTK theme name\n\
--wm <wmname>     window manager name (if can not be detected)\n\n\
-[requires layer-shell]:\n\
--layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
--layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
+#include <bar/help.h>
 
 int main(int argc, char *argv[]) {
     try {
@@ -39,7 +23,7 @@ int main(int argc, char *argv[]) {
 
         InputParser input(argc, argv);
         if(input.cmdOptionExists("-h")){
-            std::cout << HELP_MESSAGE;
+            std::cout << bar::HELP_MESSAGE;
             std::exit(0);
         }
 

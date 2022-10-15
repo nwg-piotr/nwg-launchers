@@ -1,3 +1,6 @@
+
+configure_file(input: 'help.h.in', output: 'help.h', configuration: conf_data)
+
 sources = files(
 	'bar.cc',
 	'bar_classes.cc',

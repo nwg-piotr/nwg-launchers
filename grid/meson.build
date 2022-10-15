@@ -1,3 +1,6 @@
+
+configure_file(input: 'help.h.in', output: 'help.h', configuration: conf_data)
+
 sources = files(
 	'grid.cc',
 	'grid_classes.cc',

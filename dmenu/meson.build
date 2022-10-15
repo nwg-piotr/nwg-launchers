@@ -1,3 +1,5 @@
+configure_file(input: 'help.h.in', output: 'help.h', configuration: conf_data)
+
 sources = files(
 	'dmenu.cc',
 	'dmenu_classes.cc',

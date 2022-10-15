@@ -17,28 +17,7 @@
 #include "grid_entries.h"
 #include "time_report.h"
 
-const char* const HELP_MESSAGE =
-"GTK application grid: nwggrid " VERSION_STR " (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
-\
-Options:\n\
--h               show this help message and exit\n\
--f               display favourites (most used entries); does not work with -d\n\
--p               display pinned entries; does not work with -d \n\
--d               look for .desktop files in custom paths (-d '/my/path1:/my/another path:/third/path') \n\
--o <opacity>     default (black) background opacity (0.0 - 1.0, default 0.9)\n\
--b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
--n <col>         number of grid columns (default: 6)\n\
--s <size>        button image size (default: 72)\n\
--c <name>        css file name (default: style.css)\n\
--l <ln>          force use of <ln> language\n\
--g <theme>       GTK theme name\n\
--wm <wmname>     window manager name (if can not be detected)\n\
--no-categories   disable categories display\n\
--oneshot         run in the foreground, exit when window is closed\n\
-                 generally you should not use this option, use simply `nwggrid` instead\n\
-[requires layer-shell]:\n\
--layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},         default: OVERLAY\n\
--layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
+#include <grid/help.h>
 
 /* Base class for application drivers, simply calls Application::run */
 struct ApplicationDriver {
@@ -90,7 +69,7 @@ int main(int argc, char *argv[]) {
 
         InputParser input{ argc, argv };
         if (input.cmdOptionExists("-h")){
-            std::cout << HELP_MESSAGE;
+            std::cout << grid::HELP_MESSAGE;
             std::exit(0);
         }
 
