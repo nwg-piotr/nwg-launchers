@@ -78,6 +78,11 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
         path /= "grid.conf"sv;
         if ( std::ifstream stream{ path } ) {
             stream >> config_source;
+
+            auto item = config_source.find("no-categories");
+            if (item != config_source.end()) {
+                categories = !item->get<bool>();
+            }
         } else {
             constexpr std::array main_categories{
                 "AudioVideo"sv,

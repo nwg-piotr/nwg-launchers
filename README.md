@@ -91,11 +91,22 @@ Starting with version 0.6.0 nwggrid can be run in server mode which drastically 
 First, start a server with `nwggrid-server` command.
 When it's up and running, run `nwggrid -client` to show the grid.
 
+Starting with version 0.7.0 nwggrid has limited support for XDG Desktop Menu Categories.
+A list of toggles is displayed between pinned/favorite grids and ordinary one.
+Clicking on a button displays entries of said category,
+and holding Ctrl allows to select multiple categories at the same time.
+Only non-empty categories from the list of "known" categories are shown.
+The list can be customized via `/your/config/dir/nwg-launchers/nwggrid/grid.conf`, a JSON configuration file.
+Sample file is provided along with other nwg-launchers sample configuration files.
+I plan to move all customization points to JSON config in the future.
+If the file is not present, a fixed list of categories is used.
+Additionally, you may use `-no-categories` to disable categories, or set `no-categories: false` in configuration file.
+
 ### Usage
 
 ```
 $ nwggrid -h
-GTK application grid: nwggrid 0.6.0 (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors
+GTK application grid: nwggrid 0.7.0 (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors
 
 Usage:
     nwggrid -client      sends -SIGUSR1 to nwggrid-server, requires nwggrid-server running
@@ -107,7 +118,7 @@ See also:
 
 ```
 $ nwggrid-server -h
-GTK application grid: nwggrid 0.6.0 (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors
+GTK application grid: nwggrid 0.7.0 (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors
 
 Options:
 -h               show this help message and exit
@@ -122,6 +133,7 @@ Options:
 -l <ln>          force use of <ln> language
 -g <theme>       GTK theme name
 -wm <wmname>     window manager name (if can not be detected)
+-no-categories   disable categories display
 -oneshot         run in the foreground, exit when window is closed
                  generally you should not use this option, use simply `nwggrid` instead
 [requires layer-shell]:
@@ -158,7 +170,7 @@ This command creates a horizontal or vertical button bar, out of a template file
 
 ```
 $ nwgbar -h
-GTK button bar: nwgbar 0.6.0 (c) Piotr Miller & Contributors 2021
+GTK button bar: nwgbar 0.7.0 (c) Piotr Miller & Contributors 2021
 
 Options:
 -h               show this help message and exit
@@ -259,7 +271,7 @@ This program provides 2 commands:
 
 ```
 $ nwgdmenu -h
-GTK dynamic menu: nwgdmenu 0.6.0 (c) Piotr Miller & Contributors 2021
+GTK dynamic menu: nwgdmenu 0.7.0 (c) Piotr Miller & Contributors 2021
 
 <input> | nwgdmenu - displays newline-separated stdin input as a GTK menu
 nwgdmenu - creates a GTK menu out of commands found in $PATH
