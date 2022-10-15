@@ -6,7 +6,7 @@ sources = files(
 	'dmenu_tools.cc'
 )
 
-executable(
+dmenu_exe = executable(
 	'nwgdmenu',
 	sources,
 	dependencies: [json, gtkmm, gtk_layer_shell],

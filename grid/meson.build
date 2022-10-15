@@ -8,7 +8,7 @@ sources = files(
 	'grid_entries.cc'
 )
 
-executable(
+grid_server_exe = executable(
 	'nwggrid',
 	files('grid_client.cc', 'grid_classes.cc', 'grid_tools.cc'),
 	dependencies: [json, gtkmm, gtk_layer_shell],
@@ -17,7 +17,7 @@ executable(
 	install: true
 )
 
-executable(
+grid_client_exe = executable(
 	'nwggrid-server',
 	sources,
 	dependencies: [json, gtkmm, gtk_layer_shell],

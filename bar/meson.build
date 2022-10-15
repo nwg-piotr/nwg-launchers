@@ -7,7 +7,7 @@ sources = files(
 	'bar_tools.cc'
 )
 
-executable(
+bar_exe = executable(
 	'nwgbar',
 	sources,
 	dependencies: [json, gtkmm, gtk_layer_shell],

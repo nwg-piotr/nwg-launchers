@@ -67,6 +67,22 @@ if get_option('grid')
 	subdir('grid')
 endif
 
+sed = find_program('sh')
+readme = custom_target( 'readme',
+	output: '@SOURCE_ROOT@/README.md',
+	input: '@BUILD_ROOT@/README.md',
+	command: [
+		sh, 'make_readme.sh',
+		'@INPUT@', '@OUTPUT@',
+		bar_exe.full_path(),
+		dmenu_exe.full_path(),
+		grid_client_exe.full_path(),
+		grid_server_exe.full_path()
+	],
+	depends: [bar_exe, dmenu_exe, grid_client_exe, grid_server_exe]
+)
+#configure_file(input: 'README.md.in', output: 'README.md', configuration: conf_data)
+
 install_data(
     ['icon-missing.svg', 'icon-missing.png'],
     install_dir: conf_data.get('datadir')
