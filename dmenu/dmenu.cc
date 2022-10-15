@@ -21,8 +21,8 @@ int main(int argc, char *argv[]) {
 
         InputParser input(argc, argv);
         if (input.cmdOptionExists("-h")){
-            std::cout << dmenu::HELP_MESSAGE;
-            std::exit(0);
+            Log::plain(dmenu::HELP_MESSAGE);
+            return 0;
         }
 
         auto background_color = input.get_background_color(0.3);

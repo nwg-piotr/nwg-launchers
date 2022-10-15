@@ -69,8 +69,8 @@ int main(int argc, char *argv[]) {
 
         InputParser input{ argc, argv };
         if (input.cmdOptionExists("-h")){
-            std::cout << grid::server::HELP_MESSAGE;
-            std::exit(0);
+            Log::plain(grid::server::HELP_MESSAGE);
+            return 0;
         }
 
         auto config_dir = get_config_dir("nwggrid");

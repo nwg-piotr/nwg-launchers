@@ -67,21 +67,28 @@ if get_option('grid')
 	subdir('grid')
 endif
 
-sed = find_program('sh')
-readme = custom_target( 'readme',
-	output: '@SOURCE_ROOT@/README.md',
-	input: '@BUILD_ROOT@/README.md',
+python = find_program('python3', required: false)
+if not python.found()
+	python = find_program('python')
+endif
+
+# generate README.md from template
+# make sure to copy it to the source directory!
+readme = custom_target('readme',
+	output: [ 'README.md' ],
+	input: [ 'README.md.in' ],
 	command: [
-		sh, 'make_readme.sh',
+		python, '@SOURCE_ROOT@/make_readme.py',
 		'@INPUT@', '@OUTPUT@',
 		bar_exe.full_path(),
 		dmenu_exe.full_path(),
 		grid_client_exe.full_path(),
 		grid_server_exe.full_path()
 	],
-	depends: [bar_exe, dmenu_exe, grid_client_exe, grid_server_exe]
+	depends: [bar_exe, dmenu_exe, grid_client_exe, grid_server_exe],
+	install_dir: conf_data.get('datadir'),
+	install: true
 )
-#configure_file(input: 'README.md.in', output: 'README.md', configuration: conf_data)
 
 install_data(
     ['icon-missing.svg', 'icon-missing.png'],
