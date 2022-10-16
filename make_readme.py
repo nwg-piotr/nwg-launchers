@@ -27,3 +27,5 @@ with open(src) as readme_in, open(tgt, 'w') as readme:
             placeholder = 'HELP_OUTPUT_FOR_' + k
             line = line.replace(placeholder, v)
         readme.write(line)
+
+    print('Successfully generated README, do not forget to copy it to the source root')
