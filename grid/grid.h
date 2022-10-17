@@ -7,6 +7,8 @@
  * */
 #pragma once
 
+#include <unordered_set>
+
 #include <gtkmm.h>
 #include <glibmm/ustring.h>
 
@@ -71,12 +73,17 @@ struct Entry {
     }
 };
 
+class GridWindow;
+
 class GridBox : public Gtk::Button {
 public:
     /* name, comment, desktop-id, index */
     GridBox(Glib::ustring, Glib::ustring, Entry& entry);
     GridBox(GridBox&&) = default;
     ~GridBox() = default;
+
+    GridWindow& get_toplevel();
+
     bool on_button_press_event(GdkEventButton*) override;
     bool on_focus_in_event(GdkEventFocus*) override;
     void on_enter() override;
@@ -101,7 +108,70 @@ struct GridConfig: public Config {
     int icon_size{ 72 };
     RGBA background_color;
     bool oneshot{ false };    // run in foreground, exit when window is closed
+    bool categories{ false }; // enable categories
+    ns::json config_source;
 };
+
+
+struct CategoryButton;
+
+struct CategoriesSet {
+    struct Category {
+        std::string category;
+        std::size_t refs;
+        CategoryButton* button;
+        Category(std::string_view category): category{ category }, refs{ 1 } {}
+    };
+
+    std::list<Category> categories_store;
+    std::unordered_map<std::string_view, decltype(categories_store)::iterator> categories;
+    std::unordered_set<std::string_view> active_categories;
+    bool all_enabled{ true };
+
+    using Index = typename decltype(categories_store)::iterator;
+
+    CategoriesSet() = default;
+    bool toggle(std::string_view category);
+    std::pair<Index, bool> ref(std::string_view category);
+    std::pair<Index, bool> unref(std::string_view category);
+    bool enabled(std::string_view category) const;
+    bool enabled(const GridBox& box) const;
+
+    void delete_by_index(Index index);
+};
+
+struct CategoryButton: public Gtk::ToggleButton {
+    Gdk::ModifierType modifiers;
+    bool mod_pressed{ false };
+
+    CategoriesSet& categories;
+    CategoriesSet::Index index;
+
+    CategoryButton(const std::string& name, CategoriesSet& set, CategoriesSet::Index index);
+    ~CategoryButton();
+
+    bool on_button_press_event(GdkEventButton* key) override {
+        mod_pressed = (key->state & modifiers) == Gdk::CONTROL_MASK;
+        // if Ctrl is not pressed, disable all other categories
+        if (!mod_pressed) {
+            auto& fboxchild = *dynamic_cast<Gtk::FlowBoxChild*>(get_parent());
+            auto& fbox = dynamic_cast<Gtk::FlowBox&>(*fboxchild.get_parent());
+            fbox.foreach([this](Gtk::Widget& widget) {
+                auto& fboxchild = static_cast<Gtk::FlowBoxChild&>(widget);
+                auto* button = dynamic_cast<CategoryButton*>(fboxchild.get_child());
+                // <all> button is not CategoryButton
+                if (button && this != button) {
+                    button->set_active(false);
+                }
+            });
+        }
+        return Gtk::ToggleButton::on_button_press_event(key);
+    }
+    bool on_button_release_event(GdkEventButton* key) override {
+        return Gtk::ToggleButton::on_button_release_event(key);
+    }
+};
+
 
 class AbstractBoxes {
 protected:
@@ -226,21 +296,52 @@ class AppBoxes: public BoxesModel, public Create<AppBoxes> {
     friend struct Create<AppBoxes>; // permit Create to access a protected constructor
 private:
     std::vector<GridBox*> all_boxes; // unsorted & unfiltered boxes
-    Glib::ustring search_criteria;
+    Glib::ustring         search_criteria;
+    CategoriesSet&        categories;
 protected:
-    AppBoxes(): Glib::ObjectBase(typeid(AppBoxes)) {}
+    AppBoxes(CategoriesSet& set): Glib::ObjectBase(typeid(AppBoxes)), categories{ set } {}
     void add_if_matches(GridBox* box) {
-        if (box->name.casefold().find(search_criteria) != Glib::ustring::npos) {
+        auto enabled = categories.enabled(*box);
+        if (enabled && (box->name.casefold().find(search_criteria) != Glib::ustring::npos)) {
             container_add_sorted(boxes, box, [](auto* a, auto* b) {
                 return a->name.compare(b->name) > 0;
             });
         }
     }
+    void filter_impl(bool restore) {
+        // TODO: only update actually removed/inserted entries
+        auto old_size = boxes.size();
+        if (!restore) {
+            for (auto && box: boxes) {
+                box->reference();
+            }
+            boxes.clear();
+            for (auto && box: all_boxes) {
+                box->reference();
+                add_if_matches(box);
+            }
+        } else {
+            boxes = all_boxes;
+            std::sort(boxes.begin(), boxes.end(), [](auto* a, auto* b) {
+                return a->name.compare(b->name) < 0;
+            });
+            for (auto && box: all_boxes) {
+                box->reference();
+                box->reference();
+            }
+        }
+        items_changed(0, old_size, boxes.size());
+    }
 public:
     void add(GridBox& box) override {
         // TODO: ensure the box does not exist before insertion for all *Boxes classes
         all_boxes.push_back(&box);
-        if (search_criteria.length() == 0 || (box.name.casefold().find(search_criteria) != Glib::ustring::npos)) {
+        auto ok = categories.enabled(box) && (
+            search_criteria.length() == 0
+            ||
+            box.name.casefold().find(search_criteria) != Glib::ustring::npos
+        );
+        if (ok) {
             auto pos = container_add_sorted(boxes, &box, [](auto* a, auto* b) {
                 return a->name.compare(b->name) > 0;
             });
@@ -258,58 +359,52 @@ public:
             all_boxes.erase(to_erase_2);
         }
     }
+    void update(GridBox& from, GridBox& to) override {
+        all_boxes.push_back(&to);
+        auto removed = std::remove(all_boxes.begin(), all_boxes.end(), &from);
+        if (removed != all_boxes.end()) {
+            all_boxes.erase(removed, all_boxes.end());
+        }
+        return BoxesModel::update(from, to);
+    }
     void filter(const Glib::ustring& criteria) {
         auto criteria_ = criteria.casefold();
         if (search_criteria != criteria_) {
             search_criteria = criteria_;
-            // TODO: only update actually removed/inserted entries
-            auto old_size = boxes.size();
-            if (search_criteria.length() > 0) {
-                for (auto && box: boxes) {
-                    box->reference();
-                }
-                boxes.clear();
-                for (auto && box: all_boxes) {
-                    box->reference();
-                    add_if_matches(box);
-                }
-            } else {
-                boxes = all_boxes;
-                std::sort(boxes.begin(), boxes.end(), [](auto* a, auto* b) {
-                    return a->name.compare(b->name) < 0;
-                });
-                for (auto && box: all_boxes) {
-                    box->reference();
-                    box->reference();
-                }
-            }
-            items_changed(0, old_size, boxes.size());
+            filter_impl(search_criteria.length() == 0);
         }
+    }
+    void on_category_toggled() {
+        filter_impl(false);
     }
     bool is_filtered() {
         return search_criteria.length() > 0;
     }
 };
 
-
 class GridWindow : public PlatformWindow {
     public:
         GridWindow(GridConfig& config);
         GridWindow(const GridWindow&) = delete;
+        ~GridWindow();
 
-        Gtk::SearchEntry searchbox;              // Search apps
+        Gtk::SearchEntry  searchbox;              // Search apps
+        Gtk::FlowBox      categories_box;
+        Gtk::ToggleButton categories_all;
         Gtk::Label description;                  // To display .desktop entry Comment field at the bottom
         Gtk::FlowBox apps_grid;                  // All application buttons grid
         Gtk::FlowBox favs_grid;                  // Favourites grid above
         Gtk::FlowBox pinned_grid;                // Pinned entries grid above
         Gtk::Separator separator;                // between favs and all apps
         Gtk::Separator separator1;               // below pinned
-        Gtk::VBox outer_vbox;
-        Gtk::VBox inner_vbox;
+
+        struct HVBoxes;
+        std::unique_ptr<HVBoxes> hvboxes;
         Gtk::HBox hbox_header;
         Gtk::HBox pinned_hbox;
         Gtk::HBox favs_hbox;
         Gtk::HBox apps_hbox;
+        Gtk::HBox categories_hbox;
         Gtk::ScrolledWindow scrolled_window;
         GridConfig&           config;
 
@@ -337,10 +432,15 @@ class GridWindow : public PlatformWindow {
         bool on_delete_event(GdkEventAny*) override;
         bool on_button_press_event(GdkEventButton*) override;
     private:
+        void ref_categories(const GridBox& box);
+        void unref_categories(GridBox& box);
+        
         std::list<GridBox>  all_boxes {}; // stores all applications buttons
         Glib::RefPtr<AppBoxes> apps_boxes;   // common boxes (possibly filtered)
         Glib::RefPtr<FavBoxes> fav_boxes;    // favourites (most clicked)
         Glib::RefPtr<PinnedBoxes> pinned_boxes; // boxes pinned by user
+
+        CategoriesSet categories;
 
         bool pins_changed = false;
         bool favs_changed = false;
@@ -353,6 +453,7 @@ class GridWindow : public PlatformWindow {
 template <typename ... Args>
 GridBox& GridWindow::emplace_box(Args&& ... args) {
     auto& ab = this -> all_boxes.emplace_back(std::forward<Args>(args)...);
+    ref_categories(ab);
     ab.reference();
     ab.reference();
     AbstractBoxes* boxes = apps_boxes.get();

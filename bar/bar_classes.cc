@@ -17,6 +17,7 @@
 #include "charconv-compat.h"
 #include "nwg_tools.h"
 #include "bar.h"
+#include "log.h"
 
 BarConfig::BarConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen):
     Config{ parser, "~nwgbar", "~nwgbar", screen }

@@ -13,6 +13,7 @@
 #include "filesystem-compat.h"
 #include "nwg_tools.h"
 #include "grid.h"
+#include "log.h"
 
 CacheEntry::CacheEntry(std::string desktop_id, int clicks): desktop_id(std::move(desktop_id)), clicks(clicks) { }
 

@@ -1,10 +1,12 @@
+configure_file(input: 'help.h.in', output: 'help.h', configuration: conf_data)
+
 sources = files(
 	'dmenu.cc',
 	'dmenu_classes.cc',
 	'dmenu_tools.cc'
 )
 
-executable(
+dmenu_exe = executable(
 	'nwgdmenu',
 	sources,
 	dependencies: [json, gtkmm, gtk_layer_shell],

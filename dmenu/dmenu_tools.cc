@@ -13,6 +13,7 @@
 #include "filesystem-compat.h"
 #include "nwg_tools.h"
 #include "dmenu.h"
+#include "log.h"
 
 /*
  * Returns settings cache file path

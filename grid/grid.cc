@@ -15,28 +15,9 @@
 #include "nwg_classes.h"
 #include "grid.h"
 #include "grid_entries.h"
+#include "time_report.h"
 
-const char* const HELP_MESSAGE =
-"GTK application grid: nwggrid " VERSION_STR " (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
-\
-Options:\n\
--h               show this help message and exit\n\
--f               display favourites (most used entries); does not work with -d\n\
--p               display pinned entries; does not work with -d \n\
--d               look for .desktop files in custom paths (-d '/my/path1:/my/another path:/third/path') \n\
--o <opacity>     default (black) background opacity (0.0 - 1.0, default 0.9)\n\
--b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
--n <col>         number of grid columns (default: 6)\n\
--s <size>        button image size (default: 72)\n\
--c <name>        css file name (default: style.css)\n\
--l <ln>          force use of <ln> language\n\
--g <theme>       GTK theme name\n\
--wm <wmname>     window manager name (if can not be detected)\n\
--oneshot         run in the foreground, exit when window is closed\n\
-                 generally you should not use this option, use simply `nwggrid` instead\n\
-[requires layer-shell]:\n\
--layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},         default: OVERLAY\n\
--layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n";
+#include <grid/help.h>
 
 /* Base class for application drivers, simply calls Application::run */
 struct ApplicationDriver {
@@ -84,14 +65,12 @@ struct OneshotDriver: public ApplicationDriver {
 
 int main(int argc, char *argv[]) {
     try {
-        struct timeval tp;
-        gettimeofday(&tp, NULL);
-        long int start_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+        ntime::Time start{ "start" };
 
         InputParser input{ argc, argv };
         if (input.cmdOptionExists("-h")){
-            std::cout << HELP_MESSAGE;
-            std::exit(0);
+            Log::plain(grid::server::HELP_MESSAGE);
+            return 0;
         }
 
         auto config_dir = get_config_dir("nwggrid");
@@ -105,7 +84,7 @@ int main(int argc, char *argv[]) {
         auto provider = Gtk::CssProvider::create();
         auto display = Gdk::Display::get_default();
         auto screen = display->get_default_screen();
-	auto settings = Gtk::Settings::get_for_screen(screen);
+        auto settings = Gtk::Settings::get_for_screen(screen);
         if (!provider || !display || !settings || !screen) {
             Log::error("Failed to initialize GTK");
             return EXIT_FAILURE;
@@ -118,7 +97,7 @@ int main(int argc, char *argv[]) {
         };
         Log::info("Locale: ", config.lang);
 
-	settings->property_gtk_theme_name() = config.theme;
+        settings->property_gtk_theme_name() = config.theme;
 
         Gtk::StyleContext::add_provider_for_screen(screen, provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
         {
@@ -179,27 +158,17 @@ int main(int argc, char *argv[]) {
             dirs = get_app_dirs();
         }
 
-        gettimeofday(&tp, NULL);
-        long int commons_ms  = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+        ntime::Time commons{ "common", start };
 
         GridWindow window{ config };
 
-        gettimeofday(&tp, NULL);
-        long int window_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+        ntime::Time window_time{ "window", commons };
 
         EntriesModel   table{ config, window, icon_provider, pinned, favourites };
         EntriesManager entries_provider{ dirs, table, config };
 
-        gettimeofday(&tp, NULL);
-        long int model_ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-        auto format = [](auto&& title, auto from, auto to) {
-            Log::plain(title, to - from, "ms");
-        };
-        format("Total: ", start_ms, model_ms);
-        format("\tcommon: ", start_ms, commons_ms);
-        format("\twindow: ", commons_ms, window_ms);
-        format("\tmodels: ", window_ms, model_ms);
+        ntime::Time model_time{ "models", window_time };
+        ntime::report(start);
 
         std::unique_ptr<ApplicationDriver> driver;
         if (config.oneshot) {

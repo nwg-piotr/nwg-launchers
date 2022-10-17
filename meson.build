@@ -4,7 +4,7 @@ project('nwg-launchers', 'cpp',
 			'warning_level=3'
 			],
 	license: 'GPL-3.0-or-later',
-	version: '0.6.0'
+	version: '0.7.0'
 )
 
 compiler = meson.get_compiler('cpp')
@@ -44,6 +44,7 @@ conf_data = configuration_data()
 conf_data.set('version', meson.project_version())
 conf_data.set('prefix', get_option('prefix'))
 conf_data.set('datadir', get_option('prefix') / get_option('datadir') / 'nwg-launchers')
+conf_data.set('HAVE_MODERN_NLOHMANN_JSON', json.version().version_compare('>=3.11.0'))
 configure_file(
 	input : 'nwgconfig.h.in',
 	output : 'nwgconfig.h',
@@ -64,6 +65,33 @@ endif
 
 if get_option('grid')
 	subdir('grid')
+endif
+
+python = find_program('python3', required: false)
+if not python.found()
+	python = find_program('python', required: false)
+endif
+
+# generate README.md from template
+# make sure to copy it to the source directory!
+if python.found()
+	readme = custom_target('readme',
+		output: [ 'README.md' ],
+		input: [ 'README.md.in' ],
+		command: [
+			python, '@SOURCE_ROOT@/make_readme.py',
+			'@INPUT@', '@OUTPUT@',
+			bar_exe.full_path(),
+			dmenu_exe.full_path(),
+			grid_client_exe.full_path(),
+			grid_server_exe.full_path()
+		],
+		depends: [bar_exe, dmenu_exe, grid_client_exe, grid_server_exe],
+		install_dir: conf_data.get('datadir'),
+		install: true
+	)
+else
+	message('Python was not found, fresh README.md will not be generated')
 endif
 
 install_data(

@@ -26,6 +26,7 @@
 #include "nwgconfig.h"
 #include "nwg_exceptions.h"
 #include "nwg_tools.h"
+#include "log.h"
 
 
 #ifdef GDK_WINDOWING_X11
@@ -536,6 +537,30 @@ std::string get_locale() {
     return locale;
 }
 
+
+namespace category {
+
+using namespace std::string_view_literals;
+
+std::string_view localize(const ns::json& source, std::string_view category) {
+    auto& map = json_at(source, "categories"sv);
+    if (category == "All"sv) {
+        if (auto iter = map.find(category); iter != map.end()) {
+            return iter.value().get_ref<const std::string&>();
+        }
+        return "All"sv;
+    }
+    auto item = map.find(category);
+    if (item == map.end()) {
+        throw std::logic_error{ "Trying to localize unknown category" };
+    }
+
+    return item.value().get_ref<const std::string&>();
+}
+
+} // namespace category
+
+
 /*
  * Returns file content as a string
  * */
@@ -583,6 +608,30 @@ std::string_view take_last_by(std::string_view str, std::string_view delimiter) 
     }
     return str;
 }
+
+
+ns::json::reference json_at(ns::json& j, std::string_view key) {
+#ifdef HAVE_MODERN_NLOHMANN_JSON
+    auto& k = key;
+#else
+    // pray to SSO
+    std::string k{ key };
+#endif // HAVE_MODERN_NLOHMANN_JSON
+
+    return j[k];
+}
+
+ns::json::const_reference json_at(const ns::json& j, std::string_view key) {
+#ifdef HAVE_MODERN_NLOHMANN_JSON
+    auto& k = key;
+#else
+    // pray to SSO
+    std::string k{ key };
+#endif // HAVE_MODERN_NLOHMANN_JSON
+
+    return j[k];
+}
+
 
 /*
  * Reads json from file

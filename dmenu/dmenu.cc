@@ -12,40 +12,17 @@
 #include "nwg_tools.h"
 #include "nwg_classes.h"
 #include "dmenu.h"
+#include "log.h"
 
-#define STR_EXPAND(x) #x
-#define STR(x) STR_EXPAND(x)
-
-const char* const HELP_MESSAGE =
-"GTK dynamic menu: nwgdmenu " VERSION_STR " (c) Piotr Miller & Contributors 2021\n\n\
-<input> | nwgdmenu - displays newline-separated stdin input as a GTK menu\n\
-nwgdmenu - creates a GTK menu out of commands found in $PATH\n\n\
-Options:\n\
--h               show this help message and exit\n\
--n               no search box\n\
--ha <l>|<r>      horizontal alignment left/right (default: center)\n\
--va <t>|<b>      vertical alignment top/bottom (default: middle)\n\
--r <rows>        number of rows (default: " STR(ROWS_DEFAULT) ")\n\
--c <name>        css file name (default: style.css)\n\
--o <opacity>     background opacity (0.0 - 1.0, default 0.3)\n\
--b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)\n\
--g <theme>       GTK theme name\n\
--wm <wmname>     window manager name (if can not be detected)\n\
--run             ignore stdin, always build from commands in $PATH\n\n\
-[requires layer-shell]:\n\
--layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY\n\
--layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto\n\n\
-Hotkeys:\n\
-Delete        clear search box\n\
-Insert        switch case sensitivity\n";
+#include <dmenu/help.h>
 
 int main(int argc, char *argv[]) {
     try {
 
         InputParser input(argc, argv);
         if (input.cmdOptionExists("-h")){
-            std::cout << HELP_MESSAGE;
-            std::exit(0);
+            Log::plain(dmenu::HELP_MESSAGE);
+            return 0;
         }
 
         auto background_color = input.get_background_color(0.3);

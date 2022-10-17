@@ -14,6 +14,9 @@
 #include "nwg_tools.h"
 #include "nwg_exceptions.h"
 #include "nwgconfig.h"
+#include "log.h"
+
+#include <grid/help.h>
 
 const char* const HELP_MESSAGE = "\
 GTK application grid: nwggrid " VERSION_STR " (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors \n\n\
@@ -32,7 +35,7 @@ int main(int argc, char* argv[]) {
             std::string_view argv1{ argv[1] };
 
             if (argv1 == "-h"sv) {
-                Log::plain(HELP_MESSAGE);
+                Log::plain(grid::client::HELP_MESSAGE);
                 return EXIT_SUCCESS;
             }
 

@@ -13,8 +13,22 @@
 
 #include "nwg_classes.h"
 #include "filesystem-compat.h"
-#include "on_desktop_entry.h"
 #include "grid.h"
+
+/* Stores pre-processed assets useful when parsing DesktopEntry struct */
+struct DesktopEntryConfig {
+    std::string_view term;  // user-preferred terminal
+    std::string name_ln;    // localized prefix: Name[ln]=
+    std::string comment_ln; // localized prefix: Comment[ln]=
+    std::string_view home;
+
+    const ns::json& config_source;
+    std::vector<std::string_view> known_categories;
+
+    DesktopEntryConfig(const GridConfig& config);
+
+    DesktopEntryConfig(DesktopEntryConfig&&) = delete;
+};
 
 // Table containing entries
 // internally is a thin wrapper over list<entry>
@@ -57,10 +71,15 @@ struct EntriesModel {
         return entries.begin();
     }
     template <typename ... Ts>
-    void update_entry(Index index, Ts && ... args) {
+    Index update_entry(Index index, Ts && ... args) {
         // TODO: merge entries
-        *index = Entry{ std::forward<Ts>(args)... };
-        auto && entry = *index;
+        //! ЗДЕСЬ ПРОИСХОДИТ ОБСЕР
+        auto new_index = entries.emplace(index, std::forward<Ts>(args)...);
+        auto& entry = *new_index;
+
+        decltype(entries) preserve;
+        preserve.splice(index, entries);
+
         set_entry_stats(entry);
         GridBox new_box {
             entry.desktop_entry().name,
@@ -72,6 +91,8 @@ struct EntriesModel {
         auto image = Gtk::make_managed<Gtk::Image>(icons.load_icon(entry.desktop_entry().icon));
         new_box.set_image(*image);
         window.update_box_by_id(entry.desktop_id, std::move(new_box));
+
+        return new_index;
     }
     void erase_entry(Index index) {
         auto && entry = *index;

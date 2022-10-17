@@ -20,12 +20,16 @@
 #include "charconv-compat.h"
 #include "nwg_tools.h"
 #include "grid.h"
+#include "log.h"
+
 
 GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen>& screen, const fs::path& config_dir):
     Config{ parser, "~nwggrid", "~nwggrid", screen },
     term{ get_term(config_dir.native()) },
     background_color{ parser.get_background_color(0.9) }
 {
+    using namespace std::string_view_literals;
+
     auto has_custom_paths = parser.cmdOptionExists("-d");
     auto has_favs = parser.cmdOptionExists("-f");
     auto has_pins = parser.cmdOptionExists("-p");
@@ -67,11 +71,68 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
         icon_size = parse_icon_size(i_size);
     }
     oneshot = parser.cmdOptionExists("-oneshot");
+    categories = !parser.cmdOptionExists("-no-categories");
+
+    if (categories) {
+        auto path = get_config_dir("nwggrid");
+        path /= "grid.conf"sv;
+        if ( std::ifstream stream{ path } ) {
+            stream >> config_source;
+
+            auto item = config_source.find("no-categories");
+            if (item != config_source.end()) {
+                try {
+                    categories = !item->get<bool>();
+                }
+                catch (...) {
+                    Log::error("Failed to read 'no-categories' value from config JSON");
+                    throw;
+                }
+            }
+        } else {
+            constexpr std::array main_categories{
+                "AudioVideo"sv,
+                "Development"sv,
+                "Education"sv,
+                "Game"sv,
+                "Graphics"sv,
+                "Network"sv,
+                "Office"sv,
+                "Science"sv,
+                "Settings"sv,
+                "System"sv,
+                "Utility"sv
+            };
+
+            auto& map = config_source["categories"];
+            for (auto c: main_categories) {
+                json_at(map, c) = c;
+            }
+            json_at(map, "AudioVideo") = "Multimedia"sv;
+        }
+    }
 }
 
 static Gtk::Widget* make_widget(const Glib::RefPtr<Glib::Object>& object) {
     return dynamic_cast<GridBox*>(object.get());
 }
+
+static int sort_by_name(Gtk::FlowBoxChild* a, Gtk::FlowBoxChild* b) {
+    auto a1 = dynamic_cast<CategoryButton*>(a->get_child());
+    if (!a1) {
+        return -1;
+    }
+    auto b1 = dynamic_cast<CategoryButton*>(b->get_child());
+    if (!b1) {
+        return 1;
+    }
+    return a1->get_label().compare(b1->get_label());
+}
+
+struct GridWindow::HVBoxes {
+    Gtk::VBox outer;
+    Gtk::VBox inner;
+};
 
 GridWindow::GridWindow(GridConfig& config):
     PlatformWindow{ config }, config{ config }
@@ -93,10 +154,35 @@ GridWindow::GridWindow(GridConfig& config):
     setup_grid(apps_grid);
     setup_grid(favs_grid);
     setup_grid(pinned_grid);
+    setup_grid(categories_box);
 
-    apps_boxes = AppBoxes::create();
+    categories_box.set_sort_func(&sort_by_name);
+
+    apps_boxes = AppBoxes::create(categories);
     pinned_boxes = PinnedBoxes::create();
     fav_boxes = FavBoxes::create();
+
+    auto label_all = category::localize(config.config_source, "All");
+    categories_all.set_label(Glib::locale_to_utf8({ label_all.data(), label_all.size() }));
+    categories_all.signal_toggled().connect([this](){
+        auto active = categories_all.get_active();
+        categories.all_enabled = active;
+        if (active) {
+            // disable all other buttons
+            categories_box.foreach([](auto& widget){
+                auto& fboxchild = static_cast<Gtk::FlowBoxChild&>(widget);
+                auto* button = dynamic_cast<Gtk::ToggleButton*>(fboxchild.get_child());
+                if (!button) {
+                    throw std::logic_error{ "Categories button is not a Gtk::ToggleButton" };
+                }
+                button->set_active(false);
+            });
+        }
+        apps_boxes->on_category_toggled();
+    });
+    categories_all.set_name("categories_all");
+    categories_all.set_active();
+    categories_box.add(categories_all);
 
     // doesn't compile with lambda due to sigc bug, must use free function
     Gtk::FlowBox::SlotCreateWidget<Glib::Object> make_widget_{ &make_widget };
@@ -112,6 +198,11 @@ GridWindow::GridWindow(GridConfig& config):
     separator1.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
     separator1.set_name("separator");
     add_events(Gdk::KEY_PRESS_MASK | Gdk::KEY_RELEASE_MASK);
+
+    hvboxes.reset(new GridWindow::HVBoxes());
+    auto& outer_vbox = hvboxes->outer;
+    auto& inner_vbox = hvboxes->inner;
+
     outer_vbox.set_spacing(15);
     hbox_header.pack_start(searchbox, Gtk::PACK_EXPAND_PADDING, 0);
     outer_vbox.pack_start(hbox_header, Gtk::PACK_SHRINK, 0);
@@ -125,6 +216,11 @@ GridWindow::GridWindow(GridConfig& config):
     inner_vbox.set_halign(Gtk::ALIGN_CENTER);
     inner_vbox.pack_start(pinned_hbox, Gtk::PACK_SHRINK, 5);
     inner_vbox.pack_start(separator1, false, true, 0);
+
+    if (config.categories) {
+        inner_vbox.pack_start(categories_hbox, false, false, 5);
+    }
+    categories_hbox.pack_start(categories_box, true, false, 0);
 
     favs_hbox.pack_start(favs_grid, true, false, 0);
     inner_vbox.pack_start(favs_hbox, false, false, 5);
@@ -143,9 +239,16 @@ GridWindow::GridWindow(GridConfig& config):
     this -> show_all_children();
 }
 
-bool GridWindow::on_button_press_event(GdkEventButton *event) {
-    (void) event; // suppress warning
+GridWindow::~GridWindow() {
+    // this is important: each button frees it's data in dtor,
+    // and the data must be freed while GridWindow is alive
+    categories_box.foreach([this](auto & child){
+        categories_box.remove(child);
+    });
+}
 
+bool GridWindow::on_button_press_event(GdkEventButton *event) {
+    PlatformWindow::on_button_press_event(event);
     this->hide();
     return true;
 }
@@ -364,9 +467,11 @@ void GridWindow::on_show() {
     auto vadjustment = scrolled_window.get_vadjustment();
     hadjustment->set_value(hadjustment->get_lower());
     vadjustment->set_value(vadjustment->get_lower());
-    focus_first_box();
     searchbox.set_text("");
-    return PlatformWindow::on_show();
+    PlatformWindow::on_show();
+    grab_focus();
+    focus_first_box();
+    disable_flowbox_child_focus(apps_grid);
 }
 
 bool GridWindow::on_delete_event(GdkEventAny* event) {
@@ -403,6 +508,7 @@ inline auto with_box_by_id = [](auto && container, auto && desktop_id, auto && f
 void GridWindow::remove_box_by_desktop_id(std::string_view desktop_id) {
     with_box_by_id(all_boxes, desktop_id, [this](auto && iter) {
         auto && box = *iter;
+        unref_categories(box);
         // delete references to the widget from models
         pinned_boxes->erase(box);
         fav_boxes->erase(box);
@@ -423,11 +529,136 @@ void GridWindow::update_box_by_id(std::string_view desktop_id, GridBox && new_bo
     with_box_by_id(all_boxes, desktop_id, [this,&new_box](auto && iter) {
         auto && box = *iter;
         auto && new_box_ref = all_boxes.emplace_front(std::move(new_box));
+
+        ref_categories(new_box_ref);
+        unref_categories(box);
+
         pinned_boxes->update(box, new_box_ref);
         fav_boxes->update(box, new_box_ref);
         apps_boxes->update(box, new_box_ref);
         all_boxes.erase(iter);
     });
+}
+
+void GridWindow::ref_categories(const GridBox& box) {
+    for (auto && category: box.entry->desktop_entry_->categories) {
+        if (auto [index, inserted] = categories.ref(category); inserted) {
+            std::string_view category{ index->category };
+            auto* button = Gtk::make_managed<CategoryButton>(index->category, categories, index);
+            index->button = button;
+            button->show();
+            categories_box.insert(*button, -1);
+            button->set_active(false);
+
+            auto* fboxchild = dynamic_cast<Gtk::FlowBoxChild*>(button->get_parent());
+            if (fboxchild) {
+                fboxchild->set_can_focus(false);
+            }
+
+            // initial state: ALL active, others disabled
+            // any: enable clicked, disable ALL & other active buttons
+            // C+any: disable ALL, enable clicked
+
+            button->signal_toggled().connect([this, category, button]() {
+                auto active = button->get_active();
+                if (active) {
+                    categories_all.set_active(false);
+                }
+                categories.all_enabled = categories_all.get_active();
+                categories.toggle(category);
+
+                this->apps_boxes->on_category_toggled();
+                this -> refresh_separators();
+                this -> focus_first_box();
+                refresh_max_children_per_line(apps_grid, *apps_boxes.get(), config.num_col);
+            });
+        }
+    }
+}
+
+void GridWindow::unref_categories(GridBox& box) {
+    for (auto && category: box.entry->desktop_entry_->categories) {
+        if (auto [index, deleted] = categories.unref(category); deleted) {
+            auto& button = *index->button;
+            auto* parent = dynamic_cast<Gtk::Widget*>(button.get_parent());
+            if (!parent) {
+                throw std::logic_error{ "CategoryButton::get_parent returned non-widget" };
+            }
+            categories_box.remove(*parent);
+        }
+    }
+}
+
+CategoryButton::CategoryButton(const std::string& name, CategoriesSet& set, CategoriesSet::Index index):
+    Gtk::ToggleButton{ name }, categories{ set }, index{ index }
+{
+    modifiers = Gtk::AccelGroup::get_default_mod_mask();
+}
+
+CategoryButton::~CategoryButton() {
+    categories.delete_by_index(index);
+}
+
+bool CategoriesSet::toggle(std::string_view category) {
+    if (auto iter = active_categories.find(category); iter != active_categories.end()) {
+        active_categories.extract(iter);
+        all_enabled = active_categories.empty();
+        return false;
+    } else {
+        active_categories.emplace_hint(iter, category);
+        return true;
+    }
+}
+
+std::pair<CategoriesSet::Index, bool> CategoriesSet::ref(std::string_view category) {
+    std::pair<Index, bool> ret{ {}, false };
+    if (auto iter = categories.find(category); iter != categories.end()) {
+        ++iter->second->refs;
+        return ret;
+    } else {
+        auto& ref = categories_store.emplace_front(category);
+        ret.first = categories_store.begin();
+        categories.emplace_hint(iter, ref.category, ret.first);
+        ret.second = true;
+    }
+    return ret;
+}
+
+std::pair<CategoriesSet::Index, bool> CategoriesSet::unref(std::string_view category) {
+    std::pair<Index, bool> ret{ {}, false };
+    if (auto iter = categories.find(category); iter != categories.end()) {
+        --iter->second->refs;
+        ret.second = !iter->second->refs;
+        if (ret.second) {
+            auto node = categories.extract(iter);
+            active_categories.extract(category);
+            ret.first = node.mapped();
+        }
+        all_enabled = active_categories.empty();
+        return ret;
+    }
+    throw std::logic_error{ "Trying to unref non-existing category" };
+}
+
+void CategoriesSet::delete_by_index(Index index) {
+    categories_store.erase(index);
+}
+
+inline auto enabled_impl = [](auto && cs) {
+    return [&](auto c) { return cs.find(c) != cs.end(); };
+};
+
+bool CategoriesSet::enabled(std::string_view category) const {
+    return all_enabled || enabled_impl(active_categories)(category);
+}
+
+bool CategoriesSet::enabled(const GridBox& box) const {
+    auto && categories = box.entry->desktop_entry_->categories;
+    return all_enabled || std::any_of(
+        categories.begin(),
+        categories.end(),
+        enabled_impl(active_categories)
+    );
 }
 
 GridBox::GridBox(Glib::ustring name, Glib::ustring comment, Entry& entry)
@@ -444,8 +675,12 @@ GridBox::GridBox(Glib::ustring name, Glib::ustring comment, Entry& entry)
     this->set_image_position(Gtk::POS_TOP);
 }
 
+GridWindow& GridBox::get_toplevel() {
+    return *dynamic_cast<GridWindow*>(Gtk::Button::get_toplevel());
+}
+
 bool GridBox::on_button_press_event(GdkEventButton* event) {
-    auto& toplevel = *dynamic_cast<GridWindow*>(this -> get_toplevel());
+    auto& toplevel = get_toplevel();
     if (toplevel.config.pins && event->button == 3) { // right-clicked
         toplevel.toggle_pinned(*this);
     } else {
@@ -457,19 +692,19 @@ bool GridBox::on_button_press_event(GdkEventButton* event) {
 bool GridBox::on_focus_in_event(GdkEventFocus* event) {
     (void) event; // suppress warning
 
-    auto& toplevel = *dynamic_cast<GridWindow*>(this->get_toplevel());
+    auto& toplevel = get_toplevel();
     toplevel.set_description(comment);
-    return true;
+    return Gtk::Button::on_focus_in_event(event);
 }
 
 void GridBox::on_enter() {
-    auto& toplevel = *dynamic_cast<GridWindow*>(this->get_toplevel());
+    auto& toplevel = get_toplevel();
     toplevel.set_description(comment);
     return Gtk::Button::on_enter();
 }
 
 void GridBox::on_activate() {
-    auto& toplevel = *dynamic_cast<GridWindow*>(this->get_toplevel());
+    auto& toplevel = get_toplevel();
     toplevel.run_box(*this);
 }
 
@@ -488,3 +723,4 @@ void GridInstance::on_sigint() {
 void GridInstance::on_sigterm() {
     app.release();
 }
+

@@ -106,43 +106,12 @@ Additionally, you may use `-no-categories` to disable categories, or set `no-cat
 
 ```
 $ nwggrid -h
-GTK application grid: nwggrid 0.7.0 (c) 2022 Piotr Miller, Sergey Smirnykh & Contributors 
-
-Options:
--h               show this help message and exit
--f               display favourites (most used entries); does not work with -d
--p               display pinned entries; does not work with -d 
--d               look for .desktop files in custom paths (-d '/my/path1:/my/another path:/third/path') 
--o <opacity>     default (black) background opacity (0.0 - 1.0, default 0.9)
--b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)
--n <col>         number of grid columns (default: 6)
--s <size>        button image size (default: 72)
--c <name>        css file name (default: style.css)
--l <ln>          force use of <ln> language
--g <theme>       GTK theme name
--wm <wmname>     window manager name (if can not be detected)
--no-categories   disable categories display
--oneshot         run in the foreground, exit when window is closed
-                 generally you should not use this option, use simply `nwggrid` instead
-[requires layer-shell]:
--layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},         default: OVERLAY
--layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto
-
-
+HELP_OUTPUT_FOR_GRID_CLIENT
 ```
 
 ```
 $ nwggrid-server -h
-GTK application grid: nwggrid 0.7.0 (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors 
-
-Usage:
-    nwggrid -client      sends -SIGUSR1 to nwggrid-server, requires nwggrid-server running
-    nwggrid [ARGS...]    launches nwggrid-server -oneshot ARGS...
-
-See also:
-    nwggrid-server -h
-
-
+HELP_OUTPUT_FOR_GRID_SERVER
 ```
 
 ### Terminal applications
@@ -174,26 +143,7 @@ This command creates a horizontal or vertical button bar, out of a template file
 
 ```
 $ nwgbar -h
-GTK button bar: nwgbar 0.7.0 (c) Piotr Miller & Contributors 2022
-
-Options:
--h               show this help message and exit
--v               arrange buttons vertically
--ha <l>|<r>      horizontal alignment left/right (default: center)
--va <t>|<b>      vertical alignment top/bottom (default: middle)
--t <name>        template file name (default: bar.json)
--c <name>        css file name (default: style.css)
--o <opacity>     background opacity (0.0 - 1.0, default 0.9)
--b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)
--s <size>        button image size (default: 72)
--g <theme>       GTK theme name
--wm <wmname>     window manager name (if can not be detected)
-
-[requires layer-shell]:
--layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY
--layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto
-
-
+HELP_OUTPUT_FOR_BAR
 ```
 
 ### Custom background
@@ -277,33 +227,7 @@ This program provides 2 commands:
 
 ```
 $ nwgdmenu -h
-GTK dynamic menu: nwgdmenu 0.7.0 (c) Piotr Miller & Contributors 2022
-
-<input> | nwgdmenu - displays newline-separated stdin input as a GTK menu
-nwgdmenu - creates a GTK menu out of commands found in $PATH
-
-Options:
--h               show this help message and exit
--n               no search box
--ha <l>|<r>      horizontal alignment left/right (default: center)
--va <t>|<b>      vertical alignment top/bottom (default: middle)
--r <rows>        number of rows (default: 20)
--c <name>        css file name (default: style.css)
--o <opacity>     background opacity (0.0 - 1.0, default 0.3)
--b <background>  background colour in RRGGBB or RRGGBBAA format (RRGGBBAA alpha overrides <opacity>)
--g <theme>       GTK theme name
--wm <wmname>     window manager name (if can not be detected)
--run             ignore stdin, always build from commands in $PATH
-
-[requires layer-shell]:
--layer-shell-layer          {BACKGROUND,BOTTOM,TOP,OVERLAY},        default: OVERLAY
--layer-shell-exclusive-zone {auto, valid integer (usually -1 or 0)}, default: auto
-
-Hotkeys:
-Delete        clear search box
-Insert        switch case sensitivity
-
-
+HELP_OUTPUT_FOR_DMENU
 ```
 
 (1) _The program should auto-detect if something has been passed in `stdin`, and build the menu out of the `stdin` content

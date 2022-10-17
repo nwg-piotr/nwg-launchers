@@ -6,6 +6,23 @@
  * License: GPL3
  * */
 #include "grid_entries.h"
+#include "on_desktop_entry.h"
+#include "log.h"
+
+DesktopEntryConfig::DesktopEntryConfig(const GridConfig& config):
+    term{ config.term },
+    name_ln{ concat("Name[", config.lang, "]=") },
+    comment_ln{ concat("Comment[", config.lang, "]=") },
+    home{ get_home_dir() },
+    config_source{ config.config_source }
+{
+    if (config.categories) {
+        for (auto & [k, _] : config.config_source["categories"].items()) {
+            known_categories.push_back(k);
+        }
+    }
+}
+
 
 inline bool looks_like_desktop_file(const Glib::RefPtr<Gio::File>& file) {
     fs::path path{ file->get_path() };
@@ -30,7 +47,7 @@ inline auto desktop_id(const fs::path& file, const fs::path& dir) {
 }
 
 EntriesManager::EntriesManager(Span<fs::path> dirs, EntriesModel& table, GridConfig& config):
-    table{ table }, config{ config }, desktop_entry_config{ config.lang, config.term }
+    table{ table }, config{ config }, desktop_entry_config{ config }
 {
     // set monitors
     monitors.reserve(dirs.size());
@@ -117,21 +134,22 @@ void EntriesManager::try_load_entry_(std::string id, const fs::path& file, int p
         // to keep the view valid
         desktop_ids_store.splice(desktop_ids_store.begin(), id_node);
         // load it
-        on_desktop_entry(file, desktop_entry_config, Overloaded {
-            [&,this,iter=iter](std::unique_ptr<DesktopEntry> && desktop_entry){
-                auto && meta = iter->second;
-                meta.state = Metadata::Ok;
-                meta.index = table.emplace_entry(
-                    id_,
-                    Stats{},
-                    std::move(desktop_entry)
-                );
-            },
-            [&](OnDesktopEntry::Error){
-                Log::error("Failed to load desktop file '", file, "'");
-            },
-            [](OnDesktopEntry::Hidden){ }
-        });
+        try {
+            std::unique_ptr<DesktopEntry> desktop_entry{
+                new DesktopEntry{ parse_desktop_entry(file, desktop_entry_config) }
+            };
+            auto && meta = iter->second;
+            meta.state = Metadata::Ok;
+            meta.index = table.emplace_entry(
+                id_,
+                Stats{},
+                std::move(desktop_entry)
+            );
+        } catch (entry_parse::Hidden) {
+            // do nothing
+        } catch (entry_parse::Error) {
+            Log::error("Failed to load desktop file '", file, "'");
+        }
     } else {
         Log::info(".desktop file '", file, "' with id '", id_, "' overridden, ignored");
     }
@@ -162,43 +180,42 @@ void EntriesManager::on_file_changed(std::string id, const Glib::RefPtr<Gio::Fil
             return;
         }
         meta.priority = priority;
-        on_desktop_entry(path, desktop_entry_config, Overloaded {
-            // successfully reloaded the new entry
-            [&meta=meta,this,&result](std::unique_ptr<DesktopEntry> && desktop_entry) {
-                if (meta.state == Metadata::Ok) {
-                    // entry was ok, now ok -> update contents
-                    table.update_entry(
-                        result->second.index,
-                        result->first,
-                        Stats{},
-                        std::move(desktop_entry)
-                    );
-                } else {
-                    // entry wasn't ok, but now ok -> add it to table it
-                    meta.index = table.emplace_entry(
-                        result->first,
-                        Stats{},
-                        std::move(desktop_entry)
-                    );
-                    meta.state = Metadata::Ok;
-                }
-            },
-            // reloaded entry is hidden
-            [&meta=meta,this](OnDesktopEntry::Hidden){
-                if (meta.state == Metadata::Ok) {
-                    table.erase_entry(meta.index);
-                }
-                meta.state = Metadata::Hidden;
-            },
-            // failed to reload entry
-            [&meta=meta,&path=path,this](OnDesktopEntry::Error){
-                Log::error("Failed to load desktop file'", path, "'");
-                if (meta.state == Metadata::Ok) {
-                    table.erase_entry(meta.index);
-                }
-                meta.state = Metadata::Invalid;
+
+        try {
+            std::unique_ptr<DesktopEntry> desktop_entry{
+                new DesktopEntry{ parse_desktop_entry(path, desktop_entry_config) }
+            };
+
+            if (meta.state == Metadata::Ok) {
+                // entry was ok, now ok -> update contents
+                auto new_index = table.update_entry(
+                    result->second.index,
+                    result->first,
+                    Stats{},
+                    std::move(desktop_entry)
+                );
+                result->second.index = new_index;
+            } else {
+                // entry wasn't ok, but now ok -> add it to table it
+                meta.index = table.emplace_entry(
+                    result->first,
+                    Stats{},
+                    std::move(desktop_entry)
+                );
+                meta.state = Metadata::Ok;
             }
-        });
+        } catch (entry_parse::Hidden) {
+            if (meta.state == Metadata::Ok) {
+                table.erase_entry(meta.index);
+            }
+            meta.state = Metadata::Hidden;
+        } catch (entry_parse::Error) {
+            Log::error("Failed to load desktop file'", path, "'");
+            if (meta.state == Metadata::Ok) {
+                table.erase_entry(meta.index);
+            }
+            meta.state = Metadata::Invalid;
+        }
     } else {
         // there was not such entry, add it
         try_load_entry_(std::move(id), path, priority);

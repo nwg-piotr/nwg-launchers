@@ -1,3 +1,6 @@
+
+configure_file(input: 'help.h.in', output: 'help.h', configuration: conf_data)
+
 sources = files(
 	'grid.cc',
 	'grid_classes.cc',
@@ -5,7 +8,7 @@ sources = files(
 	'grid_entries.cc'
 )
 
-executable(
+grid_server_exe = executable(
 	'nwggrid',
 	files('grid_client.cc', 'grid_classes.cc', 'grid_tools.cc'),
 	dependencies: [json, gtkmm, gtk_layer_shell],
@@ -14,7 +17,7 @@ executable(
 	install: true
 )
 
-executable(
+grid_client_exe = executable(
 	'nwggrid-server',
 	sources,
 	dependencies: [json, gtkmm, gtk_layer_shell],
@@ -24,6 +27,6 @@ executable(
 )
 
 install_data(
-	['style.css'],
+	['style.css', 'grid.conf'],
 	install_dir: conf_data.get('datadir', '') / 'nwggrid'
 )

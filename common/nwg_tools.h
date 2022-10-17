@@ -42,10 +42,21 @@ std::string detect_wm(const Glib::RefPtr<Gdk::Display>&, const Glib::RefPtr<Gdk:
 std::string get_term(std::string_view);
 std::string get_locale(void);
 
+namespace category {
+
+// TODO: avoid globals, single config file
+std::vector<std::string_view> get_known_categories(std::string_view app);
+std::string_view localize(const ns::json& j, std::string_view category);
+
+} // namespace category
+
 std::string read_file_to_string(const fs::path&);
 void save_string_to_file(std::string_view, const fs::path&);
 std::vector<std::string_view> split_string(std::string_view, std::string_view);
 std::string_view take_last_by(std::string_view, std::string_view);
+
+ns::json::reference json_at(ns::json& j, std::string_view key);
+ns::json::const_reference json_at(const ns::json& j, std::string_view key);
 
 ns::json json_from_file(const fs::path&);
 ns::json string_to_json(std::string_view);
@@ -65,22 +76,5 @@ int instance_on_sigterm(void*);
 int instance_on_sigusr1(void*);
 int instance_on_sighup(void*);
 int instance_on_sigint(void*);
-
-namespace Log {
-    template <typename ... Ts>
-    void write(std::ostream& out, Ts && ... ts) {
-        ((out << ts), ...);
-        out << '\n';
-    }
-
-    template <typename ... Ts>
-    void info(Ts && ... ts) { write(std::cerr, "INFO: ", std::forward<Ts>(ts)...); }
-    template <typename ... Ts>
-    void warn(Ts && ... ts) { write(std::cerr, "WARN: ", std::forward<Ts>(ts)...); }
-    template <typename ... Ts>
-    void error(Ts && ... ts) { write(std::cerr, "ERROR: ", std::forward<Ts>(ts)...); }
-    template <typename ... Ts>
-    void plain(Ts && ... ts) { write(std::cerr, std::forward<Ts>(ts)...); }
-}
 
 constexpr auto concat = [](auto&& ... xs) { std::string r; ((r += xs), ...); return r; };

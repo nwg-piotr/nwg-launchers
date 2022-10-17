@@ -1,10 +1,13 @@
+
+configure_file(input: 'help.h.in', output: 'help.h', configuration: conf_data)
+
 sources = files(
 	'bar.cc',
 	'bar_classes.cc',
 	'bar_tools.cc'
 )
 
-executable(
+bar_exe = executable(
 	'nwgbar',
 	sources,
 	dependencies: [json, gtkmm, gtk_layer_shell],

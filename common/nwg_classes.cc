@@ -21,6 +21,7 @@
 #include "nwg_classes.h"
 #include "nwg_exceptions.h"
 #include "nwg_tools.h"
+#include "log.h"
 
 InputParser::InputParser (int argc, char **argv) {
     tokens.reserve(argc - 1);
