@@ -106,7 +106,7 @@ Additionally, you may use `-no-categories` to disable categories, or set `no-cat
 
 ```
 $ nwggrid -h
-GTK application grid: nwggrid 0.7.0 (c) 2022 Piotr Miller, Sergey Smirnykh & Contributors 
+GTK application grid: nwggrid 0.7.1.1 (c) 2022 Piotr Miller, Sergey Smirnykh & Contributors 
 
 Options:
 -h               show this help message and exit
@@ -133,7 +133,7 @@ Options:
 
 ```
 $ nwggrid-server -h
-GTK application grid: nwggrid 0.7.0 (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors 
+GTK application grid: nwggrid 0.7.1.1 (c) 2021 Piotr Miller, Sergey Smirnykh & Contributors 
 
 Usage:
     nwggrid -client      sends -SIGUSR1 to nwggrid-server, requires nwggrid-server running
@@ -174,7 +174,7 @@ This command creates a horizontal or vertical button bar, out of a template file
 
 ```
 $ nwgbar -h
-GTK button bar: nwgbar 0.7.0 (c) Piotr Miller & Contributors 2022
+GTK button bar: nwgbar 0.7.1.1 (c) Piotr Miller & Contributors 2022
 
 Options:
 -h               show this help message and exit
@@ -277,7 +277,7 @@ This program provides 2 commands:
 
 ```
 $ nwgdmenu -h
-GTK dynamic menu: nwgdmenu 0.7.0 (c) Piotr Miller & Contributors 2022
+GTK dynamic menu: nwgdmenu 0.7.1.1 (c) Piotr Miller & Contributors 2022
 
 <input> | nwgdmenu - displays newline-separated stdin input as a GTK menu
 nwgdmenu - creates a GTK menu out of commands found in $PATH
