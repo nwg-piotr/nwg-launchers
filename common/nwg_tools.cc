@@ -49,6 +49,48 @@ std::string_view get_home_dir() {
     return { home_dir.native() };
 }
 
+fs::path get_config_file(std::string_view app, std::string_view file) {
+    auto try_ = [=](fs::path& base) {
+        base /= "nwg-launchers";
+        base /= app;
+        base /= file;
+        Log::info("trying ", base.native());
+        if (fs::exists(base)) {
+            return true;
+        }
+        base.clear();
+        return false;
+    };
+
+    fs::path result;
+
+    // try xdg-config-home
+    char* val = getenv("XDG_CONFIG_HOME");
+    if (val) {
+        result = val;
+        if (try_(result)) {
+            return result;
+        }
+    }
+
+    // try home
+    result = get_home_dir();
+    result /= ".config";
+    if (try_(result)) {
+        return result;
+    }
+
+    // DATA_DIR_STR already contains "nwg-launchers"
+    result = DATA_DIR_STR;
+    result /= app;
+    result /= file;
+    if (fs::exists(result)) {
+        return result;
+    }
+
+    throw std::runtime_error{ concat("Unable to locate '", app, '/', file, "' configuration file") };
+}
+
 /*
  * Returns config dir
  * */

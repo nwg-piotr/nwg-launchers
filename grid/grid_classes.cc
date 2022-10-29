@@ -74,8 +74,7 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
     categories = !parser.cmdOptionExists("-no-categories");
 
     if (categories) {
-        auto path = get_config_dir("nwggrid");
-        path /= "grid.conf"sv;
+        auto path = get_config_file("nwggrid"sv, "grid.conf"sv);
         if ( std::ifstream stream{ path } ) {
             stream >> config_source;
 

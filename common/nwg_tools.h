@@ -27,6 +27,16 @@ namespace ns = nlohmann;
 std::string_view get_home_dir();
 fs::path get_cache_home();
 fs::path get_config_dir(std::string_view);
+
+/// @brief Get path to application's config file by looking up across all config directories
+/// in the following order:
+/// 1. $XDG_CONFIG_HOME/nwg-launchers/<app>/<file>
+/// 2. $HOME/.config/nwg-launchers/<app>/<file>
+/// 3. DATA_DIR/nwg-launchers/<app>/<file> where DATA_DIR is build option, usually set to /usr or /usr/share
+/// @param app application
+/// @param file configuration file name
+fs::path get_config_file(std::string_view app, std::string_view file);
+
 fs::path get_runtime_dir();
 // returns path to pid file <name>
 fs::path get_pid_file(std::string_view name);
