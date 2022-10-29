@@ -712,7 +712,11 @@ void GridInstance::on_sighup() {
 }
 
 void GridInstance::on_sigusr1() {
-    window.show(hint::Fullscreen);
+    if (window.get_visible()) {
+        window.hide();
+    } else {
+        window.show(hint::Fullscreen);
+    }
 }
 
 void GridInstance::on_sigint() {
