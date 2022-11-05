@@ -161,27 +161,29 @@ GridWindow::GridWindow(GridConfig& config):
     pinned_boxes = PinnedBoxes::create();
     fav_boxes = FavBoxes::create();
 
-    auto label_all = category::localize(config.config_source, "All");
-    categories_all.set_label(Glib::locale_to_utf8({ label_all.data(), label_all.size() }));
-    categories_all.signal_toggled().connect([this](){
-        auto active = categories_all.get_active();
-        categories.all_enabled = active;
-        if (active) {
-            // disable all other buttons
-            categories_box.foreach([](auto& widget){
-                auto& fboxchild = static_cast<Gtk::FlowBoxChild&>(widget);
-                auto* button = dynamic_cast<Gtk::ToggleButton*>(fboxchild.get_child());
-                if (!button) {
-                    throw std::logic_error{ "Categories button is not a Gtk::ToggleButton" };
-                }
-                button->set_active(false);
-            });
-        }
-        apps_boxes->on_category_toggled();
-    });
-    categories_all.set_name("categories_all");
-    categories_all.set_active();
-    categories_box.add(categories_all);
+    if (config.categories) {
+        auto label_all = category::localize(config.config_source, "All");
+        categories_all.set_label(Glib::locale_to_utf8({ label_all.data(), label_all.size() }));
+        categories_all.signal_toggled().connect([this](){
+            auto active = categories_all.get_active();
+            categories.all_enabled = active;
+            if (active) {
+                // disable all other buttons
+                categories_box.foreach([](auto& widget){
+                    auto& fboxchild = static_cast<Gtk::FlowBoxChild&>(widget);
+                    auto* button = dynamic_cast<Gtk::ToggleButton*>(fboxchild.get_child());
+                    if (!button) {
+                        throw std::logic_error{ "Categories button is not a Gtk::ToggleButton" };
+                    }
+                    button->set_active(false);
+                });
+            }
+            apps_boxes->on_category_toggled();
+        });
+        categories_all.set_name("categories_all");
+        categories_all.set_active();
+        categories_box.add(categories_all);
+    }
 
     // doesn't compile with lambda due to sigc bug, must use free function
     Gtk::FlowBox::SlotCreateWidget<Glib::Object> make_widget_{ &make_widget };
