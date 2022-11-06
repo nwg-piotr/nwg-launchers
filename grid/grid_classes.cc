@@ -55,7 +55,29 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
         } else {
             Log::error("Invalid number of columns\n");
         }
+    } else {
+	auto path = get_config_file("nwggrid"sv, "grid.conf"sv);
+        if ( std::ifstream stream{ path } ) {
+            stream >> config_source;
+
+            auto item = config_source.find("columns");
+	    if (item != config_source.end()) {
+                try {
+		    int n_c = item->get<int>();
+		    if (n_c > 0 && n_c < 100) {
+		        num_col = n_c;
+		    } else {
+		        Log::error("Columns must be in range 1 - 99\n");
+		    }
+		}
+		catch (...) {
+		    Log::error("Failed to read 'columns' value from config JSON");
+		    throw;
+		}
+	    }
+	}
     }
+
 
     if (pins || favs) {
         auto cache_home = get_cache_home();
@@ -69,7 +91,24 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
 
     if (auto i_size = parser.getCmdOption("-s"); !i_size.empty()){
         icon_size = parse_icon_size(i_size);
+    } else {
+        auto path = get_config_file("nwggrid"sv, "grid.conf"sv);
+        if ( std::ifstream stream{ path } ) {
+            stream >> config_source;
+
+            auto item = config_source.find("icon-size");
+	    if (item != config_source.end()) {
+                try {
+		    icon_size = item->get<int>();
+		}
+		catch (...) {
+		    Log::error("Failed to read 'icon-size' value from config JSON");
+		    throw;
+		}
+	    }
+	}
     }
+
     oneshot = parser.cmdOptionExists("-oneshot");
     categories = !parser.cmdOptionExists("-no-categories");
 
