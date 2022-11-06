@@ -33,6 +33,10 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
     auto has_custom_paths = parser.cmdOptionExists("-d");
     auto has_favs = parser.cmdOptionExists("-f");
     auto has_pins = parser.cmdOptionExists("-p");
+    auto path = get_config_file("nwggrid"sv, "grid.conf"sv);
+    if ( std::ifstream stream{ path } ) {
+        stream >> config_source;
+    }
     if ((has_favs || has_pins) && has_custom_paths) {
         Log::error("'-f' and '-p' options are incompatible with '-d ...', ignoring '-p' and/or '-f'");
     }
@@ -56,10 +60,7 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
             Log::error("Invalid number of columns\n");
         }
     } else {
-	auto path = get_config_file("nwggrid"sv, "grid.conf"sv);
-        if ( std::ifstream stream{ path } ) {
-            stream >> config_source;
-
+        if ( !config_source.empty() ) {
             auto item = config_source.find("columns");
 	    if (item != config_source.end()) {
                 try {
@@ -92,10 +93,7 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
     if (auto i_size = parser.getCmdOption("-s"); !i_size.empty()){
         icon_size = parse_icon_size(i_size);
     } else {
-        auto path = get_config_file("nwggrid"sv, "grid.conf"sv);
-        if ( std::ifstream stream{ path } ) {
-            stream >> config_source;
-
+        if ( !config_source.empty() ) {
             auto item = config_source.find("icon-size");
 	    if (item != config_source.end()) {
                 try {
@@ -113,10 +111,7 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
     categories = !parser.cmdOptionExists("-no-categories");
 
     if (categories) {
-        auto path = get_config_file("nwggrid"sv, "grid.conf"sv);
-        if ( std::ifstream stream{ path } ) {
-            stream >> config_source;
-
+        if ( !config_source.empty() ) {
             auto item = config_source.find("no-categories");
             if (item != config_source.end()) {
                 try {
