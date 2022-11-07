@@ -45,6 +45,17 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
 
     if (auto forced_lang = parser.getCmdOption("-l"); !forced_lang.empty()){
         lang = forced_lang;
+    } else if ( !config_source.empty() ) {
+	auto item = config_source.find("language");
+	if (item != config_source.end()) {
+	    try {
+	         lang = item->get<std::string>();
+	    }
+	    catch (...) {
+		Log::error("Failed to read 'language' value from config JSON");
+		throw;
+	    }
+	}
     } else {
         lang = get_locale();
     }
