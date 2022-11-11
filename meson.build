@@ -67,33 +67,6 @@ if get_option('grid')
 	subdir('grid')
 endif
 
-python = find_program('python3', required: false)
-if not python.found()
-	python = find_program('python', required: false)
-endif
-
-# generate README.md from template
-# make sure to copy it to the source directory!
-if python.found()
-	readme = custom_target('readme',
-		output: [ 'README.md' ],
-		input: [ 'README.md.in' ],
-		command: [
-			python, '@SOURCE_ROOT@/make_readme.py',
-			'@INPUT@', '@OUTPUT@',
-			bar_exe.full_path(),
-			dmenu_exe.full_path(),
-			grid_client_exe.full_path(),
-			grid_server_exe.full_path()
-		],
-		depends: [bar_exe, dmenu_exe, grid_client_exe, grid_server_exe],
-		install_dir: conf_data.get('datadir'),
-		install: true
-	)
-else
-	message('Python was not found, fresh README.md will not be generated')
-endif
-
 install_data(
     ['icon-missing.svg', 'icon-missing.png'],
     install_dir: conf_data.get('datadir')
