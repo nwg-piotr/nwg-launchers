@@ -139,10 +139,10 @@ int main(int argc, char *argv[]) {
         }
 
         std::vector<fs::path> dirs;
-        if (auto special_dirs = input.getCmdOption("-d"); !special_dirs.empty()) {
+        if (!config.special_dirs.empty()) {
             using namespace std::string_view_literals;
             // use special dirs specified with -d argument (feature request #122)
-            auto dirs_ = split_string(special_dirs, ":");
+            auto dirs_ = split_string(config.special_dirs, ":");
             Log::info("Using custom .desktop files path(s):\n");
             std::array status { "' [INVALID]\n"sv, "' [OK]\n"sv };
             for (auto && dir: dirs_) {

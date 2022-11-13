@@ -30,18 +30,56 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
 {
     using namespace std::string_view_literals;
 
-    auto has_custom_paths = parser.cmdOptionExists("-d");
-    auto has_favs = parser.cmdOptionExists("-f");
-    auto has_pins = parser.cmdOptionExists("-p");
     auto path = get_config_file("nwggrid"sv, "grid.conf"sv);
     if ( std::ifstream stream{ path } ) {
         stream >> config_source;
     }
-    if ((has_favs || has_pins) && has_custom_paths) {
+
+    if (auto custom_paths = parser.getCmdOption("-d"); !custom_paths.empty()) {
+	special_dirs = custom_paths;
+    } else if (!config_source.empty()) {
+        auto item = config_source.find("custom-path");
+	if (item != config_source.end()) {
+	    try {
+	        special_dirs = item->get<std::string>();
+	    }
+	    catch (...) {
+	        Log::error("Failed to read 'custom-path' value from config JSON");
+		throw;
+	    }
+	}
+    }
+    auto has_favs = parser.cmdOptionExists("-f");
+    if (!has_favs && !config_source.empty()) {
+        auto item = config_source.find("favorites");
+	if (item != config_source.end()) {
+	    try {
+	        has_favs = item->get<bool>();
+	    }
+	    catch (...) {
+	        Log::error("Failed to read 'favorites' value from config JSON");
+	        throw;
+	    }
+	}
+    }
+    auto has_pins = parser.cmdOptionExists("-p");
+    if (!has_pins && !config_source.empty()) {
+        auto item = config_source.find("pins");
+	if (item != config_source.end()) {
+	    try {
+	        has_pins = item->get<bool>();
+	    }
+	    catch (...) {
+	        Log::error("Failed to read 'pins' value from config JSON");
+	        throw;
+	    }
+	}
+    }
+    if ((has_favs || has_pins) && !special_dirs.empty()) {
         Log::error("'-f' and '-p' options are incompatible with '-d ...', ignoring '-p' and/or '-f'");
     }
-    favs = has_favs && !has_custom_paths;
-    pins = has_pins && !has_custom_paths;
+    favs = has_favs && special_dirs.empty();
+    pins = has_pins && special_dirs.empty();
 
     if (auto forced_lang = parser.getCmdOption("-l"); !forced_lang.empty()){
         lang = forced_lang;

@@ -102,6 +102,7 @@ struct GridConfig: public Config {
     bool favs;                // whether to display favorites
     std::string term;         // user-preferred terminal
     std::string lang;         // user-preferred language
+    std::string special_dirs; // user-preferred path to desktop files
     std::size_t num_col{ 6 }; // number of grid columns
     fs::path pinned_file;     // file with pins
     fs::path cached_file;     // file with favs
