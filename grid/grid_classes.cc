@@ -157,6 +157,21 @@ GridConfig::GridConfig(const InputParser& parser, const Glib::RefPtr<Gdk::Screen
     }
 
     oneshot = parser.cmdOptionExists("-oneshot");
+    if (!oneshot) {
+        if (!config_source.empty() ) {
+	    auto item = config_source.find("oneshot");
+	    if (item != config_source.end()) {
+	        try {
+                    oneshot = item->get<bool>();
+		}
+		catch (...) {
+		    Log::error("Failed to read 'oneshot' value from config JSON");
+		    throw;
+		}
+	    }
+	}
+    }
+
     categories = !parser.cmdOptionExists("-no-categories");
 
     if (categories) {
