@@ -192,7 +192,7 @@ It should be noted that the `"favorites"` and `"pins"` keys should not be set to
      "pins" : false,
      "columns" : 6,
      "icon-size" : 72,
-     "language" : "eo",
+     "language" : "en",
      "no-categories": false,
      "oneshot" : false
 }
