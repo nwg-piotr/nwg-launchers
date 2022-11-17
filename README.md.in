@@ -133,6 +133,40 @@ the opacity, as well default, as defined with the -o <opacity> argument.
 On first run the program creates the `nwg-launchers/nwggrid` folder in your .config directory. You'll find the `style.css` files inside.
 You may edit the style sheet to your liking.
 
+### Customization
+
+On first run the program creates the `nwg-launchers/nwggrid` folder in your .config directory. You'll find a sample template `grid.conf` file inside.
+
+Below lists the keys currently available to be set in the `grid.conf` file. Not all keys shown below are set by in the sample template, such as the `"custom-path"` and `"language"` keys.
+
+It should be noted that the `"favorites"` and `"pins"` keys should not be set to `true` if the `"custom-path"` key is set, as those options will not work.
+
+```json
+{
+     "categories": {
+         "AudioVideo" : "Multimedia 📀",
+         "Development" : "Development 💻",
+         "Education" : "Education 🎓",
+         "Game" : "Games 🎮",
+         "Graphics" : "Graphics 🎨",
+         "Network" : "Network 🌎",
+         "Office" : "Office 💼",
+         "Science" : "Science 🔬",
+         "Settings" : "Settings ⚙️",
+         "System" : "System 🖥️",
+         "Utility" : "Utility 🛠️"
+     },
+     "custom-path" : "/my/path1:/my/another path:/third/path",
+     "favorites" : false,
+     "pins" : false,
+     "columns" : 6,
+     "icon-size" : 72,
+     "language" : "en",
+     "no-categories": false,
+     "oneshot" : false
+}
+```
+
 ## nwgbar
 
 This command creates a horizontal or vertical button bar, out of a template file.
