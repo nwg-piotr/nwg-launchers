@@ -67,14 +67,15 @@ if get_option('grid')
 	subdir('grid')
 endif
 
-python = find_program('python3', required: false)
-if not python.found()
-	python = find_program('python', required: false)
-endif
+if get_option('generate-readme')
+	python = find_program('python3', required: false)
+	if not python.found()
+		message('python3 not found in PATH, trying python...')
+		python = find_program('python', required: true)
+	endif
 
-# generate README.md from template
-# make sure to copy it to the source directory!
-if python.found()
+	# generate README.md from template
+	# make sure to copy it to the source directory!
 	readme = custom_target('readme',
 		output: [ 'README.md' ],
 		input: [ 'README.md.in' ],
@@ -90,8 +91,6 @@ if python.found()
 		install_dir: conf_data.get('datadir'),
 		install: true
 	)
-else
-	message('Python was not found, fresh README.md will not be generated')
 endif
 
 install_data(
