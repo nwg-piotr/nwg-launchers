@@ -67,33 +67,45 @@ if get_option('grid')
 	subdir('grid')
 endif
 
-if get_option('generate-readme')
+
+# find python in the most modern way available
+if meson.version() > '0.46.0'
+	pymod = import('python')
+	python = pymod.find_installation('python3', required: false)
+elif meson.version() > '0.38.0'
+	pymod = import('python3')
+	python = pymod.find_python()
+else
 	python = find_program('python3', required: false)
 	if not python.found()
 		message('python3 not found in PATH, trying python...')
-		python = find_program('python', required: true)
+		python = find_program('python', required: false)
 	endif
-
-	# generate README.md from template
-	# make sure to copy it to the source directory!
-	readme = custom_target('readme',
-		output: [ 'README.md' ],
-		input: [ 'README.md.in' ],
-		command: [
-			python, '@SOURCE_ROOT@/make_readme.py',
-			'@INPUT@', '@OUTPUT@',
-			bar_exe.full_path(),
-			dmenu_exe.full_path(),
-			grid_client_exe.full_path(),
-			grid_server_exe.full_path()
-		],
-		depends: [bar_exe, dmenu_exe, grid_client_exe, grid_server_exe],
-		install_dir: conf_data.get('datadir'),
-		install: true
-	)
 endif
 
+if not python.found()
+	python = disabler()
+endif
+
+
+# generate README.md from template
+# make sure to copy it to the source directory!
+readme = custom_target('readme',
+	output: [ 'README.md' ],
+	input: [ 'README.md.in' ],
+	command: [
+		python, '@SOURCE_ROOT@/make_readme.py',
+		'@INPUT@', '@OUTPUT@',
+		bar_exe.full_path(),
+		dmenu_exe.full_path(),
+		grid_client_exe.full_path(),
+		grid_server_exe.full_path()
+	],
+	depends: [bar_exe, dmenu_exe, grid_client_exe, grid_server_exe],
+	build_by_default: false
+)
+
 install_data(
-    ['icon-missing.svg', 'icon-missing.png'],
-    install_dir: conf_data.get('datadir')
+	['icon-missing.svg', 'icon-missing.png'],
+	install_dir: conf_data.get('datadir')
 )
