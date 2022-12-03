@@ -3,4 +3,3 @@ option('dmenu', type: 'boolean', value: true, description: 'Build the dmenu app.
 option('grid', type: 'boolean', value: true, description: 'Build the grid app.')
 option('layer-shell', type: 'feature', value: 'auto', description: 'Enable layer-shell support')
 option('gdk-x11', type: 'feature', value: 'auto', description: 'Use Gdk X11 API')
-option('generate-readme', type: 'boolean', value: false, description: 'Generate fresh README.md in build directory')
