@@ -102,7 +102,7 @@ readme = custom_target('readme',
 		grid_server_exe.full_path()
 	],
 	depends: [bar_exe, dmenu_exe, grid_client_exe, grid_server_exe],
-	build_by_default: false
+	build_by_default: meson.can_run_host_binaries()
 )
 
 install_data(
