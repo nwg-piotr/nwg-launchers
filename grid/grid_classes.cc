@@ -393,8 +393,13 @@ inline auto refresh_max_children_per_line = [](auto& flowbox, auto& container, a
     auto size = container.size();
     decltype(size) cols = num_col;
     if (auto min = std::min(cols, size)) { // suppress gtk warnings about size=0
-        //flowbox.set_min_children_per_line(std::min(size, cols));
-        flowbox.set_max_children_per_line(std::min(size, cols));
+        // When some items have long captions,
+        // flowbox may decide to reduce the number of columns
+        // to make all captions display un-omitted.
+        // We don't want that. So we'll force minimum amount of items
+        // per line of flowbox.
+        flowbox.set_min_children_per_line(min);
+        flowbox.set_max_children_per_line(min);
     }
 };
 
